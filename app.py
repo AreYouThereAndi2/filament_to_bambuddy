@@ -50,6 +50,9 @@ BAMBUDDY_API_KEY = os.getenv("BAMBUDDY_API_KEY", "")
 
 DEFAULT_LABEL_WEIGHT = int(os.getenv("DEFAULT_LABEL_WEIGHT", "1000"))
 CACHE_FILE = Path(os.getenv("BARCODE_CACHE_FILE", "barcode_cache.json"))
+# The user's own reading rules for label and title text ("Marmor" means the
+# subtype Marble), kept next to the cache.
+RULES_FILE = Path(os.getenv("PARSE_RULES_FILE", "parse_rules.json"))
 
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8088"))
@@ -251,6 +254,101 @@ def load_cache() -> dict:
 
 def save_cache(cache: dict):
     CACHE_FILE.write_text(json.dumps(cache, indent=2))
+
+
+# ── Reading rules ─────────────────────────────────────────────────────────────
+# A rule says: where the text contains `match` (any case), the field is
+# `value`. It wins over the parser's guess and yields to a database that
+# knows the scanned code. One user, one worker: the file is the store.
+RULE_FIELDS = ("brand", "material", "subtype", "color_name", "label_weight",
+               "nozzle_temp_min", "nozzle_temp_max")
+_RULE_INT_FIELDS = {"label_weight": (1, 100000), "nozzle_temp_min": (100, 500),
+                    "nozzle_temp_max": (100, 500)}
+_MAX_RULES = 200
+
+
+def load_rules() -> list:
+    try:
+        rules = json.loads(RULES_FILE.read_text()) if RULES_FILE.exists() else []
+    except Exception:
+        return []
+    return [r for r in rules if isinstance(r, dict) and r.get("field") in RULE_FIELDS
+            and r.get("match") and r.get("value") not in (None, "")]
+
+
+def save_rules(rules: list):
+    tmp = RULES_FILE.with_suffix(RULES_FILE.suffix + ".tmp")
+    tmp.write_text(json.dumps(rules, indent=2, ensure_ascii=False))
+    tmp.replace(RULES_FILE)
+
+
+def _rule_value(field: str, value):
+    """The value typed for its field, or None when it does not fit."""
+    if field in _RULE_INT_FIELDS:
+        try:
+            n = int(float(str(value).replace(",", ".")))
+        except (TypeError, ValueError):
+            return None
+        lo, hi = _RULE_INT_FIELDS[field]
+        return n if lo <= n <= hi else None
+    text = str(value or "").strip()
+    return text[:60] or None
+
+
+def apply_rules(text: str, fields: dict, rules: list | None = None) -> tuple[dict, dict]:
+    """`fields` with the user's rules applied to `text`: (fields, applied),
+    where applied maps a field to {"match", "span"} of the rule that set it.
+    The longest match wins a field two rules claim."""
+    rules = load_rules() if rules is None else rules
+    fields = dict(fields)
+    applied: dict = {}
+    low = (text or "").lower()
+    for rule in sorted(rules, key=lambda r: len(str(r["match"]))):
+        at = low.find(str(rule["match"]).lower())
+        if at < 0:
+            continue
+        value = _rule_value(rule["field"], rule["value"])
+        if value is None:
+            continue
+        fields[rule["field"]] = value
+        applied[rule["field"]] = {"match": rule["match"], "span": [at, at + len(str(rule["match"]))]}
+    return fields, applied
+
+
+@app.get("/api/rules")
+def list_rules():
+    return jsonify(rules=load_rules(), fields=list(RULE_FIELDS))
+
+
+@app.post("/api/rules")
+def add_rule():
+    body = request.get_json(force=True, silent=True) or {}
+    match = " ".join(str(body.get("match") or "").split())
+    field = body.get("field")
+    if not (2 <= len(match) <= 60) or field not in RULE_FIELDS:
+        return jsonify(ok=False, error="match/field"), 400
+    value = _rule_value(field, body.get("value"))
+    if value is None:
+        return jsonify(ok=False, error="value"), 400
+    rules = [r for r in load_rules()
+             if not (r["field"] == field and str(r["match"]).lower() == match.lower())]
+    if len(rules) >= _MAX_RULES:
+        return jsonify(ok=False, error="too_many"), 400
+    rules.append({"match": match, "field": field, "value": value})
+    save_rules(rules)
+    log.info("reading rule: %r -> %s = %r", match, field, value)
+    return jsonify(ok=True, rules=rules)
+
+
+@app.delete("/api/rules")
+def delete_rule():
+    body = request.get_json(force=True, silent=True) or {}
+    match, field = str(body.get("match") or "").lower(), body.get("field")
+    rules = load_rules()
+    kept = [r for r in rules if not (r["field"] == field and str(r["match"]).lower() == match)]
+    if len(kept) != len(rules):
+        save_rules(kept)
+    return jsonify(ok=True, removed=len(rules) - len(kept), rules=kept)
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -612,7 +710,7 @@ def _upc_fields(code: str) -> tuple | None:
     brand = None
     if hit["brand"]:
         brand = _find_brand(hit["brand"].upper(), brands) or hit["brand"]
-    fields = parse_title(hit["title"], brand_hint=brand, extra_brands=brands)
+    fields, _ = apply_rules(hit["title"], parse_title(hit["title"], brand_hint=brand, extra_brands=brands))
     fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
     return fields, hit["title"], hit["price"]
 
@@ -641,20 +739,26 @@ def _extract_barcode(text: str) -> str | None:
 def parse_endpoint():
     """Parse free text (pasted title or label OCR) into filament fields.
 
-    Heuristically parses the text, and if a barcode is present in it, looks
-    that barcode up (OFD, then SpoolmanDB-Community) — authoritative data
-    overrides the guesses when found.
+    Heuristically parses the text, applies the user's reading rules, and if
+    a barcode is present in it, looks that barcode up (TigerTag, OFD,
+    SpoolmanDB-Community): authoritative data overrides the guesses when
+    found. `why` says for each field where it came from: "text" (the parse),
+    "rule" (with the rule's match), "db" or "default", and the places in
+    `text` it was read from, so the page can show and correct the reading.
     """
     import ofd
-    from filament_parse import parse_title
+    from filament_parse import explain, parse_title
     title = (request.args.get("title") or "").strip()
     if not title:
-        return jsonify(fields={})
+        return jsonify(fields={}, why={}, text="")
     try:
         brands = ofd.get_brands()
     except Exception:
         brands = []
     fields = parse_title(title, extra_brands=brands)
+    by = dict.fromkeys(fields, "text")
+    fields, applied = apply_rules(title, fields)
+    by.update(dict.fromkeys(applied, "rule"))
 
     source, out_title = "parsed", title
     linked_codes: list = []
@@ -665,14 +769,29 @@ def parse_endpoint():
         external = _external_all_codes(code, kind)
         if external:
             ext_fields, ext_source, all_codes, ext_title = external
-            fields = {**fields, **{k: v for k, v in ext_fields.items() if not k.startswith("_") and v is not None}}
+            ext_clean = {k: v for k, v in ext_fields.items() if not k.startswith("_") and v is not None}
+            fields = {**fields, **ext_clean}
+            by.update(dict.fromkeys(ext_clean, "db"))
             source = ext_source
             out_title = ext_title or title
             resolved_code = code
             linked_codes = [c for c in all_codes if c["code"] != code]
 
-    fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
-    return jsonify(fields=fields, title=out_title, barcode=resolved_code, source=source, linked_codes=linked_codes)
+    if "label_weight" not in fields:
+        fields["label_weight"] = DEFAULT_LABEL_WEIGHT
+        by["label_weight"] = "default"
+    spans = explain(title, fields)
+    why = {}
+    for key in fields:
+        entry = {"by": by.get(key, "text"), "spans": spans.get(key, [])}
+        if entry["by"] == "rule":
+            entry["rule"] = applied[key]["match"]
+            entry["spans"] = [applied[key]["span"]]
+        elif entry["by"] == "default":
+            entry["spans"] = []
+        why[key] = entry
+    return jsonify(fields=fields, title=out_title, barcode=resolved_code, source=source,
+                   linked_codes=linked_codes, text=title, why=why)
 
 
 # The code the user last went to the web for, so a shop page handed back
@@ -731,7 +850,7 @@ def import_page():
         brands = ofd.get_brands()
     except Exception:
         brands = []
-    fields = parse_title(page["title"], extra_brands=brands) if page["title"] else {}
+    fields = apply_rules(page["title"], parse_title(page["title"], extra_brands=brands))[0] if page["title"] else {}
     if page["brand"]:
         known = {b.lower(): b for b in brands}
         fields["brand"] = known.get(page["brand"].lower(), fields.get("brand") or page["brand"])

@@ -152,6 +152,17 @@ Die Karte **🏷️ Etikett drucken** holt das Etikett einer Spule fertig von Ba
 
 - **Android:** Chrome druckt direkt über Bluetooth (Web Bluetooth). Der Drucker darf dabei nicht gleichzeitig mit der Labelnize-App verbunden sein.
 - **iPhone/iPad:** Safari kann kein Bluetooth. **Bild teilen** gibt das Etikett an die App des Druckers weiter, oder man speichert es in den Fotos.
+## Was wurde erkannt? Etikett-Foto und eingefügte Titel
+
+Nach **Etikett fotografieren** oder **Ausfüllen** (eingefügter Titel) erscheint im Formular **„🔍 So wurde der Text gelesen“**:
+
+- **Erkannter Text**, farbig markiert: Jede Farbe zeigt, aus welcher Stelle ein Feld stammt.
+- **Liste der Felder**: Wert und Herkunft, also ein Textstück, eine eigene Regel, die Datenbank (über einen Barcode im Text) oder der Standardwert.
+- **Korrigieren:** Den Text im Feld darunter berichtigen (OCR-Fehler) und **Neu auswerten** tippen.
+- **Selbst zuordnen:** Ein Stück Text markieren, das Feld wählen, den Wert prüfen und **Übernehmen** tippen.
+- **Als Regel merken:** Mit diesem Haken gilt die Zuordnung künftig immer, wenn das Textstück vorkommt. Beispiel: „Marmor“ → Untertyp = Marble.
+  - Regeln gelten für Etikett-Fotos, eingefügte Titel und Shop-Seiten. Kennt eine Datenbank den Barcode, haben deren Daten Vorrang.
+  - Unter **Eigene Regeln** lassen sie sich ansehen und löschen. Gespeichert werden sie auf dem Server in `/data/parse_rules.json`.
 
 ## Mit der SpoolmanScale verbinden
 
