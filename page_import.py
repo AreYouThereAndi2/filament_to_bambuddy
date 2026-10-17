@@ -2,18 +2,18 @@
 page_import.py
 Product data handed over from a shop page.
 
-Two ways in, both started by the user on a page they chose:
+Ways in, all started by the user on a page they chose:
 
-* The "-> Filament" bookmark (iOS and Android). It runs in the user's own
-  browser on the shop page, reads the page's schema.org Product data, its
-  OpenGraph tags and Amazon's title and price elements, and opens this app
-  with them in ?import=. Nothing is fetched from the shop by the server, so
-  Amazon's bot wall does not apply: the page is the one the user is looking
-  at.
-* "Share -> Filament" (Android, installed app). The share sheet hands over
-  a title, a text and a URL. The title or text is usually the product name;
-  the server reads that one page once for its Product data, which works for
-  ordinary shops and simply finds nothing on Amazon.
+* A pasted link or copied page (Share -> Copy, then the clipboard button or
+  the title field), and "Share -> Filament" on Android with the app
+  installed. Both hand over a title, a text and a URL; the title or text is
+  usually the product name, and the server reads that one page once for its
+  Product data, which works for ordinary shops and simply finds nothing on
+  Amazon.
+* ?import= from the "-> Filament" bookmark, which read the page's
+  schema.org Product data in the user's own browser. The bookmark is no
+  longer offered (mobile browsers hardly run one); bookmarks made earlier
+  still land here.
 
 normalize() turns either into one dict; fetch_page() is the one page read.
 
@@ -26,7 +26,7 @@ import logging
 import re
 import socket
 from html import unescape
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import requests
 
@@ -90,15 +90,47 @@ def _gtin(raw) -> str | None:
     return digits if 8 <= len(digits) <= 14 else None
 
 
-def normalize(data: dict) -> dict:
+def _code_key(code) -> str:
+    return re.sub(r"[^0-9A-Z]", "", str(code or "").upper())
+
+
+def pick_variant(variants, want_code: str | None) -> dict | None:
+    """The variant whose article number or EAN is the code the user searched
+    for; the only one when there is just one; else none, and the page's own
+    data stands."""
+    variants = [v for v in (variants or []) if isinstance(v, dict)]
+    key = _code_key(want_code)
+    if key:
+        for v in variants:
+            if key in (_code_key(v.get("s")), _code_key(v.get("g"))):
+                return v
+    return variants[0] if len(variants) == 1 else None
+
+
+def normalize(data: dict, want_code: str | None = None) -> dict:
     """The bookmark's short keys (or the share's fields) as one dict.
 
     Keys in: u url, t title, b brand, g gtin, s sku/mpn, p price, c currency,
-    k colour. Out: url, host, title, brand, gtin, sku, color, price, where
-    price is {"avg", "currency", "count": 1} like UPCitemdb's or None.
+    k colour, v variants (each n name, s, g, p, c, k). Out: url, host, title,
+    brand, gtin, sku, color, price, variant, where price is {"avg",
+    "currency", "count": 1} like UPCitemdb's or None. A variant matching
+    want_code takes the place of the page's own name, codes and price.
     """
-    data = data if isinstance(data, dict) else {}
-    url = str(data.get("u") or "").strip()
+    data = dict(data) if isinstance(data, dict) else {}
+    chosen = pick_variant(data.get("v"), want_code)
+    if chosen and not chosen.get("k"):
+        # "<group name> - Marmorbraun / EU": what the variant adds is its
+        # colour, the part before a region or size after the slash.
+        group, name = str(data.get("t") or ""), str(chosen.get("n") or "")
+        if group and name.startswith(group):
+            extra = name[len(group):].strip(" -\u2013|:").split(" / ")[0].strip()
+            if 0 < len(extra) <= 40:
+                chosen = {**chosen, "k": extra}
+    if chosen:
+        for short, long_ in (("n", "t"), ("s", "s"), ("g", "g"), ("p", "p"), ("c", "c"), ("k", "k")):
+            if chosen.get(short):
+                data[long_] = chosen[short]
+    url = unwrap_redirect(str(data.get("u") or "").strip())
     host = urlparse(url).hostname or ""
     host = host.removeprefix("www.")
     raw_price = data.get("p")
@@ -116,7 +148,30 @@ def normalize(data: dict) -> dict:
         "color": (str(data.get("k") or "").strip()[:40] or None),
         "price": ({"avg": round(price, 2), "currency": _currency(data.get("c"), raw_price), "count": 1}
                   if price else None),
+        "variant": bool(chosen),
     }
+
+
+# Search engines hand out their own redirect instead of the result:
+# google.<tld>/url?...&url=<page> (or q=<page>). The page is what counts.
+_REDIRECT_PARAMS = {"google": ("url", "q")}
+
+
+def unwrap_redirect(url: str) -> str:
+    """The target of a Google result link, else the link as it is."""
+    try:
+        parsed = urlparse(url or "")
+    except ValueError:
+        return url or ""
+    host = (parsed.hostname or "").lower()
+    labels = host.split(".")
+    if parsed.path == "/url" and "google" in labels:
+        query = parse_qs(parsed.query)
+        for key in _REDIRECT_PARAMS["google"]:
+            target = (query.get(key) or [""])[0]
+            if target.startswith(("http://", "https://")):
+                return target
+    return url or ""
 
 
 def from_share(title: str, text: str, url: str) -> dict:
@@ -134,7 +189,7 @@ def from_share(title: str, text: str, url: str) -> dict:
     title = (title or "").strip()
     if not title or len(name) > len(title):
         title = name or title
-    return {"u": url, "t": title}
+    return {"u": unwrap_redirect(url), "t": title}
 
 
 # ---- the one page read for a shared link ----------------------------------
@@ -154,6 +209,7 @@ def _public_host(host: str) -> bool:
 
 
 def _product_from_ld(html: str) -> dict:
+    found: list = []
     for m in re.finditer(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
                          html, re.DOTALL | re.IGNORECASE):
         try:
@@ -169,8 +225,36 @@ def _product_from_ld(html: str) -> dict:
             types = node.get("@type")
             types = types if isinstance(types, list) else [types]
             if "Product" in types or "ProductGroup" in types:
+                found.append(node)
+    # A shop may list a bare Product next to the real one; the one with
+    # variants or offers is the one that says something.
+    for want in ("hasVariant", "offers"):
+        for node in found:
+            if node.get(want):
                 return node
-    return {}
+    return found[0] if found else {}
+
+
+def _offer(node: dict) -> dict:
+    offers = node.get("offers") or {}
+    offer = offers[0] if isinstance(offers, list) and offers else offers
+    if isinstance(offer, dict) and isinstance(offer.get("offers"), list) and offer["offers"]:
+        offer = offer["offers"][0]
+    return offer if isinstance(offer, dict) else {}
+
+
+def _variants(node: dict) -> list:
+    """A ProductGroup's variants in the bookmark's short keys: one per
+    colour, each with its own article number and price."""
+    out = []
+    for v in (node.get("hasVariant") or [])[:60]:
+        if not isinstance(v, dict):
+            continue
+        o = _offer(v)
+        out.append({"n": v.get("name"), "s": v.get("sku") or v.get("mpn"),
+                    "g": v.get("gtin13") or v.get("gtin") or v.get("gtin12"),
+                    "p": o.get("price"), "c": o.get("priceCurrency"), "k": v.get("color")})
+    return out
 
 
 def _meta(html: str, name: str) -> str:
@@ -200,11 +284,7 @@ def fetch_page(url: str) -> dict:
         return {}
     html = body.decode(r.encoding or "utf-8", errors="replace")
     p = _product_from_ld(html)
-    offers = p.get("offers") or {}
-    offer = offers[0] if isinstance(offers, list) and offers else offers
-    if isinstance(offer, dict) and isinstance(offer.get("offers"), list) and offer["offers"]:
-        offer = offer["offers"][0]
-    offer = offer if isinstance(offer, dict) else {}
+    offer = _offer(p)
     title_tag = re.search(r"<title[^>]*>(.*?)</title>", html, re.DOTALL | re.IGNORECASE)
     return {
         "u": url,
@@ -216,7 +296,10 @@ def fetch_page(url: str) -> dict:
         "b": p.get("brand"),
         "g": p.get("gtin13") or p.get("gtin") or p.get("gtin12") or p.get("gtin14") or _meta(html, "gtin13"),
         "s": p.get("mpn") or p.get("sku"),
-        "p": offer.get("price") or offer.get("lowPrice") or _meta(html, "product:price:amount"),
-        "c": offer.get("priceCurrency") or _meta(html, "product:price:currency"),
+        "p": (offer.get("price") or offer.get("lowPrice") or _meta(html, "product:price:amount")
+              or _meta(html, "og:price:amount")),
+        "c": (offer.get("priceCurrency") or _meta(html, "product:price:currency")
+              or _meta(html, "og:price:currency")),
         "k": p.get("color"),
+        "v": _variants(p),
     }

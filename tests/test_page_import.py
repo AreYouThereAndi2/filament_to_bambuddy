@@ -79,6 +79,25 @@ class TestShare:
         d = page_import.from_share("", "Schau dir das an: SUNLU PLA Seide Gold https://amzn.eu/d/x", "")
         assert d["t"] == "SUNLU PLA Seide Gold"
 
+    def test_google_result_link_is_unwrapped(self):
+        g = ("https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.geeetech.com/"
+             "de-de/products/pla-marble-3d-printer-filament-1-75mm-1kg-roll%3Fsrsltid%3DAU7gw4Wo&ved=2ahU&usg=AOv")
+        d = page_import.from_share("", g, "")
+        assert d["u"] == ("https://www.geeetech.com/de-de/products/pla-marble-3d-printer-filament-1-75mm-1kg-roll"
+                          "?srsltid=AU7gw4Wo")
+        assert d["t"] == ""
+
+    @pytest.mark.parametrize("url", [
+        "https://www.google.de/url?q=https://shop.example/p&sa=U",
+        "https://google.com/url?url=https://shop.example/p",
+    ])
+    def test_google_variants(self, url):
+        assert page_import.unwrap_redirect(url) == "https://shop.example/p"
+
+    def test_other_links_stay(self):
+        for url in ("https://shop.example/url?url=https://x.example", "https://www.google.com/search?q=x"):
+            assert page_import.unwrap_redirect(url) == url
+
     def test_title_kept_when_the_text_is_only_the_link(self):
         d = page_import.from_share("Polymaker PLA Pro", "https://shop.example/p", "")
         assert d["t"] == "Polymaker PLA Pro"
@@ -198,3 +217,50 @@ def test_extra_codes_are_remembered(client):
     cache = app_module.load_cache()
     assert cache["700-001-1535"]["material"] == "PLA"
     assert cache["6938936716785"]["material"] == "PLA"
+
+
+GROUP_PAGE = """<html><head><meta property="og:price:amount" content="13,95">
+<meta property="og:price:currency" content="EUR">
+<script type="application/ld+json">{"@type":"ProductGroup","name":"GEEETECH PLA Marble 1,75mm, 1kg Spule",
+ "brand":{"@type":"Brand","name":"GEEETECH"},"hasVariant":[
+ {"@type":"Product","name":"GEEETECH PLA Marble 1,75mm, 1kg Spule - Marmorweiß / EU","sku":"700-001-1534",
+  "offers":{"@type":"Offer","price":"13.95","priceCurrency":"EUR"}},
+ {"@type":"Product","name":"GEEETECH PLA Marble 1,75mm, 1kg Spule - Marmorbraun / EU","sku":"700-001-1535",
+  "offers":{"@type":"Offer","price":"14.49","priceCurrency":"EUR"}}]}</script>
+<script type="application/ld+json">{"@type":"Product","name":"GEEETECH PLA Marble (en)"}</script>
+</head></html>"""
+
+
+class TestVariants:
+    def test_page_lists_its_variants(self):
+        with (
+            patch("page_import._public_host", return_value=True),
+            patch("requests.get", return_value=_page(GROUP_PAGE)),
+        ):
+            d = page_import.fetch_page("https://www.geeetech.com/de-de/products/pla-marble")
+        assert d["t"] == "GEEETECH PLA Marble 1,75mm, 1kg Spule"
+        assert [v["s"] for v in d["v"]] == ["700-001-1534", "700-001-1535"]
+        assert d["p"] == "13,95" and d["c"] == "EUR"
+
+    def test_the_searched_code_picks_its_variant(self):
+        with (
+            patch("page_import._public_host", return_value=True),
+            patch("requests.get", return_value=_page(GROUP_PAGE)),
+        ):
+            raw = page_import.fetch_page("https://www.geeetech.com/x")
+        d = page_import.normalize(raw, want_code="700 001 1535")
+        assert d["variant"] and d["sku"] == "700-001-1535"
+        assert d["title"].endswith("Marmorbraun / EU")
+        assert d["price"] == {"avg": 14.49, "currency": "EUR", "count": 1}
+        assert d["color"] == "Marmorbraun"
+
+    def test_no_match_keeps_the_page(self):
+        d = page_import.normalize({"t": "Group", "v": [{"n": "A", "s": "1"}, {"n": "B", "s": "2"}]}, "9")
+        assert d["title"] == "Group" and not d["variant"]
+
+    def test_route_uses_the_code_on_the_form(self, client):
+        data = {"t": "Group PLA", "v": [{"n": "PLA Marmorbraun", "s": "700-001-1535", "p": "14.49", "c": "EUR"},
+                                        {"n": "PLA Marmorweiß", "s": "700-001-1534"}]}
+        with patch("ofd.get_brands", return_value=[]):
+            d = client.get("/api/import?code=700-001-1535&data=" + json.dumps(data)).get_json()
+        assert d["title"] == "PLA Marmorbraun" and d["price"]["avg"] == 14.49

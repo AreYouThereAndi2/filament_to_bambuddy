@@ -33,7 +33,8 @@ class TestOfdRefreshEndpoint:
 
         assert resp.status_code == 200
         data = resp.get_json()
-        assert data == {"ok": True, "barcodes": 2, "brands": 1, "spoolmandb_community_barcodes": 2}
+        assert data == {"ok": True, "barcodes": 2, "brands": 1, "spoolmandb_community_barcodes": 2,
+                        "tigertag_barcodes": 0}
 
     def test_ofd_failure_degrades_and_still_refreshes_spoolmandb(self, client):
         with (

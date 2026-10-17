@@ -32,7 +32,7 @@ import time
 from pathlib import Path
 
 import requests
-from flask import Flask, jsonify, make_response, render_template, request
+from flask import Flask, Response, jsonify, make_response, render_template, request
 
 import i18n
 
@@ -50,6 +50,9 @@ BAMBUDDY_API_KEY = os.getenv("BAMBUDDY_API_KEY", "")
 
 DEFAULT_LABEL_WEIGHT = int(os.getenv("DEFAULT_LABEL_WEIGHT", "1000"))
 CACHE_FILE = Path(os.getenv("BARCODE_CACHE_FILE", "barcode_cache.json"))
+# The user's own reading rules for label and title text ("Marmor" means the
+# subtype Marble), kept next to the cache.
+RULES_FILE = Path(os.getenv("PARSE_RULES_FILE", "parse_rules.json"))
 
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8088"))
@@ -125,36 +128,36 @@ def _classify_code(raw: str) -> tuple[str, str]:
 
 
 def _external_all_codes(code: str, kind: str) -> tuple | None:
-    """Cross-reference OFD and SpoolmanDB-Community for `code`, merging both hits.
+    """Cross-reference TigerTag, OFD and SpoolmanDB-Community for `code`, merging their hits.
 
-    Returns (fields, source, all_codes, title) where `source` is whichever
-    database resolved first, `fields` prefers that source's values but fills
-    any gaps (e.g. missing nozzle temps) from the other, and `all_codes` is
-    the union of every sibling code (other package-size GTINs, the refill
-    GTIN, the SKU/article number) discovered across both databases. If only
-    one database resolves `code` directly, its sibling codes are also probed
-    against the *other* database to recover cross-referenced fields/codes.
+    Returns (fields, source, all_codes, title) where `source` is the first
+    database that resolved, in the order asked: TigerTag's catalogue first
+    (the most products, with makers' article numbers), then OFD, then
+    SpoolmanDB-Community. `fields` takes the first database's values and
+    fills any gaps (e.g. missing nozzle temps) from the others, and
+    `all_codes` is the union of every sibling code (other package-size
+    GTINs, the refill GTIN, the SKU/article number) found across them. A
+    database that does not know `code` itself is asked for those siblings.
     Mirrors Bambuddy's `_external_all_codes` in `backend/app/api/routes/inventory.py`.
     """
     import ofd
     import spoolmandb_community
+    import tigertag
 
-    def _ofd_lookup(c, k):
-        return ofd.lookup(c) if k == "gtin" else ofd.lookup_article(c)
+    databases = (
+        ("tigertag", tigertag.lookup, tigertag.lookup_sku),
+        ("ofd", ofd.lookup, ofd.lookup_article),
+        ("spoolmandb-community", spoolmandb_community.lookup, spoolmandb_community.lookup_sku),
+    )
 
-    def _smdb_lookup(c, k):
-        return spoolmandb_community.lookup(c) if k == "gtin" else spoolmandb_community.lookup_sku(c)
+    def _ask(by_gtin, by_sku, c, k):
+        try:
+            return by_gtin(c) if k == "gtin" else by_sku(c)
+        except Exception:
+            return None
 
-    try:
-        ofd_hit = _ofd_lookup(code, kind)
-    except Exception:
-        ofd_hit = None
-    try:
-        smdb_hit = _smdb_lookup(code, kind)
-    except Exception:
-        smdb_hit = None
-
-    if not ofd_hit and not smdb_hit:
+    hits: dict = {name: _ask(g, s, code, kind) for name, g, s in databases}
+    if not any(hits.values()):
         return None
 
     fields: dict = {}
@@ -178,10 +181,9 @@ def _external_all_codes(code: str, kind: str) -> tuple | None:
         if source is None:
             source = src_name
 
-    if ofd_hit:
-        _merge(ofd_hit, "ofd")
-    if smdb_hit:
-        _merge(smdb_hit, "spoolmandb-community")
+    for name, _, _ in databases:
+        if hits[name]:
+            _merge(hits[name], name)
 
     tried = {code}
     # list(...) is required, not redundant: _merge() below appends newly
@@ -189,28 +191,19 @@ def _external_all_codes(code: str, kind: str) -> tuple | None:
     # here would pick up entries added mid-loop instead of just the
     # original siblings.
     for entry in list(all_codes):  # noqa: PERF101
-        if ofd_hit and smdb_hit:
+        if all(hits.values()):
             break
         sibling_code = entry["code"]
         if sibling_code in tried:
             continue
         tried.add(sibling_code)
-        if not ofd_hit:
-            try:
-                probe = _ofd_lookup(sibling_code, entry["kind"])
-            except Exception:
-                probe = None
+        for name, by_gtin, by_sku in databases:
+            if hits[name]:
+                continue
+            probe = _ask(by_gtin, by_sku, sibling_code, entry["kind"])
             if probe:
-                _merge(probe, "ofd")
-                ofd_hit = probe
-        if not smdb_hit:
-            try:
-                probe = _smdb_lookup(sibling_code, entry["kind"])
-            except Exception:
-                probe = None
-            if probe:
-                _merge(probe, "spoolmandb-community")
-                smdb_hit = probe
+                _merge(probe, name)
+                hits[name] = probe
 
     return fields, source, all_codes, title
 
@@ -261,6 +254,101 @@ def load_cache() -> dict:
 
 def save_cache(cache: dict):
     CACHE_FILE.write_text(json.dumps(cache, indent=2))
+
+
+# ── Reading rules ─────────────────────────────────────────────────────────────
+# A rule says: where the text contains `match` (any case), the field is
+# `value`. It wins over the parser's guess and yields to a database that
+# knows the scanned code. One user, one worker: the file is the store.
+RULE_FIELDS = ("brand", "material", "subtype", "color_name", "label_weight",
+               "nozzle_temp_min", "nozzle_temp_max")
+_RULE_INT_FIELDS = {"label_weight": (1, 100000), "nozzle_temp_min": (100, 500),
+                    "nozzle_temp_max": (100, 500)}
+_MAX_RULES = 200
+
+
+def load_rules() -> list:
+    try:
+        rules = json.loads(RULES_FILE.read_text()) if RULES_FILE.exists() else []
+    except Exception:
+        return []
+    return [r for r in rules if isinstance(r, dict) and r.get("field") in RULE_FIELDS
+            and r.get("match") and r.get("value") not in (None, "")]
+
+
+def save_rules(rules: list):
+    tmp = RULES_FILE.with_suffix(RULES_FILE.suffix + ".tmp")
+    tmp.write_text(json.dumps(rules, indent=2, ensure_ascii=False))
+    tmp.replace(RULES_FILE)
+
+
+def _rule_value(field: str, value):
+    """The value typed for its field, or None when it does not fit."""
+    if field in _RULE_INT_FIELDS:
+        try:
+            n = int(float(str(value).replace(",", ".")))
+        except (TypeError, ValueError):
+            return None
+        lo, hi = _RULE_INT_FIELDS[field]
+        return n if lo <= n <= hi else None
+    text = str(value or "").strip()
+    return text[:60] or None
+
+
+def apply_rules(text: str, fields: dict, rules: list | None = None) -> tuple[dict, dict]:
+    """`fields` with the user's rules applied to `text`: (fields, applied),
+    where applied maps a field to {"match", "span"} of the rule that set it.
+    The longest match wins a field two rules claim."""
+    rules = load_rules() if rules is None else rules
+    fields = dict(fields)
+    applied: dict = {}
+    low = (text or "").lower()
+    for rule in sorted(rules, key=lambda r: len(str(r["match"]))):
+        at = low.find(str(rule["match"]).lower())
+        if at < 0:
+            continue
+        value = _rule_value(rule["field"], rule["value"])
+        if value is None:
+            continue
+        fields[rule["field"]] = value
+        applied[rule["field"]] = {"match": rule["match"], "span": [at, at + len(str(rule["match"]))]}
+    return fields, applied
+
+
+@app.get("/api/rules")
+def list_rules():
+    return jsonify(rules=load_rules(), fields=list(RULE_FIELDS))
+
+
+@app.post("/api/rules")
+def add_rule():
+    body = request.get_json(force=True, silent=True) or {}
+    match = " ".join(str(body.get("match") or "").split())
+    field = body.get("field")
+    if not (2 <= len(match) <= 60) or field not in RULE_FIELDS:
+        return jsonify(ok=False, error="match/field"), 400
+    value = _rule_value(field, body.get("value"))
+    if value is None:
+        return jsonify(ok=False, error="value"), 400
+    rules = [r for r in load_rules()
+             if not (r["field"] == field and str(r["match"]).lower() == match.lower())]
+    if len(rules) >= _MAX_RULES:
+        return jsonify(ok=False, error="too_many"), 400
+    rules.append({"match": match, "field": field, "value": value})
+    save_rules(rules)
+    log.info("reading rule: %r -> %s = %r", match, field, value)
+    return jsonify(ok=True, rules=rules)
+
+
+@app.delete("/api/rules")
+def delete_rule():
+    body = request.get_json(force=True, silent=True) or {}
+    match, field = str(body.get("match") or "").lower(), body.get("field")
+    rules = load_rules()
+    kept = [r for r in rules if not (r["field"] == field and str(r["match"]).lower() == match)]
+    if len(kept) != len(rules):
+        save_rules(kept)
+    return jsonify(ok=True, removed=len(rules) - len(kept), rules=kept)
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -397,9 +485,11 @@ def options():
     """Dropdown data for the form (materials, subtypes, weights, colours, brands, locations)."""
     import ofd
     import spoolmandb_community
+    import tigertag
     try:
         brands = sorted(
-            set(DEFAULT_BRANDS) | set(ofd.get_brands()) | set(spoolmandb_community.get_brands()),
+            set(DEFAULT_BRANDS) | set(ofd.get_brands()) | set(spoolmandb_community.get_brands())
+            | set(tigertag.get_brands()),
             key=str.lower,
         )
     except Exception:
@@ -444,15 +534,23 @@ def forget_barcode(barcode):
 
 @app.post("/api/ofd/refresh")
 def ofd_refresh():
-    """Force a re-download/rebuild of the OFD + SpoolmanDB-Community indexes.
+    """Force a re-download/rebuild of the TigerTag, OFD and SpoolmanDB-Community indexes.
 
     Kept at this URL (not renamed) so the existing "Refresh DB" button in
     templates/index.html doesn't need a second endpoint/button — one refresh
-    action updates both community databases.
+    action updates all three databases.
     """
     import ofd
     import spoolmandb_community
-    log.info("OFD + SpoolmanDB-Community refresh started")
+    import tigertag
+    log.info("TigerTag + OFD + SpoolmanDB-Community refresh started")
+
+    try:
+        tt_codes = len(tigertag.get_gtin_index(force=True)) + len(tigertag.get_sku_index())
+        log.info("TigerTag refresh done: %d codes", tt_codes)
+    except Exception as e:
+        log.error("TigerTag refresh failed: %s", e)
+        tt_codes = 0
 
     # Each refresh is independently guarded — an OFD network blip must not
     # take down the whole endpoint (previously it returned 502 immediately
@@ -486,6 +584,7 @@ def ofd_refresh():
         barcodes=ofd_codes,
         brands=brands,
         spoolmandb_community_barcodes=smdb_codes,
+        tigertag_barcodes=tt_codes,
     )
 
 
@@ -531,7 +630,7 @@ def health():
 @app.get("/api/lookup")
 def lookup():
     """Resolve a barcode or SKU to filament fields: cache first, then a
-    cross-referenced OFD/SpoolmanDB-Community lookup.
+    cross-referenced TigerTag/OFD/SpoolmanDB-Community lookup.
 
     A scanned/typed code is classified server-side as a GTIN (checksummed,
     standard length) or a manufacturer SKU/article number (e.g. a Code 128
@@ -611,7 +710,7 @@ def _upc_fields(code: str) -> tuple | None:
     brand = None
     if hit["brand"]:
         brand = _find_brand(hit["brand"].upper(), brands) or hit["brand"]
-    fields = parse_title(hit["title"], brand_hint=brand, extra_brands=brands)
+    fields, _ = apply_rules(hit["title"], parse_title(hit["title"], brand_hint=brand, extra_brands=brands))
     fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
     return fields, hit["title"], hit["price"]
 
@@ -640,20 +739,26 @@ def _extract_barcode(text: str) -> str | None:
 def parse_endpoint():
     """Parse free text (pasted title or label OCR) into filament fields.
 
-    Heuristically parses the text, and if a barcode is present in it, looks
-    that barcode up (OFD, then SpoolmanDB-Community) — authoritative data
-    overrides the guesses when found.
+    Heuristically parses the text, applies the user's reading rules, and if
+    a barcode is present in it, looks that barcode up (TigerTag, OFD,
+    SpoolmanDB-Community): authoritative data overrides the guesses when
+    found. `why` says for each field where it came from: "text" (the parse),
+    "rule" (with the rule's match), "db" or "default", and the places in
+    `text` it was read from, so the page can show and correct the reading.
     """
     import ofd
-    from filament_parse import parse_title
+    from filament_parse import explain, parse_title
     title = (request.args.get("title") or "").strip()
     if not title:
-        return jsonify(fields={})
+        return jsonify(fields={}, why={}, text="")
     try:
         brands = ofd.get_brands()
     except Exception:
         brands = []
     fields = parse_title(title, extra_brands=brands)
+    by = dict.fromkeys(fields, "text")
+    fields, applied = apply_rules(title, fields)
+    by.update(dict.fromkeys(applied, "rule"))
 
     source, out_title = "parsed", title
     linked_codes: list = []
@@ -664,14 +769,29 @@ def parse_endpoint():
         external = _external_all_codes(code, kind)
         if external:
             ext_fields, ext_source, all_codes, ext_title = external
-            fields = {**fields, **{k: v for k, v in ext_fields.items() if not k.startswith("_") and v is not None}}
+            ext_clean = {k: v for k, v in ext_fields.items() if not k.startswith("_") and v is not None}
+            fields = {**fields, **ext_clean}
+            by.update(dict.fromkeys(ext_clean, "db"))
             source = ext_source
             out_title = ext_title or title
             resolved_code = code
             linked_codes = [c for c in all_codes if c["code"] != code]
 
-    fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
-    return jsonify(fields=fields, title=out_title, barcode=resolved_code, source=source, linked_codes=linked_codes)
+    if "label_weight" not in fields:
+        fields["label_weight"] = DEFAULT_LABEL_WEIGHT
+        by["label_weight"] = "default"
+    spans = explain(title, fields)
+    why = {}
+    for key in fields:
+        entry = {"by": by.get(key, "text"), "spans": spans.get(key, [])}
+        if entry["by"] == "rule":
+            entry["rule"] = applied[key]["match"]
+            entry["spans"] = [applied[key]["span"]]
+        elif entry["by"] == "default":
+            entry["spans"] = []
+        why[key] = entry
+    return jsonify(fields=fields, title=out_title, barcode=resolved_code, source=source,
+                   linked_codes=linked_codes, text=title, why=why)
 
 
 # The code the user last went to the web for, so a shop page handed back
@@ -721,14 +841,16 @@ def import_page():
             raw = json.loads(request.args.get("data") or "{}")
         except ValueError:
             raw = {}
-    page = page_import.normalize(raw)
+    # The code the user went to the web for, or the one on the form: on a page
+    # with one entry per colour it picks the right one.
     pending = _take_pending()
+    page = page_import.normalize(raw, want_code=pending or request.args.get("code"))
 
     try:
         brands = ofd.get_brands()
     except Exception:
         brands = []
-    fields = parse_title(page["title"], extra_brands=brands) if page["title"] else {}
+    fields = apply_rules(page["title"], parse_title(page["title"], extra_brands=brands))[0] if page["title"] else {}
     if page["brand"]:
         known = {b.lower(): b for b in brands}
         fields["brand"] = known.get(page["brand"].lower(), fields.get("brand") or page["brand"])
@@ -881,6 +1003,61 @@ def add_spool():
     return jsonify(ok=ok, created=created, requested=quantity, spool_ids=spool_ids,
                    errors=errors, warnings=warnings, tag_error=tag_error,
                    bambuddy=BAMBUDDY_URL), (200 if created else 502)
+
+
+# ---- spool labels -----------------------------------------------------------
+# Bambuddy draws its own spool labels, the same templates its inventory page
+# prints (since 1.2.5.7 also as a PNG at a thermal printer's 203 dpi). This
+# app only fetches one for the phone, which shows it and, when asked, sends
+# it to the label printer over Bluetooth: Bambuddy's layout, never printed
+# without a tap.
+LABEL_TEMPLATES = ("box_40x30", "box_62x29", "ams_holder_74x33", "ams_holder_75x55")
+LABEL_FIELDS = ("brand", "material", "hex", "name", "location", "material_number",
+                "temps", "weight", "note", "added", "qr", "spool_id")
+
+
+def _labels_path() -> str:
+    """Bambuddy's label route for the active inventory: its own spools or
+    Spoolman's, which have ids of their own."""
+    return ("/api/v1/spoolman/labels" if _inventory_base() == "/api/v1/spoolman/inventory"
+            else "/api/v1/inventory/labels")
+
+
+@app.post("/api/label")
+def spool_label():
+    """One spool's label from Bambuddy as a 203 dpi monochrome PNG."""
+    if not BAMBUDDY_API_KEY:
+        return jsonify(ok=False, error="BAMBUDDY_API_KEY not set on the server"), 400
+    body = request.get_json(force=True, silent=True) or {}
+    try:
+        spool_id = int(body.get("spool_id"))
+    except (TypeError, ValueError):
+        spool_id = 0
+    if spool_id < 1:
+        return jsonify(ok=False, error="spool_id"), 400
+    template = body.get("template") or LABEL_TEMPLATES[0]
+    if template not in LABEL_TEMPLATES:
+        return jsonify(ok=False, error="template"), 400
+    fields = body.get("fields")
+    fields = ([f for f in fields if f in LABEL_FIELDS] if isinstance(fields, list) else None)
+    payload = {"spool_ids": [spool_id], "template": template, "monochrome": True,
+               "format": "png", "dpi": 203}
+    if fields is not None:
+        payload["fields"] = fields
+    try:
+        r = requests.post(f"{BAMBUDDY_URL}{_labels_path()}", json=payload, timeout=30,
+                          headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "image/png"})
+    except Exception as e:
+        log.warning("label for spool %s: Bambuddy not reachable: %s", spool_id, e)
+        return jsonify(ok=False, error="unreachable"), 502
+    if r.ok and r.headers.get("Content-Type", "").startswith("image/png"):
+        return Response(r.content, mimetype="image/png", headers={"Cache-Control": "no-store"})
+    # 404: no such spool. 422 or a PDF: a Bambuddy from before PNG labels.
+    error = {404: "not_found", 422: "too_old"}.get(r.status_code, "failed")
+    if r.ok:
+        error = "too_old"
+    log.warning("label for spool %s: Bambuddy %s %s", spool_id, r.status_code, r.text[:200] if not r.ok else "")
+    return jsonify(ok=False, error=error, status=r.status_code), 502
 
 
 if __name__ == "__main__":

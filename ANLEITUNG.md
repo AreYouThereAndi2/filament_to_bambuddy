@@ -5,7 +5,7 @@ Diese Anleitung gilt für den Fork [AreYouThereAndi2/filament_to_bambuddy](https
 ## Was die App macht
 
 - Box-Barcode (EAN/UPC, Hersteller-Nummer) mit dem Handy scannen oder eintippen.
-- Die App sucht das Produkt im eigenen Cache, in der Open Filament Database und in SpoolmanDB-Community. Kennen die beiden Datenbanken eine EAN nicht, fragt sie UPCitemdb, das die Angebote von Amazon und anderen Shops sammelt. Von dort kommen Titel, Marke und der **Durchschnittspreis pro Rolle**.
+- Die App sucht das Produkt im eigenen Cache, dann im **TigerTag-Katalog** (rund 16 000 Filamente mit Hersteller-Artikelnummer, viele mit EAN), in der Open Filament Database und in SpoolmanDB-Community. Kennt keine der Datenbanken eine EAN, fragt sie UPCitemdb, das die Angebote von Amazon und anderen Shops sammelt. Von dort kommen Titel, Marke und der **Durchschnittspreis pro Rolle**.
 - Formular prüfen, Preis übernehmen, auf Wunsch den NFC-Tag mit dem Handy lesen, dann **Hinzufügen**: Die Spule landet in BamBuddy, bei eingeschaltetem Spoolman-Modus in Spoolman.
 - Die **SpoolmanScale** fragt dieselbe App, wenn ihr Barcode-Scanner einen unbekannten Code liest, und legt die Spule dann selbst an.
 
@@ -39,6 +39,7 @@ BAMBUDDY_API_KEY=bb_xxxxxxxx
 # DEFAULT_LABEL_WEIGHT=1000
 # UPCITEMDB_KEY=...          # bezahlter UPCitemdb-Schlüssel, sonst 100 Abfragen/Tag frei
 # UPC_LOOKUP=off             # UPCitemdb ganz abschalten
+# TIGERTAG=off               # TigerTag-Katalog nicht verwenden
 ```
 
 Danach läuft die App auf Port **8088**: `http://<server-ip>:8088`. Die Statuszeile oben zeigt 🟢, wenn BamBuddy erreichbar ist und der Schlüssel passt. Unten im Fußbereich steht die Version.
@@ -123,7 +124,7 @@ Was geht wo:
 | Barcode mit der Kamera, Etikett fotografieren | ja | ja |
 | 🔦 Licht beim Scannen | ja | nur wenn iOS es der Seite erlaubt; sonst erscheint der Knopf nicht |
 | NFC-Tag lesen | ja (NTAG) | nein: Apple lässt Web-Apps nicht an NFC, den Tag legt die Waage an |
-| Shop-Seite per Lesezeichen „→ Filament“ übernehmen | ja | ja |
+| Shop-Seite aus der Zwischenablage oder als Link übernehmen | ja | ja |
 | Shop-Seite per **Teilen → Filament** übernehmen | ja, mit installierter App | nein: iOS bietet Web-Apps nicht im Teilen-Menü an |
 
 ## Daten von einer Shop-Seite übernehmen
@@ -132,18 +133,36 @@ Kennt keine Datenbank den Code (z. B. eine Artikelnummer wie `700-001-1535`), so
 
 1. In der App den Code suchen, dann **„🔍 Im Web nach diesem Code suchen“** tippen. Die App merkt sich den Code für zwei Stunden.
 2. In den Ergebnissen die Produktseite öffnen (Amazon, 3DJake, Herstellerseite …).
-3. Auf der Produktseite das Lesezeichen **„→ Filament“** antippen. Die App öffnet sich mit Name, Marke, Material, Farbe und Preis der Seite. Hat die Seite eine EAN, schlägt die App diese zusätzlich in den Datenbanken nach.
+3. Auf der Produktseite oder in der Shop-App (auch Amazon) **Teilen → Kopieren**, zurück in die App und **„📋 Aus der Zwischenablage übernehmen“** tippen. Oder den Link bzw. den kopierten Text ins Feld „Produkttitel …“ einfügen und **Ausfüllen** tippen. Auch Links aus der Google-Suche (`google.com/url?…`) gehen. Die App übernimmt Name, Marke, Material, Farbe und Preis der Seite. Hat die Seite eine EAN, schlägt die App diese zusätzlich in den Datenbanken nach. Führt eine Seite mehrere Farben, nimmt die App die Farbe, deren Artikelnummer oder EAN zum gesuchten Code passt.
 4. Prüfen, **Hinzufügen**. Die App merkt sich die Daten für die Artikelnummer und für die EAN der Seite: Beim nächsten Scan sind sie sofort da.
 
-**Am einfachsten, ohne Einrichtung (iPhone und Android):** Auf der Produktseite oder in der Shop-App (auch Amazon) **Teilen → Kopieren**, zurück in die App und **„📋 Aus der Zwischenablage übernehmen“** tippen. Alternativ den Link oder den kopierten Text ins Feld „Produkttitel …“ einfügen und **Ausfüllen** tippen. Aus dem Link liest der Server die Seite: Bei normalen Shops kommen Name, EAN und Preis. Amazon gibt Servern keine Seite heraus, dort zählt der mitkopierte Name aus „Teilen → Kopieren“.
-
-**Das Lesezeichen einrichten:** In der App ganz unten „📲 Shop-Knopf einrichten“ aufklappen, **Code kopieren** und der Anleitung dort folgen. Kurz:
-- **iPhone:** In Safari irgendeine Seite als Lesezeichen sichern, Name „→ Filament“. Dann Lesezeichen → Bearbeiten → das Lesezeichen öffnen → Adresse durch den kopierten Code ersetzen. Benutzen: Lesezeichen → „→ Filament“.
-- **Android:** In Chrome ein Lesezeichen anlegen, bearbeiten, Name „Filament“, URL = kopierter Code. Benutzen: in die Adresszeile „Filament“ tippen und den Lesezeichen-Eintrag mit dem Stern wählen.
-
-Das Lesezeichen läuft im eigenen Browser auf der Seite, die man gerade ansieht. Die App lädt dafür nichts von Amazon. Links aus der installierten App öffnen sich manchmal in einem eingebauten Browser ohne Lesezeichen: dort „In Safari öffnen“ bzw. „In Chrome öffnen“ wählen.
+Aus dem Link liest der Server die Seite: Bei normalen Shops kommen Name, EAN und Preis. Amazon gibt Servern keine Seite heraus, dort zählt der mitkopierte Name aus „Teilen → Kopieren“.
 
 **Android, noch einfacher:** Mit installierter App auf der Produktseite **Teilen → Filament** wählen, auch in der Amazon-App. Die App bekommt Titel und Link. Bei normalen Shops liest der Server die geteilte Seite einmal und holt EAN und Preis dazu. Amazon gibt Servern keine Seite heraus, dort reicht der Titel.
+
+## Etiketten drucken (TYPONOS PM240)
+
+Die Karte **🏷️ Etikett drucken** holt das Etikett einer Spule fertig von BamBuddy, in BamBuddys eigenen Vorlagen. Das geht auch im Spoolman-Modus. Dafür braucht es **BamBuddy 1.2.5.7 oder neuer**: Erst ab dieser Version liefert BamBuddy Etiketten als Bild.
+
+1. Die Spulen-ID eingeben, also die # aus BamBuddy. Nach dem Anlegen einer Spule steht ihre ID schon da; bei mehreren Spulen kann man sie antippen.
+2. Unter **Vorlage** ein Format wählen. Auf die 50 × 30-mm-Rolle passt **Box 40 × 30 mm**; es wird mittig gedruckt. Die anderen Vorlagen sind breiter als der 48-mm-Druckkopf.
+3. Unter **Etikettenrolle und Zeilen** die Rolle (Standard 50 × 30 mm) und die Zeilen einstellen. Das Handy merkt sich beides.
+4. **Vorschau** zeigt das Etikett Punkt für Punkt so, wie der Drucker es druckt.
+5. Erst **🖨️ Drucken** schickt es los. Beim ersten Mal fragt Chrome, welcher Drucker es sein soll: den **PM240** wählen.
+
+- **Android:** Chrome druckt direkt über Bluetooth (Web Bluetooth). Der Drucker darf dabei nicht gleichzeitig mit der Labelnize-App verbunden sein.
+- **iPhone/iPad:** Safari kann kein Bluetooth. **Bild teilen** gibt das Etikett an die App des Druckers weiter, oder man speichert es in den Fotos.
+## Was wurde erkannt? Etikett-Foto und eingefügte Titel
+
+Nach **Etikett fotografieren** oder **Ausfüllen** (eingefügter Titel) erscheint im Formular **„🔍 So wurde der Text gelesen“**:
+
+- **Erkannter Text**, farbig markiert: Jede Farbe zeigt, aus welcher Stelle ein Feld stammt.
+- **Liste der Felder**: Wert und Herkunft, also ein Textstück, eine eigene Regel, die Datenbank (über einen Barcode im Text) oder der Standardwert.
+- **Korrigieren:** Den Text im Feld darunter berichtigen (OCR-Fehler) und **Neu auswerten** tippen.
+- **Selbst zuordnen:** Ein Stück Text markieren, das Feld wählen, den Wert prüfen und **Übernehmen** tippen.
+- **Als Regel merken:** Mit diesem Haken gilt die Zuordnung künftig immer, wenn das Textstück vorkommt. Beispiel: „Marmor“ → Untertyp = Marble.
+  - Regeln gelten für Etikett-Fotos, eingefügte Titel und Shop-Seiten. Kennt eine Datenbank den Barcode, haben deren Daten Vorrang.
+  - Unter **Eigene Regeln** lassen sie sich ansehen und löschen. Gespeichert werden sie auf dem Server in `/data/parse_rules.json`.
 
 ## Mit der SpoolmanScale verbinden
 

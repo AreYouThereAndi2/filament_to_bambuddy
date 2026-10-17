@@ -260,6 +260,75 @@ def parse_title(title: str, brand_hint: str | None = None, extra_brands=None) ->
     return out
 
 
+# ---- where each field came from ----------------------------------------------
+
+def _first(pattern: str, text: str, flags=re.IGNORECASE):
+    m = re.search(pattern, text, flags)
+    return [m.start(), m.end()] if m else None
+
+
+def explain(text: str, fields: dict) -> dict:
+    """For each field, where in ``text`` its value was read: {field: [[start,
+    end], ...]}, empty when the text does not show it (a database's value,
+    or one the parse settled on without a place to point at). A subtype of
+    several words ("Plus Silk") has a place for each.
+
+    Done on the result rather than inside the parse, so it explains a value
+    whatever produced it: the guesses above, a user's rule, a database.
+    """
+    text = text or ""
+    out: dict = {}
+    for key, value in (fields or {}).items():
+        if value is None or key.startswith("_"):
+            continue
+        span = None
+        v = str(value)
+        if key == "brand":
+            span = _first(re.escape(v), text)
+        elif key == "material":
+            for token, canonical in BASE_MATERIALS:
+                if canonical == v:
+                    span = _first(r"(?<![A-Z])" + re.escape(token) + r"(?![A-Z])", text)
+                    if span:
+                        break
+            span = span or _first(re.escape(v), text)
+        elif key == "subtype":
+            spans = []
+            for part in v.split(" "):
+                tokens = [t for t, c in SUBTYPE_HINTS if c == part] + [part]
+                if part == "Plus":
+                    tokens = ["+", "PLUS", *tokens]
+                for token in tokens:
+                    found = _first(re.escape(token), text)
+                    if found:
+                        spans.append(found)
+                        break
+            out[key] = spans
+            continue
+        elif key == "color_name":
+            span = _first(r"\b" + re.escape(v) + r"\b", text)
+            if not span and "-" in v:
+                span = _first(r"\b" + re.escape(v.split("-")[0]) + r"\b", text)
+        elif key == "rgba":
+            span = _first("#" + re.escape(v[:6]) + r"\b", text)
+            if not span and out.get("color_name"):
+                span = out["color_name"][0]
+        elif key in ("nozzle_temp_min", "nozzle_temp_max"):
+            lo, hi = fields.get("nozzle_temp_min"), fields.get("nozzle_temp_max")
+            if lo is not None and hi is not None and lo != hi:
+                span = _first(rf"(?<!\d){lo}\s*[-–~]\s*{hi}(?!\d)(?:\s*°?\s*C\b)?", text)
+            span = span or _first(rf"(?<!\d){re.escape(v)}(?!\d)\s*°?\s*C?", text)
+        elif key == "diameter_mm":
+            span = _first(r"\b" + v.replace(".", "[.,]") + r"0?\s*(?:mm)?", text)
+        elif key == "label_weight":
+            grams = int(float(v))
+            kg = f"{grams / 1000:g}".replace(".", "[.,]")
+            span = (_first(rf"(?<![\d.,]){kg}\s*(?:kg|kgs|kilograms?)\b", text)
+                    or _first(rf"(?<!\d){grams}\s*(?:g|grams?)\b", text))
+        out[key] = [span] if span else []
+    return out
+
+
 if __name__ == "__main__":
     # Quick manual check.
     for t in [
