@@ -5,6 +5,7 @@ Releases of the fork [AreYouThereAndi2/filament_to_bambuddy](https://github.com/
 ## Unreleased
 
 ### New
+- **See how a label or title was read, and correct it.** After a label photo or a pasted title, "🔍 How the text was read" shows the text with each field's place marked and, per field, where it came from: the text, a rule, the database or the default. The text can be corrected and read again; a selected piece of text can be assigned to a field, once or as a **rule** ("Marmor" → subtype Marble) that applies to later label photos, titles and shop pages. Rules are kept in `/data/parse_rules.json` and listed for deletion.
 - **Hand a shop page back to the app.** The "→ Filament" bookmark (iOS and Android) reads the product page in the user's own browser: schema.org Product data, Amazon's title and price, OpenGraph. It opens the app with name, brand, EAN and price. The app remembers which code the user searched the web for and lands on it. On Android, **Share → Filament** does the same once the app is installed; the server reads the shared page once for its Product data.
 - The article number and the page's EAN are both remembered when the spool is added.
 - **🔦 Torch** while scanning, wherever the browser allows a page to switch it.

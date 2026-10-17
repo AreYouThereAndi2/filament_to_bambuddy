@@ -35,6 +35,7 @@ COPY static ./static
 # Caches live on a mounted volume so they survive restarts.
 ENV APP_VERSION=$VERSION \
     BARCODE_CACHE_FILE=/data/barcode_cache.json \
+    PARSE_RULES_FILE=/data/parse_rules.json \
     OFD_CACHE_FILE=/data/ofd_index.json \
     SPOOLMANDB_COMMUNITY_CACHE_FILE=/data/spoolmandb_community_index.json \
     HOST=0.0.0.0 \

@@ -180,6 +180,7 @@ Docker-specific env vars: `OFD_CACHE_FILE` and `BARCODE_CACHE_FILE` default to
 | `BARCODE_CACHE_FILE` | `barcode_cache.json` | Where learned lookups are stored |
 | `OFD_CACHE_FILE` | `ofd_index.json` | Where the OFD index is cached |
 | `SPOOLMANDB_COMMUNITY_CACHE_FILE` | `spoolmandb_community_index.json` | Where the SpoolmanDB-Community index is cached |
+| `PARSE_RULES_FILE` | `parse_rules.json` | The user's reading rules for label/title text |
 | `HOST` / `PORT` | `0.0.0.0` / `8088` | Server bind address |
 | `UPC_LOOKUP` | `on` | `off` disables the UPCitemdb fallback |
 | `UPCITEMDB_KEY` | — | Paid UPCitemdb key; without one the free trial is used (100 lookups a day per IP) |

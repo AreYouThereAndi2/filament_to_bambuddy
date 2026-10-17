@@ -145,6 +145,18 @@ Das Lesezeichen läuft im eigenen Browser auf der Seite, die man gerade ansieht.
 
 **Android, noch einfacher:** Mit installierter App auf der Produktseite **Teilen → Filament** wählen, auch in der Amazon-App. Die App bekommt Titel und Link. Bei normalen Shops liest der Server die geteilte Seite einmal und holt EAN und Preis dazu. Amazon gibt Servern keine Seite heraus, dort reicht der Titel.
 
+## Was wurde erkannt? Etikett-Foto und eingefügte Titel
+
+Nach **Etikett fotografieren** oder **Ausfüllen** (eingefügter Titel) erscheint im Formular **„🔍 So wurde der Text gelesen“**:
+
+- **Erkannter Text**, farbig markiert: Jede Farbe zeigt, aus welcher Stelle ein Feld stammt.
+- **Liste der Felder**: Wert und Herkunft, also ein Textstück, eine eigene Regel, die Datenbank (über einen Barcode im Text) oder der Standardwert.
+- **Korrigieren:** Den Text im Feld darunter berichtigen (OCR-Fehler) und **Neu auswerten** tippen.
+- **Selbst zuordnen:** Ein Stück Text markieren, das Feld wählen, den Wert prüfen und **Übernehmen** tippen.
+- **Als Regel merken:** Mit diesem Haken gilt die Zuordnung künftig immer, wenn das Textstück vorkommt. Beispiel: „Marmor“ → Untertyp = Marble.
+  - Regeln gelten für Etikett-Fotos, eingefügte Titel und Shop-Seiten. Kennt eine Datenbank den Barcode, haben deren Daten Vorrang.
+  - Unter **Eigene Regeln** lassen sie sich ansehen und löschen. Gespeichert werden sie auf dem Server in `/data/parse_rules.json`.
+
 ## Mit der SpoolmanScale verbinden
 
 In der Weboberfläche der Waage → Einstellungen → Barcode-Scanner → **filament_to_bambuddy-Adresse**: `http://<server-ip>:8088`. Scannt die Waage dann einen Code, den keine Spule kennt, fragt sie die App und bietet an, die Spule anzulegen, mit oder ohne den gefundenen Preis.

@@ -87,6 +87,16 @@
   .swatch{height:44px;border-radius:9px;border:1px solid #4a4a4a;width:100%;padding:0}
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
   .hint.err{color:var(--danger)}
+  #whyMarked{white-space:pre-wrap;word-break:break-word;font-family:Menlo,monospace;font-size:12px;
+    background:#1f1f1f;border:1px solid #4a4a4a;border-radius:9px;padding:10px;margin:8px 0;max-height:180px;overflow:auto}
+  #whyMarked mark{color:var(--fg);border-radius:3px;padding:0 1px}
+  .whyrow{font-size:13px;margin:4px 0;line-height:1.4}
+  .whyrow .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+  .whyrow .muted{font-size:12px}
+  .rulerow{display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0}
+  .rulerow span{flex:1}
+  .rulerow button{width:auto;padding:4px 10px;font-size:13px;background:var(--tertiary);color:var(--fg)}
+  #whyText{font-family:Menlo,monospace;font-size:13px}
   .status-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px}
 </style>
 </head>
@@ -150,6 +160,29 @@
     <div id="barcodeLine" class="muted" style="margin-bottom:2px"></div>
     <div id="titleLine" class="muted" style="margin-bottom:2px"></div>
     <div id="linkedCodesLine" class="muted" style="margin-bottom:8px;font-size:12px"></div>
+
+    <!-- Where the fields came from: the text read from the label or pasted,
+         each field's place in it, and a way to correct it, once or as a rule. -->
+    <details id="whyBox" class="bm hidden" style="margin:6px 0 10px">
+      <summary style="font-weight:400;font-size:13px;color:var(--green-light)">{{ t('why.title') }}</summary>
+      <div id="whyMarked"></div>
+      <div id="whyList"></div>
+      <label for="whyText">{{ t('why.text_label') }}</label>
+      <textarea id="whyText" rows="4" spellcheck="false"></textarea>
+      <button id="whyReparse" type="button" class="btn-secondary" style="margin-top:6px">{{ t('why.reparse') }}</button>
+      <div class="hint" style="margin-top:10px">{{ t('why.assign') }}</div>
+      <div class="row">
+        <div><label for="whyField">{{ t('why.field') }}</label><select id="whyField"></select></div>
+        <div><label for="whyValue">{{ t('why.value') }}</label><input id="whyValue" autocomplete="off"></div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--fg)"><input id="whyRule" type="checkbox" style="width:auto;margin:0">{{ t('why.as_rule') }}</label>
+      <button id="whyApply" type="button" class="btn-secondary" style="margin-top:6px">{{ t('why.apply') }}</button>
+      <div id="whyHint" class="hint"></div>
+      <details style="margin-top:10px">
+        <summary id="rulesTitle" style="cursor:pointer;font-size:13px;color:var(--muted)"></summary>
+        <div id="rulesList"></div>
+      </details>
+    </details>
 
     <label>{{ t('form.paste_title_label') }}</label>
     <div class="row">
@@ -796,6 +829,7 @@ function fillForm(d){
   ['color_name','category','nozzle_temp_min','nozzle_temp_max',
    'cost_per_kg','price_per_spool','tag_uid','note','paste_title'].forEach(id=>$(id).value='');
   $('nfcHint').textContent='';
+  $('whyBox').classList.add('hidden');
   setSelect('material',''); setSelect('brand',''); setSelect('subtype',''); setSelect('storage_location','');
   setSelect('label_weight','1000'); $('quantity').value=1;
   applyFields(f);
@@ -892,10 +926,122 @@ $('labelPhoto').onchange = async (e) => {
                title: dbSource ? (d.title||'') : '',  // never dump raw OCR text
                linked_codes: dbSource ? (d.linked_codes||[]) : [],
                fields });
+    showWhy(d);
     $('ocrHint').textContent = got ? '' : t('ocr.couldnt_read');
   }catch(err){ $('ocrHint').textContent=t('ocr.failed',{error:err}); }
   finally{ e.target.value=''; }
 };
+
+// ── Where the fields came from, and the user's reading rules ──
+const WHY_FIELDS = ['brand','material','subtype','color_name','rgba','label_weight','nozzle_temp_min','nozzle_temp_max','diameter_mm'];
+const WHY_LABEL = {brand:'form.brand', material:'form.material', subtype:'form.subtype', color_name:'form.color_name',
+  rgba:'form.color', label_weight:'form.net_weight', nozzle_temp_min:'form.nozzle_min', nozzle_temp_max:'form.nozzle_max',
+  diameter_mm:'why.diameter'};
+const WHY_COLOR = {brand:'#4f9cf9', material:'#00c64d', subtype:'#c084fc', color_name:'#f59e0b', rgba:'#f59e0b',
+  label_weight:'#22d3ee', nozzle_temp_min:'#f87171', nozzle_temp_max:'#f87171', diameter_mm:'#a3e635'};
+const RULE_FIELDS = ['brand','material','subtype','color_name','label_weight','nozzle_temp_min','nozzle_temp_max'];
+let whySel = '';
+function esc(v){ return String(v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function whyHint(msg, err){ $('whyHint').textContent = msg||''; $('whyHint').classList.toggle('err', !!err); }
+
+// The text with each field's places marked in its colour, and a line per
+// field: its value and what it was read from.
+function showWhy(d){
+  if(!d || !d.text){ $('whyBox').classList.add('hidden'); return; }
+  $('whyBox').classList.remove('hidden');
+  $('whyText').value = d.text; whySel = ''; whyHint('');
+  const text = d.text, why = d.why || {}, fields = d.fields || {};
+  const marks = [];
+  for(const [k, w] of Object.entries(why)) for(const [a, b] of (w.spans||[])) if(WHY_COLOR[k]) marks.push({k, a, b});
+  marks.sort((x, y) => x.a - y.a || (y.b - y.a) - (x.b - x.a));
+  let html = '', at = 0;
+  for(const m of marks){
+    if(m.a < at) continue;
+    const c = WHY_COLOR[m.k];
+    html += esc(text.slice(at, m.a)) + '<mark style="background:'+c+'33;border-bottom:2px solid '+c+'" title="'+esc(t(WHY_LABEL[m.k]))+'">'
+      + esc(text.slice(m.a, m.b)) + '</mark>';
+    at = m.b;
+  }
+  $('whyMarked').innerHTML = html + esc(text.slice(at));
+  const rows = WHY_FIELDS.filter(k => fields[k] != null && why[k]).map(k => {
+    const w = why[k];
+    let from;
+    if(w.by === 'rule') from = t('why.by_rule', {match: w.rule});
+    else if(w.by === 'db') from = t('why.by_db');
+    else if(w.by === 'default') from = t('why.by_default');
+    else from = (w.spans||[]).length ? w.spans.map(([a, b]) => t('why.quote', {text: text.slice(a, b)})).join(' + ') : t('why.by_guess');
+    const v = k === 'rgba' ? '#'+String(fields[k]).slice(0, 6) : fields[k];
+    return '<div class="whyrow"><span class="dot" style="background:'+WHY_COLOR[k]+'"></span><b>'+esc(t(WHY_LABEL[k]))+'</b> '
+      + esc(v) + ' <span class="muted">← '+esc(from)+'</span></div>';
+  });
+  $('whyList').innerHTML = rows.join('') || '<div class="hint">'+esc(t('why.nothing'))+'</div>';
+}
+
+// A re-read fills what it found; the default weight does not undo a choice.
+function whyFields(d){
+  const out = {};
+  for(const [k, v] of Object.entries(d.fields||{})) if(!(d.why && d.why[k] && d.why[k].by === 'default')) out[k] = v;
+  return out;
+}
+
+(function whyInit(){
+  for(const k of RULE_FIELDS){
+    const o = document.createElement('option'); o.value = k; o.textContent = t(WHY_LABEL[k]); $('whyField').appendChild(o);
+  }
+  const grab = () => {
+    const ta = $('whyText'), sel = ta.value.slice(ta.selectionStart, ta.selectionEnd).trim();
+    if(sel){ whySel = sel; $('whyValue').value = sel; whyHint(t('why.selected', {text: sel})); }
+  };
+  for(const ev of ['select','mouseup','keyup','touchend']) $('whyText').addEventListener(ev, grab);
+  $('whyText').addEventListener('input', () => { whySel = ''; });
+  $('whyReparse').onclick = async () => {
+    const text = $('whyText').value.trim();
+    if(!text) return;
+    try{
+      const d = await (await fetch('/api/parse?title='+encodeURIComponent(text))).json();
+      applyFields(whyFields(d)); showWhy(d);
+    }catch(e){ toast(t('form.parse_request_failed'), false); }
+  };
+  $('whyApply').onclick = async () => {
+    const field = $('whyField').value, value = $('whyValue').value.trim();
+    if(!value){ whyHint(t('why.need_value'), true); return; }
+    applyFields({[field]: value});
+    if(!$('whyRule').checked){ whyHint(t('why.applied')); return; }
+    if(whySel.length < 2){ whyHint(t('why.need_selection'), true); return; }
+    try{
+      const r = await fetch('/api/rules', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({match: whySel, field, value})});
+      const d = await r.json();
+      if(!d.ok){ whyHint(t('why.rule_failed'), true); return; }
+      renderRules(d.rules); $('whyRule').checked = false;
+      whyHint(t('why.rule_saved', {match: whySel, field: t(WHY_LABEL[field]), value}));
+    }catch(e){ whyHint(t('why.rule_failed'), true); }
+  };
+  loadRules();
+})();
+
+function renderRules(rules){
+  $('rulesTitle').textContent = t('why.rules', {count: rules.length});
+  $('rulesList').innerHTML = '';
+  if(!rules.length){ $('rulesList').innerHTML = '<div class="hint">'+esc(t('why.no_rules'))+'</div>'; return; }
+  for(const r of rules){
+    const row = document.createElement('div'); row.className = 'rulerow';
+    const span = document.createElement('span');
+    span.textContent = t('why.rule_row', {match: r.match, field: t(WHY_LABEL[r.field]||r.field), value: r.value});
+    const del = document.createElement('button'); del.type = 'button'; del.textContent = '✕'; del.title = t('why.delete');
+    del.onclick = async () => {
+      try{
+        const d = await (await fetch('/api/rules', {method:'DELETE', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({match: r.match, field: r.field})})).json();
+        renderRules(d.rules||[]);
+      }catch(e){}
+    };
+    row.appendChild(span); row.appendChild(del); $('rulesList').appendChild(row);
+  }
+}
+async function loadRules(){
+  try{ renderRules((await (await fetch('/api/rules')).json()).rules || []); }catch(e){}
+}
 
 // Auto-fill from a pasted product title.
 $('autofillBtn').onclick = async () => {
@@ -915,6 +1061,7 @@ $('autofillBtn').onclick = async () => {
   try{
     const d = await (await fetch('/api/parse?title='+encodeURIComponent(pastedTitle))).json();
     applyFields(d.fields||{});
+    showWhy(d);
     if(d.barcode){
       currentBarcode = d.barcode;
       $('barcodeLine').innerHTML = t('form.barcode_label')+' <span style="color:var(--fg);font-family:Menlo,monospace">'+d.barcode+'</span>';
