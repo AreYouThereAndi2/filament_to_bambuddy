@@ -149,7 +149,7 @@
       <div style="flex:0 0 96px"><button id="autofillBtn" type="button" class="btn-secondary">{{ t('form.fill_button') }}</button></div>
     </div>
     <div class="hint" style="margin-bottom:6px">
-      {{ t('form.fill_hint') }}
+      <span id="fillHint">{{ t('form.fill_hint') }}</span>
       <a id="searchLink" href="#" target="_blank" rel="noopener"
          style="color:var(--green-light)">{{ t('form.search_link') }}</a>
     </div>
@@ -610,6 +610,29 @@ function badgeFor(source){
   return BADGE[source] || BADGE.none;
 }
 
+// Amazon's own codes are no product barcodes and no database knows them. An
+// ASIN (B0...) is the listing itself, so the link opens it; an FNSKU (X00...)
+// is a seller's warehouse label that Amazon resolves for nobody, so the link
+// goes to the orders, where the article's name can be copied.
+const AMAZON_TLD = {de:'de', fr:'fr', it:'it', es:'es', ja:'co.jp', 'pt-br':'com.br', tr:'com.tr'};
+function amazonHost(){ return 'https://www.amazon.' + (AMAZON_TLD[I18N_LANG] || 'com'); }
+function setSearchLink(code, source){
+  const link = $('searchLink'), up = (code||'').toUpperCase();
+  $('fillHint').textContent = t('form.fill_hint');
+  if(source === 'amazon' && /^B0[0-9A-Z]{8}$/.test(up)){
+    link.href = amazonHost() + '/dp/' + up;
+    link.textContent = t('form.amazon_listing_link');
+  }else if(source === 'amazon' && /^X0[0-9A-Z]{8}$/.test(up)){
+    $('fillHint').textContent = t('form.fnsku_hint');
+    link.href = amazonHost() + '/gp/css/order-history';
+    link.textContent = t('form.amazon_orders_link');
+  }else{
+    link.href = 'https://www.google.com/search?q='+encodeURIComponent('"'+code+'" filament');
+    link.textContent = t('form.search_link');
+  }
+  link.style.display = code ? '' : 'none';
+}
+
 function fillForm(d){
   const f = d.fields || {};
   $('form').classList.remove('hidden');
@@ -627,8 +650,7 @@ function fillForm(d){
     : '';
   // Point the web-search link at the scanned code (helps when no DB has it).
   const code = d.barcode || currentBarcode || '';
-  $('searchLink').href = 'https://www.google.com/search?q='+encodeURIComponent('"'+code+'" filament');
-  $('searchLink').style.display = code ? '' : 'none';
+  setSearchLink(code, d.source);
   // 'Forget' only makes sense for a remembered (cache) entry with a barcode.
   $('forgetBtn').classList.toggle('hidden', !(code && d.source==='cache'));
   // reset then apply
@@ -740,6 +762,12 @@ $('labelPhoto').onchange = async (e) => {
 $('autofillBtn').onclick = async () => {
   const pastedTitle = $('paste_title').value.trim();
   if(!pastedTitle) return;
+  // A single word of letters and digits is a code, not a product name: there
+  // is nothing in it to fill a form from.
+  if(/^[A-Z0-9][A-Z0-9-]{4,31}$/i.test(pastedTitle) && /\d/.test(pastedTitle)){
+    toast(t('form.paste_is_code'), false);
+    return;
+  }
   try{
     const d = await (await fetch('/api/parse?title='+encodeURIComponent(pastedTitle))).json();
     applyFields(d.fields||{});
