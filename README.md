@@ -23,7 +23,9 @@ It's a small mobile web app:
    discovered for the same product (other package-size barcodes, the refill
    barcode, the manufacturer SKU) are shown as "Also matches" — informational
    only.
-4. **Add** the spool(s) to Bambuddy via its inventory API.
+4. **Add** the spool(s) to Bambuddy via its inventory API. With Bambuddy's
+   Spoolman integration switched on, the spools go to the Spoolman inventory
+   behind it; the app reads the mode from Bambuddy, no setting needed.
 
 The lookup also **learns**: whatever you confirm is remembered for that code
 *and* every code cross-referenced alongside it, so a later scan of any of

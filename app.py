@@ -27,6 +27,7 @@ import json
 import logging
 import os
 import subprocess
+import time
 from pathlib import Path
 
 import requests
@@ -315,6 +316,44 @@ DEFAULT_BRANDS = ["Bambu Lab", "Polymaker", "eSUN", "Overture", "SUNLU", "Inland
                   "Hatchbox", "Prusament", "Creality", "Generic"]
 
 
+# Bambuddy answers inventory requests under two prefixes: its own database
+# (/api/v1/inventory) or, when Settings → Spoolman is on, the Spoolman server
+# behind it (/api/v1/spoolman/inventory). Spools posted to the local prefix
+# while Spoolman is on land in a database Bambuddy no longer shows. The mode
+# is read from Bambuddy itself and kept for a minute, so switching it there
+# takes effect here without a restart.
+_INVENTORY_MODE_TTL = 60.0
+_inventory_mode_cache: dict = {"at": 0.0, "base": None}
+
+
+def _truthy(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in ("1", "true", "yes", "on")
+
+
+def _inventory_base() -> str:
+    """Path prefix of Bambuddy's active inventory, without a trailing slash."""
+    now = time.monotonic()
+    cached = _inventory_mode_cache["base"]
+    if cached and now - _inventory_mode_cache["at"] < _INVENTORY_MODE_TTL:
+        return cached
+    base = "/api/v1/inventory"
+    if BAMBUDDY_API_KEY:
+        try:
+            r = requests.get(f"{BAMBUDDY_URL}/api/v1/settings/spoolman",
+                             headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"},
+                             timeout=10)
+            if r.ok and _truthy((r.json() or {}).get("spoolman_enabled")):
+                base = "/api/v1/spoolman/inventory"
+        except Exception:
+            log.debug("Bambuddy Spoolman mode probe failed, using the local inventory", exc_info=True)
+    if base != cached:
+        log.info("Bambuddy inventory: %s", base)
+    _inventory_mode_cache.update(at=now, base=base)
+    return base
+
+
 def _bambuddy_locations() -> list[str]:
     """Storage-location names from Bambuddy (best-effort; empty on failure)."""
     if not BAMBUDDY_API_KEY:
@@ -437,7 +476,7 @@ def health():
     # Probe the endpoint we actually use (inventory), so the key is checked
     # against the permission this app needs.
     try:
-        r = requests.get(f"{BAMBUDDY_URL}/api/v1/inventory/spools",
+        r = requests.get(f"{BAMBUDDY_URL}{_inventory_base()}/spools",
                          headers=headers, params={"limit": 1}, timeout=10)
     except requests.exceptions.SSLError:
         log.warning("bambuddy health check: TLS error contacting %s", BAMBUDDY_URL, exc_info=True)
@@ -608,13 +647,19 @@ def add_spool():
 
     headers = {"X-API-Key": BAMBUDDY_API_KEY, "Content-Type": "application/json",
                "Accept": "application/json"}
-    created, errors = 0, []
+    created, errors, spool_ids = 0, [], []
+    spools_url = f"{BAMBUDDY_URL}{_inventory_base()}/spools"
     for _ in range(quantity):
         try:
-            r = requests.post(f"{BAMBUDDY_URL}/api/v1/inventory/spools",
-                              json=payload, headers=headers, timeout=30)
+            r = requests.post(spools_url, json=payload, headers=headers, timeout=30)
             if r.status_code in (200, 201):
                 created += 1
+                try:
+                    new_id = (r.json() or {}).get("id")
+                except ValueError:
+                    new_id = None
+                if isinstance(new_id, int):
+                    spool_ids.append(new_id)
             else:
                 errors.append(f"{r.status_code}: {r.text[:200]}")
                 break
@@ -653,7 +698,7 @@ def add_spool():
     else:
         log.warning("spool add partial: %d/%d %s (barcode=%s) errors=%s",
                     created, quantity, label, barcode or "none", errors)
-    return jsonify(ok=ok, created=created, requested=quantity,
+    return jsonify(ok=ok, created=created, requested=quantity, spool_ids=spool_ids,
                    errors=errors, bambuddy=BAMBUDDY_URL), (200 if created else 502)
 
 
