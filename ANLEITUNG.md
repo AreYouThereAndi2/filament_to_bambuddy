@@ -123,7 +123,7 @@ Was geht wo:
 | Barcode mit der Kamera, Etikett fotografieren | ja | ja |
 | 🔦 Licht beim Scannen | ja | nur wenn iOS es der Seite erlaubt; sonst erscheint der Knopf nicht |
 | NFC-Tag lesen | ja (NTAG) | nein: Apple lässt Web-Apps nicht an NFC, den Tag legt die Waage an |
-| Shop-Seite per Lesezeichen „→ Filament“ übernehmen | ja | ja |
+| Shop-Seite aus der Zwischenablage oder als Link übernehmen | ja | ja |
 | Shop-Seite per **Teilen → Filament** übernehmen | ja, mit installierter App | nein: iOS bietet Web-Apps nicht im Teilen-Menü an |
 
 ## Daten von einer Shop-Seite übernehmen
@@ -132,16 +132,10 @@ Kennt keine Datenbank den Code (z. B. eine Artikelnummer wie `700-001-1535`), so
 
 1. In der App den Code suchen, dann **„🔍 Im Web nach diesem Code suchen“** tippen. Die App merkt sich den Code für zwei Stunden.
 2. In den Ergebnissen die Produktseite öffnen (Amazon, 3DJake, Herstellerseite …).
-3. Auf der Produktseite das Lesezeichen **„→ Filament“** antippen. Die App öffnet sich mit Name, Marke, Material, Farbe und Preis der Seite. Hat die Seite eine EAN, schlägt die App diese zusätzlich in den Datenbanken nach.
+3. Auf der Produktseite oder in der Shop-App (auch Amazon) **Teilen → Kopieren**, zurück in die App und **„📋 Aus der Zwischenablage übernehmen“** tippen. Oder den Link bzw. den kopierten Text ins Feld „Produkttitel …“ einfügen und **Ausfüllen** tippen. Auch Links aus der Google-Suche (`google.com/url?…`) gehen. Die App übernimmt Name, Marke, Material, Farbe und Preis der Seite. Hat die Seite eine EAN, schlägt die App diese zusätzlich in den Datenbanken nach. Führt eine Seite mehrere Farben, nimmt die App die Farbe, deren Artikelnummer oder EAN zum gesuchten Code passt.
 4. Prüfen, **Hinzufügen**. Die App merkt sich die Daten für die Artikelnummer und für die EAN der Seite: Beim nächsten Scan sind sie sofort da.
 
-**Am einfachsten, ohne Einrichtung (iPhone und Android):** Auf der Produktseite oder in der Shop-App (auch Amazon) **Teilen → Kopieren**, zurück in die App und **„📋 Aus der Zwischenablage übernehmen“** tippen. Alternativ den Link oder den kopierten Text ins Feld „Produkttitel …“ einfügen und **Ausfüllen** tippen. Aus dem Link liest der Server die Seite: Bei normalen Shops kommen Name, EAN und Preis. Amazon gibt Servern keine Seite heraus, dort zählt der mitkopierte Name aus „Teilen → Kopieren“.
-
-**Das Lesezeichen einrichten:** In der App ganz unten „📲 Shop-Knopf einrichten“ aufklappen, **Code kopieren** und der Anleitung dort folgen. Kurz:
-- **iPhone:** In Safari irgendeine Seite als Lesezeichen sichern, Name „→ Filament“. Dann Lesezeichen → Bearbeiten → das Lesezeichen öffnen → Adresse durch den kopierten Code ersetzen. Benutzen: Lesezeichen → „→ Filament“.
-- **Android:** In Chrome ein Lesezeichen anlegen, bearbeiten, Name „Filament“, URL = kopierter Code. Benutzen: in die Adresszeile „Filament“ tippen und den Lesezeichen-Eintrag mit dem Stern wählen.
-
-Das Lesezeichen läuft im eigenen Browser auf der Seite, die man gerade ansieht. Die App lädt dafür nichts von Amazon. Links aus der installierten App öffnen sich manchmal in einem eingebauten Browser ohne Lesezeichen: dort „In Safari öffnen“ bzw. „In Chrome öffnen“ wählen.
+Aus dem Link liest der Server die Seite: Bei normalen Shops kommen Name, EAN und Preis. Amazon gibt Servern keine Seite heraus, dort zählt der mitkopierte Name aus „Teilen → Kopieren“.
 
 **Android, noch einfacher:** Mit installierter App auf der Produktseite **Teilen → Filament** wählen, auch in der Amazon-App. Die App bekommt Titel und Link. Bei normalen Shops liest der Server die geteilte Seite einmal und holt EAN und Preis dazu. Amazon gibt Servern keine Seite heraus, dort reicht der Titel.
 

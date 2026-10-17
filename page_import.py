@@ -2,18 +2,18 @@
 page_import.py
 Product data handed over from a shop page.
 
-Two ways in, both started by the user on a page they chose:
+Ways in, all started by the user on a page they chose:
 
-* The "-> Filament" bookmark (iOS and Android). It runs in the user's own
-  browser on the shop page, reads the page's schema.org Product data, its
-  OpenGraph tags and Amazon's title and price elements, and opens this app
-  with them in ?import=. Nothing is fetched from the shop by the server, so
-  Amazon's bot wall does not apply: the page is the one the user is looking
-  at.
-* "Share -> Filament" (Android, installed app). The share sheet hands over
-  a title, a text and a URL. The title or text is usually the product name;
-  the server reads that one page once for its Product data, which works for
-  ordinary shops and simply finds nothing on Amazon.
+* A pasted link or copied page (Share -> Copy, then the clipboard button or
+  the title field), and "Share -> Filament" on Android with the app
+  installed. Both hand over a title, a text and a URL; the title or text is
+  usually the product name, and the server reads that one page once for its
+  Product data, which works for ordinary shops and simply finds nothing on
+  Amazon.
+* ?import= from the "-> Filament" bookmark, which read the page's
+  schema.org Product data in the user's own browser. The bookmark is no
+  longer offered (mobile browsers hardly run one); bookmarks made earlier
+  still land here.
 
 normalize() turns either into one dict; fetch_page() is the one page read.
 
