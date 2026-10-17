@@ -145,6 +145,19 @@ Das Lesezeichen läuft im eigenen Browser auf der Seite, die man gerade ansieht.
 
 **Android, noch einfacher:** Mit installierter App auf der Produktseite **Teilen → Filament** wählen, auch in der Amazon-App. Die App bekommt Titel und Link. Bei normalen Shops liest der Server die geteilte Seite einmal und holt EAN und Preis dazu. Amazon gibt Servern keine Seite heraus, dort reicht der Titel.
 
+## Etiketten drucken (TYPONOS PM240)
+
+Die Karte **🏷️ Etikett drucken** holt das Etikett einer Spule fertig von BamBuddy, in BamBuddys eigenen Vorlagen. Das geht auch im Spoolman-Modus. Dafür braucht es **BamBuddy 1.2.5.7 oder neuer**: Erst ab dieser Version liefert BamBuddy Etiketten als Bild.
+
+1. Die Spulen-ID eingeben, also die # aus BamBuddy. Nach dem Anlegen einer Spule steht ihre ID schon da; bei mehreren Spulen kann man sie antippen.
+2. Unter **Vorlage** ein Format wählen. Auf die 50 × 30-mm-Rolle passt **Box 40 × 30 mm**; es wird mittig gedruckt. Die anderen Vorlagen sind breiter als der 48-mm-Druckkopf.
+3. Unter **Etikettenrolle und Zeilen** die Rolle (Standard 50 × 30 mm) und die Zeilen einstellen. Das Handy merkt sich beides.
+4. **Vorschau** zeigt das Etikett Punkt für Punkt so, wie der Drucker es druckt.
+5. Erst **🖨️ Drucken** schickt es los. Beim ersten Mal fragt Chrome, welcher Drucker es sein soll: den **PM240** wählen.
+
+- **Android:** Chrome druckt direkt über Bluetooth (Web Bluetooth). Der Drucker darf dabei nicht gleichzeitig mit der Labelnize-App verbunden sein.
+- **iPhone/iPad:** Safari kann kein Bluetooth. **Bild teilen** gibt das Etikett an die App des Druckers weiter, oder man speichert es in den Fotos.
+
 ## Mit der SpoolmanScale verbinden
 
 In der Weboberfläche der Waage → Einstellungen → Barcode-Scanner → **filament_to_bambuddy-Adresse**: `http://<server-ip>:8088`. Scannt die Waage dann einen Code, den keine Spule kennt, fragt sie die App und bietet an, die Spule anzulegen, mit oder ohne den gefundenen Preis.

@@ -87,6 +87,13 @@
   .swatch{height:44px;border-radius:9px;border:1px solid #4a4a4a;width:100%;padding:0}
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
   .hint.err{color:var(--danger)}
+  #labelCanvas{width:100%;display:block;background:#fff;border-radius:6px;
+    image-rendering:pixelated;image-rendering:crisp-edges}
+  .fieldgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}
+  .fieldgrid label{display:flex;gap:8px;align-items:center;margin:4px 0;color:var(--fg)}
+  .fieldgrid input{width:auto;margin:0}
+  .chip{display:inline-block;margin:6px 6px 0 0;padding:4px 10px;border-radius:999px;
+    background:var(--tertiary);color:var(--fg);font-size:13px;text-decoration:none}
   .status-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px}
 </style>
 </head>
@@ -216,6 +223,35 @@
 
     <button id="submitBtn" type="submit" class="btn-primary" style="margin-top:16px">{{ t('form.submit') }}</button>
   </form>
+
+  <!-- A spool's label: Bambuddy's own template, shown here dot for dot as
+       the label printer prints it, and printed only on a tap. -->
+  <div class="card" id="labelCard">
+    <div style="font-weight:600">{{ t('label.title') }}</div>
+    <div class="row">
+      <div><label for="labelSpool">{{ t('label.spool_id') }}</label><input id="labelSpool" inputmode="numeric" autocomplete="off"></div>
+      <div><label for="labelTpl">{{ t('label.template') }}</label><select id="labelTpl"></select></div>
+    </div>
+    <div id="labelChips"></div>
+    <details class="bm" style="margin-top:12px">
+      <summary style="font-weight:400;font-size:13px;color:var(--muted)">{{ t('label.settings') }}</summary>
+      <div class="row">
+        <div><label for="labelW">{{ t('label.media_w') }}</label><input id="labelW" inputmode="numeric"></div>
+        <div><label for="labelL">{{ t('label.media_l') }}</label><input id="labelL" inputmode="numeric"></div>
+      </div>
+      <label>{{ t('label.lines') }}</label>
+      <div id="labelFields" class="fieldgrid"></div>
+    </details>
+    <button id="labelPreviewBtn" type="button" class="btn-secondary" style="margin-top:12px">{{ t('label.preview') }}</button>
+    <div id="labelBox" class="hidden" style="margin-top:12px">
+      <canvas id="labelCanvas" width="400" height="240"></canvas>
+      <div class="row" style="margin-top:10px">
+        <div id="labelPrintWrap"><button id="labelPrintBtn" type="button" class="btn-primary">{{ t('label.print') }}</button></div>
+        <div><button id="labelShareBtn" type="button" class="btn-secondary">{{ t('label.share') }}</button></div>
+      </div>
+    </div>
+    <div id="labelHint" class="hint"></div>
+  </div>
 
   <!-- The "-> Filament" bookmark: hands a shop page back to this app. -->
   <div class="card">
@@ -1017,6 +1053,220 @@ $('nfcBtn').onclick = async () => {
   }
 };
 
+// ── Spool label ──
+// Bambuddy draws the label (its templates, at the printer's 203 dpi); here
+// it is placed on the loaded roll, turned into the dots the head prints and
+// shown as such. Printing is TSPL over Bluetooth LE, what the TYPONOS PM240
+// takes and what the SpoolmanScale sends it: service FF00, characteristic
+// FF02, written without response. Web Bluetooth is Chrome on Android (and
+// desktop); Safari on iPhone has none, there the image goes to the
+// printer's own app through the share sheet.
+const LABEL_SIZES = {box_40x30:[40,30], box_62x29:[62,29], ams_holder_74x33:[74,33], ams_holder_75x55:[75,55]};
+const LABEL_FIELDS = ['brand','material','hex','name','location','material_number','temps','weight','note','added','qr','spool_id'];
+const LABEL_DEFAULT_FIELDS = ['brand','material','hex','name','location','qr','spool_id'];
+const DOTS_PER_MM = 8;          // 203 dpi
+const TSPL_HEAD_DOTS = 384;     // 48 mm: a wider roll prints its middle
+const TSPL_GAP_MM = 6, TSPL_DENSITY = 10;   // the vendor app's, for the 50 x 30 roll
+// 20 bytes fit any MTU; a short pause every 120 bytes paces the job like
+// the scale's 128 byte chunks, which the printer takes without dropping.
+const BT_CHUNK = 20, BT_PAUSE_EVERY = 6, BT_PAUSE_MS = 20, BT_HOLD_MS = 3000;
+function lsGet(k, d){ try{ const v = localStorage.getItem(k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } }
+function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const labelCfg = Object.assign({template:'box_40x30', w:50, l:30, fields:LABEL_DEFAULT_FIELDS}, lsGet('f2b.label', {}));
+if(!LABEL_SIZES[labelCfg.template]) labelCfg.template = 'box_40x30';
+let labelJob = null;      // the previewed label as the printer takes it
+let labelPng = null;      // Bambuddy's image, for sharing
+let labelPrinter = null;  // the printer picked in this session
+let labelSeq = 0;
+
+function labelHint(msg, err){ $('labelHint').textContent = msg||''; $('labelHint').classList.toggle('err', !!err); }
+function labelSave(){ lsSet('f2b.label', labelCfg); }
+
+(function labelInit(){
+  for(const [k,[w,h]] of Object.entries(LABEL_SIZES)){
+    const o = document.createElement('option');
+    o.value = k; o.textContent = (k.startsWith('ams') ? 'AMS ' : 'Box ')+w+' × '+h+' mm';
+    $('labelTpl').appendChild(o);
+  }
+  $('labelTpl').value = labelCfg.template;
+  $('labelW').value = labelCfg.w; $('labelL').value = labelCfg.l;
+  for(const f of LABEL_FIELDS){
+    const l = document.createElement('label'), c = document.createElement('input');
+    c.type = 'checkbox'; c.value = f; c.checked = labelCfg.fields.includes(f);
+    c.onchange = () => {
+      labelCfg.fields = LABEL_FIELDS.filter(x => document.querySelector('#labelFields input[value="'+x+'"]').checked);
+      labelSave(); labelRefresh();
+    };
+    l.appendChild(c); l.appendChild(document.createTextNode(t('label.f_'+f)));
+    $('labelFields').appendChild(l);
+  }
+  $('labelTpl').onchange = () => { labelCfg.template = $('labelTpl').value; labelSave(); labelRefresh(); };
+  for(const id of ['labelW','labelL']) $(id).onchange = () => {
+    const w = parseInt($('labelW').value), l = parseInt($('labelL').value);
+    if(w >= 10 && w <= 120) labelCfg.w = w;
+    if(l >= 10 && l <= 200) labelCfg.l = l;
+    $('labelW').value = labelCfg.w; $('labelL').value = labelCfg.l;
+    labelSave(); labelRefresh();
+  };
+  $('labelSpool').oninput = () => { labelJob = null; $('labelBox').classList.add('hidden'); labelHint(''); };
+  $('labelSpool').onkeydown = (e) => { if(e.key === 'Enter'){ e.preventDefault(); labelPreview(); } };
+  $('labelPreviewBtn').onclick = () => labelPreview();
+  $('labelPrintBtn').onclick = () => labelPrint();
+  $('labelShareBtn').onclick = () => labelShare();
+  if(!navigator.bluetooth) $('labelPrintWrap').classList.add('hidden');
+})();
+
+// A shown preview follows the settings; nothing is fetched before one is asked for.
+function labelRefresh(){ if(!$('labelBox').classList.contains('hidden')) labelPreview(); }
+
+// After spools were added: their ids, one tap from a preview. Never printed by itself.
+function labelOffer(ids){
+  ids = (ids||[]).filter(n => Number.isInteger(n) && n > 0);
+  if(!ids.length) return;
+  $('labelChips').innerHTML = '';
+  if(ids.length > 1){
+    const s = document.createElement('span'); s.className = 'hint'; s.textContent = t('label.created')+' ';
+    $('labelChips').appendChild(s);
+    for(const id of ids){
+      const a = document.createElement('a'); a.href = '#'; a.className = 'chip'; a.textContent = '#'+id;
+      a.onclick = (e) => { e.preventDefault(); $('labelSpool').value = id; labelPreview(); };
+      $('labelChips').appendChild(a);
+    }
+  }
+  $('labelSpool').value = ids[0];
+  labelPreview();
+}
+
+async function labelPreview(){
+  const id = parseInt($('labelSpool').value);
+  if(!(id > 0)){ labelHint(t('label.need_id'), true); $('labelSpool').focus(); return; }
+  const seq = ++labelSeq;
+  labelHint(t('label.loading'));
+  $('labelPreviewBtn').disabled = true;
+  try{
+    const r = await fetch('/api/label', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({spool_id:id, template:labelCfg.template, fields:labelCfg.fields})});
+    if(seq !== labelSeq) return;
+    if(!r.ok || !(r.headers.get('Content-Type')||'').startsWith('image/png')){
+      let err = 'failed';
+      try{ err = (await r.json()).error || err; }catch(e){}
+      labelJob = null; $('labelBox').classList.add('hidden');
+      let msg = t('label.err_'+err, {id});
+      if(msg.startsWith('label.')) msg = t('label.err_failed')+' ('+err+')';
+      labelHint(msg, true);
+      return;
+    }
+    const blob = await r.blob();
+    const img = await labelImage(blob);
+    if(seq !== labelSeq) return;
+    labelPng = blob;
+    labelJob = labelRaster(img, id);
+    $('labelBox').classList.remove('hidden');
+    $('labelPrintBtn').disabled = !labelJob.fits;
+    if(!labelJob.fits){
+      const [w,h] = LABEL_SIZES[labelCfg.template];
+      labelHint(t('label.too_big', {tpl:w+' × '+h, w:labelCfg.w, l:labelCfg.l}), true);
+    }else labelHint(navigator.bluetooth ? t('label.ready', {id}) : t('label.no_bt'));
+  }catch(e){
+    if(seq === labelSeq) labelHint(t('label.err_failed'), true);
+  }finally{ if(seq === labelSeq) $('labelPreviewBtn').disabled = false; }
+}
+
+function labelImage(blob){
+  return new Promise((ok, fail) => {
+    const img = new Image(), url = URL.createObjectURL(blob);
+    img.onload = () => { URL.revokeObjectURL(url); ok(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); fail(new Error('image')); };
+    img.src = url;
+  });
+}
+
+// The label in the middle of the roll, in black and white dots, drawn into
+// the preview; and the rows the head prints, a 0 bit for a black dot as
+// TSPL's BITMAP wants them.
+function labelRaster(img, id){
+  const W = labelCfg.w * DOTS_PER_MM, H = labelCfg.l * DOTS_PER_MM;
+  const cv = $('labelCanvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d', {willReadFrequently:true});
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+  const fits = img.naturalWidth <= W + 2 && img.naturalHeight <= H + 2;
+  g.drawImage(img, Math.floor((W - img.naturalWidth)/2), Math.floor((H - img.naturalHeight)/2));
+  const px = g.getImageData(0, 0, W, H);
+  const d = px.data;
+  for(let i = 0; i < d.length; i += 4){
+    const v = (d[i]*299 + d[i+1]*587 + d[i+2]*114)/1000 < 128 ? 0 : 255;
+    d[i] = d[i+1] = d[i+2] = v; d[i+3] = 255;
+  }
+  g.putImageData(px, 0, 0);
+  const dots = Math.min(W, TSPL_HEAD_DOTS) & ~7, row = dots/8, skip = Math.floor((W - dots)/2);
+  const bits = new Uint8Array(row * H).fill(0xFF);
+  for(let y = 0; y < H; y++)
+    for(let x = 0; x < dots; x++)
+      if(d[(y*W + skip + x)*4] === 0) bits[y*row + (x>>3)] &= ~(0x80 >> (x & 7));
+  // A roll narrower than the head runs in its middle.
+  const x0 = Math.floor((TSPL_HEAD_DOTS - dots)/2/8)*8;
+  const enc = new TextEncoder();
+  const head = enc.encode('SIZE '+labelCfg.w.toFixed(1)+' mm,'+labelCfg.l.toFixed(1)+' mm\r\nGAP '+TSPL_GAP_MM+'.0 mm,0 mm\r\n'
+    +'DIRECTION 0,0\r\nDENSITY '+TSPL_DENSITY+'\r\nCLS\r\nBITMAP '+x0+',0,'+row+','+H+',1,');
+  const tail = enc.encode('\r\nPRINT 1\r\n');
+  const job = new Uint8Array(head.length + bits.length + tail.length);
+  job.set(head, 0); job.set(bits, head.length); job.set(tail, head.length + bits.length);
+  return {id, fits, job};
+}
+
+async function labelPrint(){
+  if(!labelJob || !labelJob.fits) return;
+  const job = labelJob.job;
+  $('labelPrintBtn').disabled = true;
+  let device = labelPrinter;
+  try{
+    // The chooser needs the tap itself: nothing awaited before it.
+    if(!device) device = await navigator.bluetooth.requestDevice({
+      filters:[{services:[0xff00]}, {namePrefix:'PM2'}], optionalServices:[0xff00]});
+    labelHint(t('label.connecting'));
+    const server = await device.gatt.connect();
+    const ch = await (await server.getPrimaryService(0xff00)).getCharacteristic(0xff02);
+    labelPrinter = device;
+    const write = ch.writeValueWithoutResponse ? b => ch.writeValueWithoutResponse(b) : b => ch.writeValue(b);
+    let n = 0, shown = -1;
+    for(let pos = 0; pos < job.length; pos += BT_CHUNK, n++){
+      await write(job.subarray(pos, pos + BT_CHUNK));
+      if(n % BT_PAUSE_EVERY === BT_PAUSE_EVERY - 1) await sleep(BT_PAUSE_MS);
+      const pct = Math.floor(100 * pos / job.length / 10) * 10;
+      if(pct !== shown){ shown = pct; labelHint(t('label.sending', {pct})); }
+    }
+    // The printer prints from its buffer; the link stays until it is through.
+    labelHint(t('label.printing'));
+    await sleep(BT_HOLD_MS);
+    labelHint(t('label.printed', {id:labelJob.id}));
+    toast(t('label.printed', {id:labelJob.id}));
+  }catch(e){
+    // A closed chooser is no error; anything else forgets the printer, so
+    // the next tap offers the choice again.
+    if(e && e.name === 'NotFoundError') labelHint('');
+    else { labelPrinter = null; labelHint(t('label.bt_failed', {error: (e && e.message) || e}), true); }
+  }finally{
+    try{ if(device && device.gatt.connected) device.gatt.disconnect(); }catch(e){}
+    $('labelPrintBtn').disabled = !(labelJob && labelJob.fits);
+  }
+}
+
+// iPhone, or another app: Bambuddy's PNG through the share sheet (it carries
+// its 203 dpi, so a label app prints it at size), else as a download.
+async function labelShare(){
+  if(!labelPng || !labelJob) return;
+  const file = new File([labelPng], 'spool-'+labelJob.id+'.png', {type:'image/png'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file]}); }catch(e){}
+    return;
+  }
+  const a = document.createElement('a'), url = URL.createObjectURL(labelPng);
+  a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
 // ── Submit ──
 $('form').onsubmit = async (e) => {
   e.preventDefault();
@@ -1049,7 +1299,8 @@ $('form').onsubmit = async (e) => {
       else if(d.warnings&&d.warnings.length) toast(t('submit.price_not_set'), false);
       else toast(tn('submit.added', d.created)+' ✓');
       $('form').classList.add('hidden'); $('manual').value=''; currentBarcode=null;
-      $('tag_uid').value=''; nfcStop(); }
+      $('tag_uid').value=''; nfcStop();
+      labelOffer(d.spool_ids); }
     else { toast(t('submit.failed')+(d.error?': '+d.error:(d.errors&&d.errors.length?': '+d.errors[0]:'')), false); }
   }catch(e){ toast(t('submit.request_failed'), false); }
   finally{ $('submitBtn').disabled = false; }

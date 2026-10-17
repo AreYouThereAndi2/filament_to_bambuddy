@@ -9,6 +9,7 @@ Releases of the fork [AreYouThereAndi2/filament_to_bambuddy](https://github.com/
 - The article number and the page's EAN are both remembered when the spool is added.
 - **🔦 Torch** while scanning, wherever the browser allows a page to switch it.
 - Amazon codes: an FNSKU (`X00…`) explains itself and links to the orders, and an ASIN (`B0…`) opens its listing.
+- **🏷️ Spool labels from the phone.** The label card fetches a spool's label from BamBuddy, in BamBuddy's own templates (also in Spoolman mode), and shows it dot for dot as the label printer will print it. **🖨️ Print** sends it to a TYPONOS PM240 over Bluetooth (Chrome on Android), with the same TSPL job the SpoolmanScale sends. **Share image** hands the PNG to the printer's own app, e.g. on an iPhone, where Safari has no Bluetooth. Nothing is printed without a tap. After adding spools, their ids are offered right there. Needs BamBuddy 1.2.5.7 or newer.
 - iOS: the NFC button is hidden. Web NFC does not exist there; the field for a UID stays.
 
 ## v1.0.0
