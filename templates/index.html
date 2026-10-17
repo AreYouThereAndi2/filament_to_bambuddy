@@ -6,7 +6,8 @@
 <title>{{ t('app.title') }}</title>
 <!-- PWA -->
 <link rel="manifest" href="/manifest.webmanifest">
-<meta name="theme-color" content="#00ae42">
+<meta name="theme-color" content="#1b1f23" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#edf0f2" media="(prefers-color-scheme: light)">
 <link rel="icon" type="image/png" href="/static/icons/icon-192.png">
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
@@ -14,16 +15,35 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Filament">
 <meta name="application-name" content="Filament">
-<style>html{background:#1a1a1a}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&display=swap">
+<style>html{background:#1b1f23}@media (prefers-color-scheme:light){html{background:#edf0f2}}</style>
 <style>
+  /* Graphite, not black; BamBuddy's green only where something is done.
+     The filament's own colour (--spool) is the one bold thing on the page. */
   :root{
-    --bg:#1a1a1a; --card:#2d2d2d; --tertiary:#3d3d3d; --green:#00ae42;
-    --green-light:#00c64d; --fg:#e8e8e8; --muted:#a0a0a0; --danger:#e0533d;
-    --radius:12px;
+    --bg:#1b1f23; --surface:#23282d; --raised:#2c3238; --inset:#16191c; --line:#394047;
+    --text:#e8ecef; --muted:#9aa4ad; --brand:#00ae42; --brand-strong:#00c64d; --on-brand:#03200e;
+    --warn:#e8a93a; --danger:#e2553f; --focus:#6bd49a; --spool:#7a4b2b;
+    --display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --r-card:18px; --r-ctl:11px;
+    /* Names older code and inline styles still use. */
+    --fg:var(--text); --card:var(--surface); --tertiary:var(--raised);
+    --green:var(--brand); --green-light:var(--brand-strong); --radius:var(--r-card);
+    color-scheme:dark;
+  }
+  @media (prefers-color-scheme:light){
+    :root{
+      --bg:#edf0f2; --surface:#ffffff; --raised:#f2f4f6; --inset:#e5e9ec; --line:#cbd3d9;
+      --text:#1a1f24; --muted:#5b6670; --brand:#00953a; --brand-strong:#007f31; --on-brand:#ffffff;
+      --warn:#a86a00; --danger:#c43c28; --focus:#00953a;
+      color-scheme:light;
+    }
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);
-    font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--body);
     -webkit-text-size-adjust:100%;overscroll-behavior-y:contain}
   #ptr{position:fixed;top:0;left:0;right:0;height:calc(56px + env(safe-area-inset-top));
     padding-top:env(safe-area-inset-top);
@@ -31,105 +51,172 @@
     font-size:13px;background:var(--bg);transform:translateY(-100%);z-index:30;pointer-events:none}
   #ptrIcon{font-size:18px;display:inline-block;transition:transform .15s}
   @keyframes ptrspin{to{transform:rotate(360deg)}}
-  header{padding:16px;padding-top:calc(16px + env(safe-area-inset-top));
-    display:flex;align-items:center;gap:10px;
-    border-bottom:1px solid #333;position:sticky;top:0;background:var(--bg);z-index:5}
-  header h1{font-size:18px;margin:0;font-weight:600}
+
+  header{position:sticky;top:0;z-index:5;background:var(--bg);
+    padding:calc(12px + env(safe-area-inset-top)) 16px 10px}
+  .bar{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:10px}
+  header h1{font:700 21px/1 var(--display);letter-spacing:.2px;margin:0;flex:1}
   .cube{width:26px;height:26px;flex:0 0 auto}
-  main{padding:16px;max-width:560px;margin:0 auto;
-    padding-bottom:calc(48px + env(safe-area-inset-bottom))}
-  .card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+  .status{max-width:560px;margin:8px auto 0;display:flex;align-items:flex-start;gap:8px;
+    color:var(--muted);font-size:12.5px;line-height:1.35}
+  .status-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;margin-top:4px;background:#888}
+
+  main{padding:6px 16px calc(40px + env(safe-area-inset-bottom));max-width:560px;margin:0 auto}
+  .card{background:var(--surface);border-radius:var(--r-card);padding:18px;margin-bottom:14px;
+    border:1px solid var(--line)}
+  @media (prefers-color-scheme:light){.card{border-color:transparent;box-shadow:0 1px 2px rgba(20,30,40,.08)}}
+  .card-title{font:600 19px/1.2 var(--display);margin:0 0 12px}
   .muted{color:var(--muted);font-size:13px}
-  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+  label{display:block;font:600 14px/1.2 var(--display);letter-spacing:.2px;color:var(--muted);margin:12px 0 5px}
   input,select,button,textarea{font-size:16px;font-family:inherit}
-  input,select,textarea{width:100%;padding:11px;border-radius:9px;border:1px solid #4a4a4a;
-    background:#1f1f1f;color:var(--fg)}
-  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green)}
+  input,select,textarea{width:100%;padding:11px 12px;border-radius:var(--r-ctl);border:1px solid var(--line);
+    background:var(--inset);color:var(--text)}
+  @media (prefers-color-scheme:light){input,select,textarea{background:#fff}}
+  input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;border-color:var(--focus);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--focus) 28%,transparent)}
+  button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
   .row{display:flex;gap:10px}
-  .row>div{flex:1}
-  button{cursor:pointer;border:none;border-radius:10px;padding:13px 16px;font-weight:600}
-  .btn-primary{background:var(--green);color:#0a0a0a;width:100%}
-  .btn-primary:disabled{background:#066b2c;color:#5a5a5a}
-  .btn-secondary{background:var(--tertiary);color:var(--fg);width:100%}
-  #video{width:100%;border-radius:var(--radius);background:#000;aspect-ratio:4/3;object-fit:cover;display:block}
-  #videoWrap{position:relative;border-radius:var(--radius);overflow:hidden}
+  .row>div{flex:1;min-width:0}
+  button{cursor:pointer;border:none;border-radius:var(--r-ctl);padding:13px 16px;
+    font:600 17px/1.15 var(--display);letter-spacing:.2px}
+  .btn-primary{background:var(--brand);color:var(--on-brand);width:100%}
+  .btn-primary:active{background:var(--brand-strong)}
+  .btn-primary:disabled{opacity:.45}
+  .btn-secondary{background:var(--raised);color:var(--text);width:100%;border:1px solid var(--line)}
+  .btn-secondary:active{background:var(--line)}
+  .btn-secondary:disabled{opacity:.5}
+  .btn-quiet{background:none;border:none;color:var(--muted);padding:6px 4px;width:auto;
+    font:500 13px/1.2 var(--body);text-decoration:underline;text-underline-offset:3px}
+  a{color:var(--brand-strong)}
+  .hidden{display:none !important}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.4}
+  .hint.err{color:var(--danger)}
+
+  /* Scan: the page's first job. A large raised tile with the barcode glyph. */
+  .scan-btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;
+    min-height:76px;font-size:21px;background:var(--raised);color:var(--text);border:1px solid var(--line)}
+  .scan-btn svg{width:34px;height:24px;flex:0 0 auto;color:var(--brand-strong)}
+  .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:14px 0 10px}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+  #video{width:100%;border-radius:14px;background:#000;aspect-ratio:4/3;object-fit:cover;display:block}
+  #videoWrap{position:relative;border-radius:14px;overflow:hidden}
   #torchBtn{position:absolute;right:10px;bottom:10px;z-index:3;width:auto;padding:8px 12px;
-    font-size:14px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;border:1px solid #666}
+    font-size:15px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;border:1px solid #666}
   #torchBtn.on{background:#f5c518;color:#111;border-color:#f5c518}
-  details.bm summary{cursor:pointer;font-weight:600}
-  details.bm ol{padding-left:20px;margin:6px 0}
-  details.bm li{margin:4px 0}
-  .hidden{display:none}
-  /* Scan viewfinder: guide box + corner brackets + sweeping scan line, so
-     it's obvious where to line up the barcode (or QR code). */
   .viewfinder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
   .vf-box{position:relative;width:82%;max-width:320px;height:38%}
   .vf-box::before{content:'';position:absolute;inset:0;border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,.45)}
-  .vf-corner{position:absolute;width:24px;height:24px;border:3px solid var(--green)}
+  .vf-corner{position:absolute;width:24px;height:24px;border:3px solid var(--brand)}
   .vf-corner.tl{top:-2px;left:-2px;border-right:none;border-bottom:none;border-top-left-radius:8px}
   .vf-corner.tr{top:-2px;right:-2px;border-left:none;border-bottom:none;border-top-right-radius:8px}
   .vf-corner.bl{bottom:-2px;left:-2px;border-right:none;border-top:none;border-bottom-left-radius:8px}
   .vf-corner.br{bottom:-2px;right:-2px;border-left:none;border-top:none;border-bottom-right-radius:8px}
-  .vf-scanline{position:absolute;left:0;right:0;height:2px;background:var(--green);
+  .vf-scanline{position:absolute;left:0;right:0;height:2px;background:var(--brand);
     box-shadow:0 0 6px 2px rgba(0,174,66,.6);animation:vfscan 2s ease-in-out infinite}
   @keyframes vfscan{0%,100%{top:6%}50%{top:94%}}
-  @media (prefers-reduced-motion: reduce){.vf-scanline{animation:none;top:50%}}
-  .badge{display:inline-block;font-size:11px;padding:3px 8px;border-radius:999px;
-    background:var(--tertiary);color:var(--muted);margin-left:6px;vertical-align:middle}
-  .badge.cache{background:#0c4a2a;color:var(--green-light)}
-  .badge.upc{background:#0b3a66;color:#9cd2ff}
+
+  /* The spool: the filament's colour wound on a reel, with what it is beside it. */
+  .spool{display:flex;align-items:center;gap:16px;margin:-2px 0 12px}
+  .spool svg{width:96px;height:96px;flex:0 0 auto;overflow:visible}
+  .spool .wind{fill:var(--spool);transition:fill .35s ease}
+  .spool .flange{fill:none;stroke:var(--line);stroke-width:5}
+  .spool .groove{fill:none;stroke:rgba(0,0,0,.22);stroke-width:1}
+  .spool .hub{fill:var(--surface);stroke:var(--line);stroke-width:3}
+  .spool-text{min-width:0;flex:1}
+  .spool-mat{font:700 30px/1.02 var(--display);margin:0;overflow-wrap:anywhere}
+  .spool-brand{font:600 17px/1.2 var(--display);color:var(--text);margin-top:4px}
+  .spool-meta{font-size:13px;color:var(--muted);margin-top:3px}
+  .form-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .form-head .grow{flex:1}
+  .badge{display:inline-block;font:600 12.5px/1 var(--display);letter-spacing:.2px;padding:5px 9px;
+    border-radius:999px;background:var(--raised);color:var(--muted);border:1px solid var(--line)}
+  .badge.cache{color:var(--brand-strong);border-color:color-mix(in srgb,var(--brand) 45%,transparent)}
+  .badge.upc{color:#5aa9f0;border-color:rgba(90,169,240,.45)}
+  .codes{font-size:13px;color:var(--muted);line-height:1.5}
+  .codes code,.mono{font-family:ui-monospace,Menlo,monospace;color:var(--text)}
+
+  /* A section of the form: a quiet heading and a hairline above it. */
+  .sec{margin-top:18px;padding-top:4px;border-top:1px solid var(--line)}
+  .sec>h3{font:600 15px/1 var(--display);color:var(--text);margin:12px 0 0}
+  .fetch{background:var(--inset);border:1px dashed var(--line);border-radius:14px;padding:12px;margin:4px 0 2px}
+  @media (prefers-color-scheme:light){.fetch{background:var(--raised)}}
+  .fetch label{margin-top:0}
+  .two{display:flex;gap:10px;margin-top:10px}
+  .two>*{flex:1}
+  .swatch{height:46px;border-radius:var(--r-ctl);border:1px solid var(--line);width:100%;padding:3px;background:var(--inset)}
+  .submit-bar{position:sticky;bottom:0;margin:18px -18px 0;padding:14px 18px calc(12px + env(safe-area-inset-bottom));z-index:4;
+    background:linear-gradient(to bottom,transparent,var(--surface) 38%)}
+  .submit-bar .btn-primary{min-height:54px;font-size:19px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
-    padding:12px 18px;border-radius:10px;font-weight:600;max-width:90%;text-align:center;
+    padding:12px 18px;border-radius:12px;font:600 15px/1.3 var(--display);max-width:90%;text-align:center;
     box-shadow:0 6px 24px rgba(0,0,0,.4);z-index:20}
-  .toast.ok{background:var(--green);color:#0a0a0a}
+  .toast.ok{background:var(--brand);color:var(--on-brand)}
   .toast.err{background:var(--danger);color:#fff}
-  .swatch{height:44px;border-radius:9px;border:1px solid #4a4a4a;width:100%;padding:0}
-  .hint{font-size:12px;color:var(--muted);margin-top:6px}
-  .hint.err{color:var(--danger)}
+
+  details.bm summary{cursor:pointer;font-weight:600}
+  details.bm ol{padding-left:20px;margin:6px 0}
+  details.bm li{margin:4px 0}
+
+  /* The label: printed tape, white whatever the theme. */
   #labelCanvas{width:100%;display:block;background:#fff;border-radius:6px;
-    image-rendering:pixelated;image-rendering:crisp-edges}
+    image-rendering:pixelated;image-rendering:crisp-edges;
+    box-shadow:0 0 0 1px var(--line),0 6px 18px rgba(0,0,0,.25)}
   .fieldgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}
-  .fieldgrid label{display:flex;gap:8px;align-items:center;margin:4px 0;color:var(--fg)}
-  .fieldgrid input{width:auto;margin:0}
-  .chip{display:inline-block;margin:6px 6px 0 0;padding:4px 10px;border-radius:999px;
-    background:var(--tertiary);color:var(--fg);font-size:13px;text-decoration:none}
-  #whyMarked{white-space:pre-wrap;word-break:break-word;font-family:Menlo,monospace;font-size:12px;
-    background:#1f1f1f;border:1px solid #4a4a4a;border-radius:9px;padding:10px;margin:8px 0;max-height:180px;overflow:auto}
-  #whyMarked mark{color:var(--fg);border-radius:3px;padding:0 1px}
-  .whyrow{font-size:13px;margin:4px 0;line-height:1.4}
+  .fieldgrid label{display:flex;gap:8px;align-items:center;margin:5px 0;color:var(--text);
+    font:500 14px/1.2 var(--body)}
+  .fieldgrid input{width:auto;margin:0;accent-color:var(--brand)}
+  .chip{display:inline-block;margin:6px 6px 0 0;padding:5px 11px;border-radius:999px;
+    background:var(--raised);border:1px solid var(--line);color:var(--text);font:600 14px/1 var(--display);text-decoration:none}
+
+  #whyMarked{white-space:pre-wrap;word-break:break-word;font:12.5px/1.5 ui-monospace,Menlo,monospace;
+    background:var(--inset);border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;max-height:180px;overflow:auto}
+  #whyMarked mark{color:var(--text);border-radius:3px;padding:0 1px}
+  .whyrow{font-size:13.5px;margin:5px 0;line-height:1.4}
   .whyrow .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
-  .whyrow .muted{font-size:12px}
-  .rulerow{display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0}
+  .whyrow .muted{font-size:12.5px}
+  .rulerow{display:flex;align-items:center;gap:8px;font-size:13.5px;margin:4px 0}
   .rulerow span{flex:1}
-  .rulerow button{width:auto;padding:4px 10px;font-size:13px;background:var(--tertiary);color:var(--fg)}
-  #whyText{font-family:Menlo,monospace;font-size:13px}
-  .status-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px}
+  .rulerow button{width:auto;padding:5px 10px;font-size:14px;background:var(--raised);color:var(--text);border:1px solid var(--line)}
+  #whyText{font:13px/1.45 ui-monospace,Menlo,monospace}
+  details>summary{list-style-position:inside}
+
+  footer{max-width:560px;margin:0 auto;text-align:center;color:var(--muted);font-size:12px;
+    padding:0 16px calc(18px + env(safe-area-inset-bottom))}
+  footer .tools{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+
+  @media (prefers-reduced-motion:reduce){
+    .vf-scanline{animation:none;top:50%}
+    .spool .wind{transition:none}
+  }
 </style>
 </head>
 <body>
 <div id="ptr"><span id="ptrIcon">↓</span><span id="ptrText">{{ t('ptr.pull') }}</span></div>
 <header>
-  <svg class="cube" viewBox="0 0 64 64" aria-hidden="true">
-    <polygon points="32,8 8,22 32,36 56,22" fill="#00c64d"/>
-    <polygon points="8,22 8,46 32,60 32,36" fill="#00ae42"/>
-    <polygon points="56,22 56,46 32,60 32,36" fill="#009438"/>
-  </svg>
-  <h1>{{ t('app.title') }}</h1>
+  <div class="bar">
+    <svg class="cube" viewBox="0 0 64 64" aria-hidden="true">
+      <polygon points="32,8 8,22 32,36 56,22" fill="#00c64d"/>
+      <polygon points="8,22 8,46 32,60 32,36" fill="#00ae42"/>
+      <polygon points="56,22 56,46 32,60 32,36" fill="#009438"/>
+    </svg>
+    <h1>{{ t('app.title') }}</h1>
+  </div>
+  <div class="status" role="status"><span id="dot" class="status-dot"></span><span id="health">{{ t('health.checking') }}</span></div>
 </header>
 
 <main>
-  <div class="card">
-    <div style="display:flex;align-items:center;gap:8px">
-      <div class="muted" style="flex:1"><span id="dot" class="status-dot" style="background:#888"></span><span id="health">{{ t('health.checking') }}</span></div>
-      <button id="refreshDb" class="btn-secondary" style="flex:0 0 auto;width:auto;padding:8px 12px;font-size:13px">{{ t('scan.refresh_db') }}</button>
-    </div>
-    <div id="refreshHint" class="hint"></div>
-    <div style="margin-top:6px"><a id="clearCache" href="#" style="color:var(--muted);font-size:12px">{{ t('scan.clear_cache') }}</a></div>
-  </div>
-
   <!-- Scan -->
-  <div class="card">
-    <button id="startBtn" class="btn-secondary">{{ t('scan.scan_button') }}</button>
+  <section class="card" aria-label="{{ t('scan.scan_button') }}">
+    <button id="startBtn" class="scan-btn">
+      <svg viewBox="0 0 34 24" aria-hidden="true" fill="currentColor">
+        <rect x="0" y="0" width="3" height="24"/><rect x="5" y="0" width="1.5" height="24"/>
+        <rect x="8.5" y="0" width="3" height="24"/><rect x="13.5" y="0" width="1.5" height="24"/>
+        <rect x="17" y="0" width="4" height="24"/><rect x="23" y="0" width="1.5" height="24"/>
+        <rect x="26.5" y="0" width="2.5" height="24"/><rect x="31" y="0" width="3" height="24"/>
+      </svg>
+      <span>{{ t('scan.scan_button')|replace('📷', '')|trim }}</span>
+    </button>
     <div id="videoWrap" class="hidden">
       <video id="video" playsinline></video>
       <div class="viewfinder">
@@ -144,129 +231,163 @@
       <button id="torchBtn" type="button" class="hidden">{{ t('scan.torch') }}</button>
     </div>
     <button id="stopBtn" class="btn-secondary hidden" style="margin-top:10px">{{ t('scan.stop_camera') }}</button>
-    <label for="manual" style="margin-top:14px">{{ t('scan.manual_label') }}</label>
+    <label for="manual" style="margin-top:16px">{{ t('scan.manual_label') }}</label>
     <div class="row">
-      <div><input id="manual" placeholder="{{ t('scan.manual_placeholder') }}"></div>
-      <div style="flex:0 0 96px"><button id="lookupBtn" class="btn-secondary">{{ t('scan.lookup_button') }}</button></div>
+      <div><input id="manual" placeholder="{{ t('scan.manual_placeholder') }}" autocomplete="off" spellcheck="false"></div>
+      <div style="flex:0 0 100px"><button id="lookupBtn" class="btn-secondary">{{ t('scan.lookup_button') }}</button></div>
     </div>
     <div id="scanHint" class="hint"></div>
 
-    <div style="text-align:center;color:var(--muted);font-size:12px;margin:12px 0 8px">{{ t('scan.or_separator') }}</div>
+    <div class="or">{{ t('scan.or_separator')|replace('—', '')|trim }}</div>
     <button id="ocrBtn" class="btn-secondary">{{ t('scan.ocr_button') }}</button>
     <input id="labelPhoto" type="file" accept="image/*" capture="environment" class="hidden">
     <div id="ocrHint" class="hint"></div>
-  </div>
+  </section>
 
   <!-- Details form -->
   <form id="form" class="card hidden">
-    <div style="font-weight:600;margin-bottom:4px">
-      {{ t('form.title') }} <span id="srcBadge" class="badge"></span>
-      <a id="forgetBtn" href="#" class="hidden" style="float:right;font-size:12px;color:var(--muted)">{{ t('form.forget') }}</a>
+    <div class="form-head">
+      <span class="card-title grow" style="margin:0">{{ t('form.title') }}</span>
+      <span id="srcBadge" class="badge"></span>
+      <a id="forgetBtn" href="#" class="hidden" style="font-size:12.5px;color:var(--muted)">{{ t('form.forget') }}</a>
     </div>
-    <div id="barcodeLine" class="muted" style="margin-bottom:2px"></div>
-    <div id="titleLine" class="muted" style="margin-bottom:2px"></div>
-    <div id="linkedCodesLine" class="muted" style="margin-bottom:8px;font-size:12px"></div>
+
+    <!-- The spool as the form has it: its colour on a reel, and what it is. -->
+    <div class="spool" aria-hidden="true">
+      <svg viewBox="0 0 100 100">
+        <circle class="flange" cx="50" cy="50" r="46"/>
+        <circle class="wind" cx="50" cy="50" r="41"/>
+        <circle class="groove" cx="50" cy="50" r="35"/>
+        <circle class="groove" cx="50" cy="50" r="29"/>
+        <circle class="groove" cx="50" cy="50" r="23"/>
+        <circle class="hub" cx="50" cy="50" r="15"/>
+        <circle cx="50" cy="50" r="5" fill="var(--bg)"/>
+      </svg>
+      <div class="spool-text">
+        <p class="spool-mat" id="spoolMat"></p>
+        <div class="spool-brand" id="spoolBrand"></div>
+        <div class="spool-meta" id="spoolMeta"></div>
+      </div>
+    </div>
+    <div class="codes">
+      <div id="barcodeLine"></div>
+      <div id="titleLine"></div>
+      <div id="linkedCodesLine" style="font-size:12.5px"></div>
+    </div>
 
     <!-- Where the fields came from: the text read from the label or pasted,
          each field's place in it, and a way to correct it, once or as a rule. -->
-    <details id="whyBox" class="bm hidden" style="margin:6px 0 10px">
-      <summary style="font-weight:400;font-size:13px;color:var(--green-light)">{{ t('why.title') }}</summary>
+    <details id="whyBox" class="bm hidden" style="margin:10px 0 0">
+      <summary style="font-weight:600;font-size:14px;color:var(--brand-strong)">{{ t('why.title') }}</summary>
       <div id="whyMarked"></div>
       <div id="whyList"></div>
       <label for="whyText">{{ t('why.text_label') }}</label>
       <textarea id="whyText" rows="4" spellcheck="false"></textarea>
-      <button id="whyReparse" type="button" class="btn-secondary" style="margin-top:6px">{{ t('why.reparse') }}</button>
-      <div class="hint" style="margin-top:10px">{{ t('why.assign') }}</div>
+      <button id="whyReparse" type="button" class="btn-secondary" style="margin-top:8px">{{ t('why.reparse') }}</button>
+      <div class="hint" style="margin-top:12px">{{ t('why.assign') }}</div>
       <div class="row">
         <div><label for="whyField">{{ t('why.field') }}</label><select id="whyField"></select></div>
         <div><label for="whyValue">{{ t('why.value') }}</label><input id="whyValue" autocomplete="off"></div>
       </div>
-      <label style="display:flex;gap:8px;align-items:center;color:var(--fg)"><input id="whyRule" type="checkbox" style="width:auto;margin:0">{{ t('why.as_rule') }}</label>
-      <button id="whyApply" type="button" class="btn-secondary" style="margin-top:6px">{{ t('why.apply') }}</button>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--text);font:500 14px/1.3 var(--body)"><input id="whyRule" type="checkbox" style="width:auto;margin:0;accent-color:var(--brand)">{{ t('why.as_rule') }}</label>
+      <button id="whyApply" type="button" class="btn-secondary" style="margin-top:8px">{{ t('why.apply') }}</button>
       <div id="whyHint" class="hint"></div>
-      <details style="margin-top:10px">
+      <details style="margin-top:12px">
         <summary id="rulesTitle" style="cursor:pointer;font-size:13px;color:var(--muted)"></summary>
         <div id="rulesList"></div>
       </details>
     </details>
 
-    <label>{{ t('form.paste_title_label') }}</label>
-    <div class="row">
-      <div><input id="paste_title" placeholder="{{ t('form.paste_title_placeholder') }}"></div>
-      <div style="flex:0 0 96px"><button id="autofillBtn" type="button" class="btn-secondary">{{ t('form.fill_button') }}</button></div>
-    </div>
-    <div class="hint" style="margin-bottom:6px">
-      <span id="fillHint">{{ t('form.fill_hint') }}</span>
-      <a id="searchLink" href="#" target="_blank" rel="noopener"
-         style="color:var(--green-light)">{{ t('form.search_link') }}</a>
-    </div>
-    <button id="clipBtn" type="button" class="btn-secondary" style="margin-bottom:4px">{{ t('form.clip_button') }}</button>
-    <div class="hint" style="margin-bottom:6px">{{ t('form.clip_hint') }}</div>
-
-    <label>{{ t('form.material') }}</label>
-    <select id="material" required></select>
-
-    <div class="row">
-      <div><label>{{ t('form.brand') }}</label><select id="brand"></select></div>
-      <div><label>{{ t('form.subtype') }}</label><select id="subtype"></select></div>
+    <div class="sec">
+      <h3>{{ t('form.sec_fetch') }}</h3>
+      <div class="fetch" style="margin-top:10px">
+        <label for="paste_title">{{ t('form.paste_title_label') }}</label>
+        <div class="row">
+          <div><input id="paste_title" placeholder="{{ t('form.paste_title_placeholder') }}"></div>
+          <div style="flex:0 0 112px"><button id="autofillBtn" type="button" class="btn-secondary">{{ t('form.fill_button')|replace('✨', '')|trim }}</button></div>
+        </div>
+        <div class="hint">
+          <span id="fillHint">{{ t('form.fill_hint') }}</span>
+          <a id="searchLink" href="#" target="_blank" rel="noopener">{{ t('form.search_link') }}</a>
+        </div>
+        <button id="clipBtn" type="button" class="btn-secondary" style="margin-top:10px">{{ t('form.clip_button') }}</button>
+        <div class="hint">{{ t('form.clip_hint') }}</div>
+      </div>
     </div>
 
-    <div class="row">
-      <div><label>{{ t('form.color_name') }}</label><input id="color_name" list="colorList" autocomplete="off"></div>
-      <div><label>{{ t('form.color') }}</label><input id="color_picker" type="color" class="swatch" value="#00ae42"></div>
-    </div>
-    <datalist id="colorList"></datalist>
-
-    <div class="row">
-      <div><label>{{ t('form.net_weight') }}</label><select id="label_weight"></select></div>
-      <div><label>{{ t('form.quantity') }}</label><input id="quantity" inputmode="numeric" value="1"></div>
-    </div>
-
-    <div class="row">
-      <div><label>{{ t('form.storage_location') }}</label><select id="storage_location"></select></div>
-      <div><label>{{ t('form.category') }}</label><input id="category" placeholder="{{ t('form.optional_placeholder') }}"></div>
-    </div>
-
-    <div class="row">
-      <div><label>{{ t('form.nozzle_min') }}</label><input id="nozzle_temp_min" inputmode="numeric"></div>
-      <div><label>{{ t('form.nozzle_max') }}</label><input id="nozzle_temp_max" inputmode="numeric"></div>
+    <div class="sec">
+      <h3>{{ t('form.sec_filament') }}</h3>
+      <label for="material">{{ t('form.material') }}</label>
+      <select id="material" required></select>
+      <div class="row">
+        <div><label for="brand">{{ t('form.brand') }}</label><select id="brand"></select></div>
+        <div><label for="subtype">{{ t('form.subtype') }}</label><select id="subtype"></select></div>
+      </div>
+      <div class="row">
+        <div><label for="color_name">{{ t('form.color_name') }}</label><input id="color_name" list="colorList" autocomplete="off"></div>
+        <div style="flex:0 0 96px"><label for="color_picker">{{ t('form.color') }}</label><input id="color_picker" type="color" class="swatch" value="#00ae42"></div>
+      </div>
+      <datalist id="colorList"></datalist>
     </div>
 
-    <!-- Price: per spool is what a receipt says, per kg is what Bambuddy
-         stores. The two are kept in step through the net weight. -->
-    <div class="row">
-      <div><label>{{ t('form.price_per_spool') }}</label><input id="price_per_spool" inputmode="decimal"></div>
-      <div><label>{{ t('form.cost_per_kg') }}</label><input id="cost_per_kg" inputmode="decimal"></div>
+    <div class="sec">
+      <h3>{{ t('form.sec_stock') }}</h3>
+      <div class="row">
+        <div><label for="label_weight">{{ t('form.net_weight') }}</label><select id="label_weight"></select></div>
+        <div><label for="quantity">{{ t('form.quantity') }}</label><input id="quantity" inputmode="numeric" value="1"></div>
+      </div>
+      <div class="row">
+        <div><label for="storage_location">{{ t('form.storage_location') }}</label><select id="storage_location"></select></div>
+        <div><label for="category">{{ t('form.category') }}</label><input id="category" placeholder="{{ t('form.optional_placeholder') }}"></div>
+      </div>
     </div>
-    <div id="priceHint" class="hint hidden"><span id="priceHintText"></span>
-      <a id="priceHintUse" href="#" style="color:var(--green-light)">{{ t('form.price_use') }}</a></div>
 
-    <!-- The NFC tag on this spool, read with the phone (Web NFC, Chrome on
-         Android over https). Optional: the SpoolmanScale links a tag too. -->
-    <label for="tag_uid">{{ t('form.tag_uid') }}</label>
-    <div class="row">
-      <div><input id="tag_uid" autocomplete="off" spellcheck="false" placeholder="{{ t('form.tag_placeholder') }}"></div>
-      <div style="flex:0 0 120px"><button id="nfcBtn" type="button" class="btn-secondary">{{ t('form.nfc_scan') }}</button></div>
+    <div class="sec">
+      <h3>{{ t('form.sec_print') }}</h3>
+      <div class="row">
+        <div><label for="nozzle_temp_min">{{ t('form.nozzle_min') }}</label><input id="nozzle_temp_min" inputmode="numeric"></div>
+        <div><label for="nozzle_temp_max">{{ t('form.nozzle_max') }}</label><input id="nozzle_temp_max" inputmode="numeric"></div>
+      </div>
+      <!-- Price: per spool is what a receipt says, per kg is what Bambuddy
+           stores. The two are kept in step through the net weight. -->
+      <div class="row">
+        <div><label for="price_per_spool">{{ t('form.price_per_spool') }}</label><input id="price_per_spool" inputmode="decimal"></div>
+        <div><label for="cost_per_kg">{{ t('form.cost_per_kg') }}</label><input id="cost_per_kg" inputmode="decimal"></div>
+      </div>
+      <div id="priceHint" class="hint hidden"><span id="priceHintText"></span>
+        <a id="priceHintUse" href="#">{{ t('form.price_use') }}</a></div>
     </div>
-    <div id="nfcHint" class="hint"></div>
 
-    <label>{{ t('form.note') }}</label>
-    <textarea id="note" rows="2" placeholder="{{ t('form.optional_placeholder') }}"></textarea>
+    <div class="sec">
+      <h3>{{ t('form.sec_tag') }}</h3>
+      <!-- The NFC tag on this spool, read with the phone (Web NFC, Chrome on
+           Android over https). Optional: the SpoolmanScale links a tag too. -->
+      <label for="tag_uid">{{ t('form.tag_uid') }}</label>
+      <div class="row">
+        <div><input id="tag_uid" autocomplete="off" spellcheck="false" placeholder="{{ t('form.tag_placeholder') }}"></div>
+        <div style="flex:0 0 120px"><button id="nfcBtn" type="button" class="btn-secondary">{{ t('form.nfc_scan') }}</button></div>
+      </div>
+      <div id="nfcHint" class="hint"></div>
+      <label for="note">{{ t('form.note') }}</label>
+      <textarea id="note" rows="2" placeholder="{{ t('form.optional_placeholder') }}"></textarea>
+    </div>
 
-    <button id="submitBtn" type="submit" class="btn-primary" style="margin-top:16px">{{ t('form.submit') }}</button>
+    <div class="submit-bar">
+      <button id="submitBtn" type="submit" class="btn-primary">{{ t('form.submit') }}</button>
+    </div>
   </form>
 
   <!-- A spool's label: Bambuddy's own template, shown here dot for dot as
        the label printer prints it, and printed only on a tap. -->
-  <div class="card" id="labelCard">
-    <div style="font-weight:600">{{ t('label.title') }}</div>
+  <section class="card" id="labelCard">
+    <h2 class="card-title">{{ t('label.title') }}</h2>
     <div class="row">
-      <div><label for="labelSpool">{{ t('label.spool_id') }}</label><input id="labelSpool" inputmode="numeric" autocomplete="off"></div>
-      <div><label for="labelTpl">{{ t('label.template') }}</label><select id="labelTpl"></select></div>
+      <div style="flex:0 0 38%"><label for="labelSpool" style="margin-top:0">{{ t('label.spool_id') }}</label><input id="labelSpool" inputmode="numeric" autocomplete="off"></div>
+      <div><label for="labelTpl" style="margin-top:0">{{ t('label.template') }}</label><select id="labelTpl"></select></div>
     </div>
     <div id="labelChips"></div>
     <details class="bm" style="margin-top:12px">
-      <summary style="font-weight:400;font-size:13px;color:var(--muted)">{{ t('label.settings') }}</summary>
+      <summary style="font-weight:500;font-size:13.5px;color:var(--muted)">{{ t('label.settings') }}</summary>
       <div class="row">
         <div><label for="labelW">{{ t('label.media_w') }}</label><input id="labelW" inputmode="numeric"></div>
         <div><label for="labelL">{{ t('label.media_l') }}</label><input id="labelL" inputmode="numeric"></div>
@@ -274,19 +395,24 @@
       <label>{{ t('label.lines') }}</label>
       <div id="labelFields" class="fieldgrid"></div>
     </details>
-    <button id="labelPreviewBtn" type="button" class="btn-secondary" style="margin-top:12px">{{ t('label.preview') }}</button>
-    <div id="labelBox" class="hidden" style="margin-top:12px">
+    <button id="labelPreviewBtn" type="button" class="btn-secondary" style="margin-top:14px">{{ t('label.preview') }}</button>
+    <div id="labelBox" class="hidden" style="margin-top:14px">
       <canvas id="labelCanvas" width="400" height="240"></canvas>
-      <div class="row" style="margin-top:10px">
+      <div class="row" style="margin-top:12px">
         <div id="labelPrintWrap"><button id="labelPrintBtn" type="button" class="btn-primary">{{ t('label.print') }}</button></div>
         <div><button id="labelShareBtn" type="button" class="btn-secondary">{{ t('label.share') }}</button></div>
       </div>
     </div>
     <div id="labelHint" class="hint"></div>
-  </div>
+  </section>
 </main>
 
-<footer style="max-width:560px;margin:0 auto;text-align:center;color:var(--muted);font-size:11px;padding:0 16px calc(16px + env(safe-area-inset-bottom))">
+<footer>
+  <div class="tools">
+    <button id="refreshDb" type="button" class="btn-quiet">{{ t('scan.refresh_db') }}</button>
+    <a id="clearCache" href="#" class="btn-quiet" style="color:var(--muted)">{{ t('scan.clear_cache') }}</a>
+  </div>
+  <div id="refreshHint" class="hint" style="margin:0 0 6px"></div>
   {{ t('app.title') }} {{ version }}
 </footer>
 
@@ -750,7 +876,23 @@ function applyFields(f){
   if(f.nozzle_temp_max!=null) $('nozzle_temp_max').value = f.nozzle_temp_max;
   if(f.cost_per_kg!=null){ $('cost_per_kg').value = f.cost_per_kg; priceFromKg(); }
   if(f.note!=null) $('note').value = f.note;
+  updateSpool();
 }
+
+// The reel at the top of the form: the picked colour, and what it is.
+function updateSpool(){
+  const val = id => ($(id).value || '').trim();
+  const mat = val('material'), sub = val('subtype');
+  $('spoolMat').textContent = mat ? (sub ? mat+' '+sub : mat) : t('form.material').replace(/\s*\*\s*$/, '');
+  $('spoolBrand').textContent = val('brand');
+  const meta = [val('color_name'), val('label_weight') ? val('label_weight')+' g' : ''].filter(Boolean);
+  $('spoolMeta').textContent = meta.join(', ');
+  document.documentElement.style.setProperty('--spool', $('color_picker').value || '#7a4b2b');
+}
+['material','subtype','brand','color_name','color_picker','label_weight'].forEach(id => {
+  $(id).addEventListener('input', updateSpool);
+  $(id).addEventListener('change', updateSpool);
+});
 
 // Built lazily (not at module scope) so it always reflects the current I18N
 // dict — harmless here since the language is fixed for the page's lifetime,
@@ -818,7 +960,7 @@ function fillForm(d){
   $('srcBadge').className = 'badge '+cls;
   $('srcBadge').textContent = text;
   $('barcodeLine').innerHTML = d.barcode
-    ? t('form.barcode_label')+' <span style="color:var(--fg);font-family:Menlo,monospace">'+d.barcode+'</span>' : '';
+    ? t('form.barcode_label')+' <code>'+d.barcode+'</code>' : '';
   $('titleLine').textContent = d.title || '';
   // Sibling GTIN/SKU codes cross-referenced from OFD/SpoolmanDB-Community
   // (see _external_all_codes in app.py) — read-only, informational only.
@@ -839,6 +981,7 @@ function fillForm(d){
   setSelect('material',''); setSelect('brand',''); setSelect('subtype',''); setSelect('storage_location','');
   setSelect('label_weight','1000'); $('quantity').value=1;
   applyFields(f);
+  updateSpool();
   showPriceHint(d.price);
   $('material').focus();
 }
@@ -1070,7 +1213,7 @@ $('autofillBtn').onclick = async () => {
     showWhy(d);
     if(d.barcode){
       currentBarcode = d.barcode;
-      $('barcodeLine').innerHTML = t('form.barcode_label')+' <span style="color:var(--fg);font-family:Menlo,monospace">'+d.barcode+'</span>';
+      $('barcodeLine').innerHTML = t('form.barcode_label')+' <code>'+d.barcode+'</code>';
       const linked = d.linked_codes || [];
       $('linkedCodesLine').textContent = linked.length
         ? t('form.also_matches',{codes: linked.map(c=>c.is_refill ? c.code+t('form.refill_suffix') : c.code).join(', ')})
