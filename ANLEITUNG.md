@@ -5,7 +5,7 @@ Diese Anleitung gilt für den Fork [AreYouThereAndi2/filament_to_bambuddy](https
 ## Was die App macht
 
 - Box-Barcode (EAN/UPC, Hersteller-Nummer) mit dem Handy scannen oder eintippen.
-- Die App sucht das Produkt im eigenen Cache, in der Open Filament Database und in SpoolmanDB-Community. Kennen die beiden Datenbanken eine EAN nicht, fragt sie UPCitemdb, das die Angebote von Amazon und anderen Shops sammelt. Von dort kommen Titel, Marke und der **Durchschnittspreis pro Rolle**.
+- Die App sucht das Produkt im eigenen Cache, dann im **TigerTag-Katalog** (rund 16 000 Filamente mit Hersteller-Artikelnummer, viele mit EAN), in der Open Filament Database und in SpoolmanDB-Community. Kennt keine der Datenbanken eine EAN, fragt sie UPCitemdb, das die Angebote von Amazon und anderen Shops sammelt. Von dort kommen Titel, Marke und der **Durchschnittspreis pro Rolle**.
 - Formular prüfen, Preis übernehmen, auf Wunsch den NFC-Tag mit dem Handy lesen, dann **Hinzufügen**: Die Spule landet in BamBuddy, bei eingeschaltetem Spoolman-Modus in Spoolman.
 - Die **SpoolmanScale** fragt dieselbe App, wenn ihr Barcode-Scanner einen unbekannten Code liest, und legt die Spule dann selbst an.
 
@@ -39,6 +39,7 @@ BAMBUDDY_API_KEY=bb_xxxxxxxx
 # DEFAULT_LABEL_WEIGHT=1000
 # UPCITEMDB_KEY=...          # bezahlter UPCitemdb-Schlüssel, sonst 100 Abfragen/Tag frei
 # UPC_LOOKUP=off             # UPCitemdb ganz abschalten
+# TIGERTAG=off               # TigerTag-Katalog nicht verwenden
 ```
 
 Danach läuft die App auf Port **8088**: `http://<server-ip>:8088`. Die Statuszeile oben zeigt 🟢, wenn BamBuddy erreichbar ist und der Schlüssel passt. Unten im Fußbereich steht die Version.

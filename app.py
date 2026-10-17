@@ -125,36 +125,36 @@ def _classify_code(raw: str) -> tuple[str, str]:
 
 
 def _external_all_codes(code: str, kind: str) -> tuple | None:
-    """Cross-reference OFD and SpoolmanDB-Community for `code`, merging both hits.
+    """Cross-reference TigerTag, OFD and SpoolmanDB-Community for `code`, merging their hits.
 
-    Returns (fields, source, all_codes, title) where `source` is whichever
-    database resolved first, `fields` prefers that source's values but fills
-    any gaps (e.g. missing nozzle temps) from the other, and `all_codes` is
-    the union of every sibling code (other package-size GTINs, the refill
-    GTIN, the SKU/article number) discovered across both databases. If only
-    one database resolves `code` directly, its sibling codes are also probed
-    against the *other* database to recover cross-referenced fields/codes.
+    Returns (fields, source, all_codes, title) where `source` is the first
+    database that resolved, in the order asked: TigerTag's catalogue first
+    (the most products, with makers' article numbers), then OFD, then
+    SpoolmanDB-Community. `fields` takes the first database's values and
+    fills any gaps (e.g. missing nozzle temps) from the others, and
+    `all_codes` is the union of every sibling code (other package-size
+    GTINs, the refill GTIN, the SKU/article number) found across them. A
+    database that does not know `code` itself is asked for those siblings.
     Mirrors Bambuddy's `_external_all_codes` in `backend/app/api/routes/inventory.py`.
     """
     import ofd
     import spoolmandb_community
+    import tigertag
 
-    def _ofd_lookup(c, k):
-        return ofd.lookup(c) if k == "gtin" else ofd.lookup_article(c)
+    databases = (
+        ("tigertag", tigertag.lookup, tigertag.lookup_sku),
+        ("ofd", ofd.lookup, ofd.lookup_article),
+        ("spoolmandb-community", spoolmandb_community.lookup, spoolmandb_community.lookup_sku),
+    )
 
-    def _smdb_lookup(c, k):
-        return spoolmandb_community.lookup(c) if k == "gtin" else spoolmandb_community.lookup_sku(c)
+    def _ask(by_gtin, by_sku, c, k):
+        try:
+            return by_gtin(c) if k == "gtin" else by_sku(c)
+        except Exception:
+            return None
 
-    try:
-        ofd_hit = _ofd_lookup(code, kind)
-    except Exception:
-        ofd_hit = None
-    try:
-        smdb_hit = _smdb_lookup(code, kind)
-    except Exception:
-        smdb_hit = None
-
-    if not ofd_hit and not smdb_hit:
+    hits: dict = {name: _ask(g, s, code, kind) for name, g, s in databases}
+    if not any(hits.values()):
         return None
 
     fields: dict = {}
@@ -178,10 +178,9 @@ def _external_all_codes(code: str, kind: str) -> tuple | None:
         if source is None:
             source = src_name
 
-    if ofd_hit:
-        _merge(ofd_hit, "ofd")
-    if smdb_hit:
-        _merge(smdb_hit, "spoolmandb-community")
+    for name, _, _ in databases:
+        if hits[name]:
+            _merge(hits[name], name)
 
     tried = {code}
     # list(...) is required, not redundant: _merge() below appends newly
@@ -189,28 +188,19 @@ def _external_all_codes(code: str, kind: str) -> tuple | None:
     # here would pick up entries added mid-loop instead of just the
     # original siblings.
     for entry in list(all_codes):  # noqa: PERF101
-        if ofd_hit and smdb_hit:
+        if all(hits.values()):
             break
         sibling_code = entry["code"]
         if sibling_code in tried:
             continue
         tried.add(sibling_code)
-        if not ofd_hit:
-            try:
-                probe = _ofd_lookup(sibling_code, entry["kind"])
-            except Exception:
-                probe = None
+        for name, by_gtin, by_sku in databases:
+            if hits[name]:
+                continue
+            probe = _ask(by_gtin, by_sku, sibling_code, entry["kind"])
             if probe:
-                _merge(probe, "ofd")
-                ofd_hit = probe
-        if not smdb_hit:
-            try:
-                probe = _smdb_lookup(sibling_code, entry["kind"])
-            except Exception:
-                probe = None
-            if probe:
-                _merge(probe, "spoolmandb-community")
-                smdb_hit = probe
+                _merge(probe, name)
+                hits[name] = probe
 
     return fields, source, all_codes, title
 
@@ -397,9 +387,11 @@ def options():
     """Dropdown data for the form (materials, subtypes, weights, colours, brands, locations)."""
     import ofd
     import spoolmandb_community
+    import tigertag
     try:
         brands = sorted(
-            set(DEFAULT_BRANDS) | set(ofd.get_brands()) | set(spoolmandb_community.get_brands()),
+            set(DEFAULT_BRANDS) | set(ofd.get_brands()) | set(spoolmandb_community.get_brands())
+            | set(tigertag.get_brands()),
             key=str.lower,
         )
     except Exception:
@@ -444,15 +436,23 @@ def forget_barcode(barcode):
 
 @app.post("/api/ofd/refresh")
 def ofd_refresh():
-    """Force a re-download/rebuild of the OFD + SpoolmanDB-Community indexes.
+    """Force a re-download/rebuild of the TigerTag, OFD and SpoolmanDB-Community indexes.
 
     Kept at this URL (not renamed) so the existing "Refresh DB" button in
     templates/index.html doesn't need a second endpoint/button — one refresh
-    action updates both community databases.
+    action updates all three databases.
     """
     import ofd
     import spoolmandb_community
-    log.info("OFD + SpoolmanDB-Community refresh started")
+    import tigertag
+    log.info("TigerTag + OFD + SpoolmanDB-Community refresh started")
+
+    try:
+        tt_codes = len(tigertag.get_gtin_index(force=True)) + len(tigertag.get_sku_index())
+        log.info("TigerTag refresh done: %d codes", tt_codes)
+    except Exception as e:
+        log.error("TigerTag refresh failed: %s", e)
+        tt_codes = 0
 
     # Each refresh is independently guarded — an OFD network blip must not
     # take down the whole endpoint (previously it returned 502 immediately
@@ -486,6 +486,7 @@ def ofd_refresh():
         barcodes=ofd_codes,
         brands=brands,
         spoolmandb_community_barcodes=smdb_codes,
+        tigertag_barcodes=tt_codes,
     )
 
 
@@ -531,7 +532,7 @@ def health():
 @app.get("/api/lookup")
 def lookup():
     """Resolve a barcode or SKU to filament fields: cache first, then a
-    cross-referenced OFD/SpoolmanDB-Community lookup.
+    cross-referenced TigerTag/OFD/SpoolmanDB-Community lookup.
 
     A scanned/typed code is classified server-side as a GTIN (checksummed,
     standard length) or a manufacturer SKU/article number (e.g. a Code 128
