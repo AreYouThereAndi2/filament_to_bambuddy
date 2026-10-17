@@ -674,6 +674,82 @@ def parse_endpoint():
     return jsonify(fields=fields, title=out_title, barcode=resolved_code, source=source, linked_codes=linked_codes)
 
 
+# The code the user last went to the web for, so a shop page handed back
+# through the bookmark lands on it. Server side because the bookmark opens
+# the app in the browser, which on iOS does not share storage with the
+# installed app. One user, one worker: a dict is enough.
+_PENDING_TTL_S = 2 * 3600
+_pending: dict = {"code": None, "at": 0.0}
+
+
+@app.post("/api/pending")
+def set_pending():
+    code = ((request.get_json(force=True, silent=True) or {}).get("barcode") or "").strip()[:64]
+    _pending.update(code=code or None, at=time.time())
+    return jsonify(ok=True)
+
+
+def _take_pending() -> str | None:
+    code = _pending["code"] if time.time() - _pending["at"] < _PENDING_TTL_S else None
+    _pending.update(code=None, at=0.0)
+    return code
+
+
+@app.get("/api/import")
+def import_page():
+    """Product data from a shop page: the bookmark's ?data= or a share.
+
+    Answers like /api/parse, plus `price` (the page's own), `host`, `gtin`
+    and `pending`, the code the user searched the web for, if recent.
+    """
+    import ofd
+    import page_import
+    from filament_parse import parse_title
+
+    if request.args.get("share"):
+        raw = page_import.from_share(request.args.get("title", ""), request.args.get("text", ""),
+                                     request.args.get("url", ""))
+        fetched = page_import.fetch_page(raw["u"]) if raw["u"] else {}
+        # The page's own name beats the share text; the share text stays when
+        # the page could not be read.
+        raw = {**raw, **{k: v for k, v in fetched.items() if v}}
+    else:
+        try:
+            raw = json.loads(request.args.get("data") or "{}")
+        except ValueError:
+            raw = {}
+    page = page_import.normalize(raw)
+    pending = _take_pending()
+
+    try:
+        brands = ofd.get_brands()
+    except Exception:
+        brands = []
+    fields = parse_title(page["title"], extra_brands=brands) if page["title"] else {}
+    if page["brand"]:
+        known = {b.lower(): b for b in brands}
+        fields["brand"] = known.get(page["brand"].lower(), fields.get("brand") or page["brand"])
+    if page["color"] and not fields.get("color_name"):
+        fields["color_name"] = page["color"]
+
+    source, title, linked_codes, gtin = "page", page["title"], [], None
+    if page["gtin"]:
+        code, kind = _classify_code(page["gtin"])
+        if kind == "gtin":
+            gtin = code
+            external = _external_all_codes(code, kind)
+            if external:
+                ext_fields, source, all_codes, ext_title = external
+                fields = {**fields, **{k: v for k, v in ext_fields.items()
+                                       if not k.startswith("_") and v is not None}}
+                title = ext_title or title
+                linked_codes = [c for c in all_codes if c["code"] != code]
+    fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
+    log.info("page import from %s: %r gtin=%s pending=%s", page["host"] or "?", title[:60], gtin, pending)
+    return jsonify(fields=fields, title=title, source=source, gtin=gtin, linked_codes=linked_codes,
+                   price=page["price"], host=page["host"], pending=pending)
+
+
 @app.post("/api/spool")
 def add_spool():
     """Create one or more spools in Bambuddy, then remember the details by barcode."""
@@ -782,6 +858,12 @@ def add_spool():
             for entry in all_codes:
                 if entry["code"] != code:
                     cache[entry["code"]] = remembered
+        # A shop page handed back for an article number may have named the
+        # product's EAN too: the box's barcode then resolves next time.
+        for extra in (body.get("extra_codes") or [])[:4]:
+            extra_code, _ = _classify_code(str(extra))
+            if extra_code and extra_code != code:
+                cache[extra_code] = remembered
         save_cache(cache)
 
     ok = created == quantity

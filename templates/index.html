@@ -53,6 +53,13 @@
   .btn-secondary{background:var(--tertiary);color:var(--fg);width:100%}
   #video{width:100%;border-radius:var(--radius);background:#000;aspect-ratio:4/3;object-fit:cover;display:block}
   #videoWrap{position:relative;border-radius:var(--radius);overflow:hidden}
+  #torchBtn{position:absolute;right:10px;bottom:10px;z-index:3;width:auto;padding:8px 12px;
+    font-size:14px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;border:1px solid #666}
+  #torchBtn.on{background:#f5c518;color:#111;border-color:#f5c518}
+  #bmCode{width:100%;font-family:Menlo,monospace;font-size:11px;height:84px}
+  details.bm summary{cursor:pointer;font-weight:600}
+  details.bm ol{padding-left:20px;margin:6px 0}
+  details.bm li{margin:4px 0}
   .hidden{display:none}
   /* Scan viewfinder: guide box + corner brackets + sweeping scan line, so
      it's obvious where to line up the barcode (or QR code). */
@@ -118,6 +125,7 @@
           <div class="vf-scanline"></div>
         </div>
       </div>
+      <button id="torchBtn" type="button" class="hidden">{{ t('scan.torch') }}</button>
     </div>
     <button id="stopBtn" class="btn-secondary hidden" style="margin-top:10px">{{ t('scan.stop_camera') }}</button>
     <label for="manual" style="margin-top:14px">{{ t('scan.manual_label') }}</label>
@@ -206,7 +214,34 @@
 
     <button id="submitBtn" type="submit" class="btn-primary" style="margin-top:16px">{{ t('form.submit') }}</button>
   </form>
+
+  <!-- The "-> Filament" bookmark: hands a shop page back to this app. -->
+  <div class="card">
+    <details class="bm">
+      <summary>{{ t('bm.title') }}</summary>
+      <p class="hint">{{ t('bm.intro') }}</p>
+      <textarea id="bmCode" readonly></textarea>
+      <button id="bmCopy" type="button" class="btn-secondary" style="margin-top:6px">{{ t('bm.copy') }}</button>
+      <p style="margin:12px 0 0;font-weight:600">iPhone / iPad (Safari)</p>
+      <ol class="hint">
+        <li>{{ t('bm.ios_1') }}</li>
+        <li>{{ t('bm.ios_2') }}</li>
+        <li>{{ t('bm.ios_3') }}</li>
+      </ol>
+      <p style="margin:12px 0 0;font-weight:600">Android (Chrome)</p>
+      <ol class="hint">
+        <li>{{ t('bm.android_1') }}</li>
+        <li>{{ t('bm.android_2') }}</li>
+        <li>{{ t('bm.android_3') }}</li>
+      </ol>
+      <p class="hint">{{ t('bm.inapp') }}</p>
+    </details>
+  </div>
 </main>
+<!-- The bookmark's code. __ORIGIN__ becomes this app's address. It runs on
+     the shop page in the user's browser: schema.org Product data first, then
+     Amazon's title and price elements, then OpenGraph and the page title. -->
+<script type="text/plain" id="bmSrc">javascript:(function(){var P=null,q=function(s){return document.querySelector(s)},m=function(n){var e=q('meta[property="'+n+'"],meta[name="'+n+'"],meta[itemprop="'+n+'"]');return e?(e.content||''):''};[].forEach.call(document.querySelectorAll('script[type="application/ld+json"]'),function(s){try{[].concat(JSON.parse(s.textContent)).forEach(function(x){[].concat(x['@graph']||x).forEach(function(y){var t=[].concat(y['@type']);if(!P&&(t.indexOf('Product')>=0||t.indexOf('ProductGroup')>=0))P=y})})}catch(e){}});P=P||{};var o=[].concat(P.offers||[])[0]||{};if(o.offers)o=[].concat(o.offers)[0]||o;var a=q('#productTitle'),ap=q('#corePrice_feature_div .a-offscreen')||q('.a-price .a-offscreen'),b=P.brand,d={u:location.href,t:((a&&a.innerText)||P.name||m('og:title')||document.title||'').trim(),b:b?(b.name||b):'',g:P.gtin13||P.gtin||P.gtin12||P.gtin14||P.ean||m('gtin13')||'',s:P.mpn||P.sku||'',p:o.price||o.lowPrice||m('product:price:amount')||(ap?ap.textContent:''),c:o.priceCurrency||m('product:price:currency')||'',k:P.color||''};location.href='__ORIGIN__/?import='+encodeURIComponent(JSON.stringify(d))})()</script>
 
 <footer style="max-width:560px;margin:0 auto;text-align:center;color:var(--muted);font-size:11px;padding:0 16px calc(16px + env(safe-area-inset-bottom))">
   {{ t('app.title') }} {{ version }}
@@ -340,7 +375,8 @@ async function loadOptions(){
   fillDatalist('colorList', OPTS.colors);
   setSelect('label_weight','1000');
 }
-loadOptions();
+// A shop page handed back at load fills the form; it waits for the selects.
+const optionsReady = loadOptions();
 
 // Force-refresh the Open Filament Database + SpoolmanDB-Community.
 $('refreshDb').onclick = async () => {
@@ -530,9 +566,33 @@ $('startBtn').onclick = async () => {
       if(!candidate || !isValidUpcEanBarcode(candidate)) return;
       stopScan(); onBarcode(candidate);
     });
+    if(!$('videoWrap').classList.contains('hidden')) offerTorch();
   }catch(e){ setScanHint(t('scan.camera_error',{error:e}), true); stopScan(); }
 };
+// The phone's light while the camera runs. Offered only where the browser
+// lets a page switch it (Chrome on Android; Safari on newer iOS versions).
+let torchOn = false;
+function videoTrack(){
+  const st = $('video').srcObject;
+  return st && st.getVideoTracks ? st.getVideoTracks()[0] : null;
+}
+function offerTorch(){
+  if($('videoWrap').classList.contains('hidden')) return;
+  const tr = videoTrack();
+  const caps = tr && tr.getCapabilities ? tr.getCapabilities() : {};
+  $('torchBtn').classList.toggle('hidden', !caps.torch);
+}
+$('torchBtn').onclick = async () => {
+  const tr = videoTrack();
+  if(!tr) return;
+  try{
+    await tr.applyConstraints({advanced:[{torch: !torchOn}]});
+    torchOn = !torchOn;
+    $('torchBtn').classList.toggle('on', torchOn);
+  }catch(e){ $('torchBtn').classList.add('hidden'); }
+};
 function stopScan(){
+  torchOn = false; $('torchBtn').classList.remove('on'); $('torchBtn').classList.add('hidden');
   try{ reader && reader.reset && reader.reset(); }catch(e){}
   $('videoWrap').classList.add('hidden'); $('startBtn').classList.remove('hidden');
   $('stopBtn').classList.add('hidden');
@@ -568,8 +628,67 @@ async function onBarcode(barcode){
     const d = await (await fetch('/api/lookup?barcode='+encodeURIComponent(barcode))).json();
     fillForm(d);
     setScanHint('');
+    return d;
   }catch(e){ toast(t('scan.lookup_failed'), false); }
+  return null;
 }
+
+// ── A shop page handed back: the bookmark's ?import= or a share ──
+// The code that sent the user to the web is kept by the server (the bookmark
+// may open this page in the browser rather than the installed app, and on
+// iOS the two do not share storage), so the page lands on that code.
+let extraCodes = [];
+const KNOWN = ['cache','ofd','spoolmandb-community','upcitemdb'];
+function onlyMissing(f){
+  const out = {};
+  for(const [k,v] of Object.entries(f||{})){
+    const el = $(k);
+    if(el && el.value && el.value !== '—' && el.value !== '0') continue;
+    out[k] = v;
+  }
+  return out;
+}
+async function importPage(query){
+  setScanHint(t('import.reading'));
+  await optionsReady;
+  let r;
+  try{ r = await (await fetch('/api/import?'+query)).json(); }
+  catch(e){ setScanHint(''); toast(t('import.failed'), false); return; }
+  const base = r.pending || r.gtin || '';
+  const d = base ? await onBarcode(base) : null;
+  if(!d) fillForm({source:'page', fields:{}, barcode:''});
+  const known = d && KNOWN.includes(d.source);
+  applyFields(known ? onlyMissing(r.fields) : (r.fields||{}));
+  if(!known){
+    $('srcBadge').className = 'badge upc';
+    $('srcBadge').textContent = t('badge.page', {host: r.host || '?'});
+  }
+  if(r.title){ $('titleLine').textContent = r.title; $('paste_title').value = r.title; }
+  if(r.price) showPriceHint(Object.assign({}, r.price, {page: true}));
+  extraCodes = (r.gtin && r.gtin !== currentBarcode) ? [r.gtin] : [];
+  if(extraCodes.length) $('linkedCodesLine').textContent = t('form.also_matches', {codes: extraCodes.join(', ')});
+  setScanHint('');
+  const got = Object.keys(r.fields||{}).filter(k => k !== 'label_weight').length;
+  toast(got ? t('import.done', {host: r.host || '?'}) : t('import.empty'), !!got);
+}
+// The bookmark, with this app's address in it.
+$('bmCode').value = $('bmSrc').textContent.trim().replace('__ORIGIN__', location.origin);
+$('bmCopy').onclick = async () => {
+  try{ await navigator.clipboard.writeText($('bmCode').value); }
+  catch(e){ $('bmCode').select(); document.execCommand('copy'); }
+  toast(t('bm.copied'), true);
+};
+(function(){
+  const qs = new URLSearchParams(location.search);
+  let query = null;
+  if(qs.get('import')) query = 'data='+encodeURIComponent(qs.get('import'));
+  // The share sheet replaces the query with title, text and url.
+  else if(qs.get('title') || qs.get('text') || qs.get('url')) query = 'share=1&title='+encodeURIComponent(qs.get('title')||'')
+    +'&text='+encodeURIComponent(qs.get('text')||'')+'&url='+encodeURIComponent(qs.get('url')||'');
+  if(!query) return;
+  history.replaceState(null, '', location.pathname);
+  importPage(query);
+})();
 
 function hexToColorInput(rgba){ // RRGGBBAA → #RRGGBB
   if(!rgba) return null;
@@ -616,6 +735,11 @@ function badgeFor(source){
 // goes to the orders, where the article's name can be copied.
 const AMAZON_TLD = {de:'de', fr:'fr', it:'it', es:'es', ja:'co.jp', 'pt-br':'com.br', tr:'com.tr'};
 function amazonHost(){ return 'https://www.amazon.' + (AMAZON_TLD[I18N_LANG] || 'com'); }
+$('searchLink').addEventListener('click', () => {
+  if(!currentBarcode) return;
+  fetch('/api/pending', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({barcode: currentBarcode})}).catch(()=>{});
+});
 function setSearchLink(code, source){
   const link = $('searchLink'), up = (code||'').toUpperCase();
   $('fillHint').textContent = t('form.fill_hint');
@@ -635,6 +759,7 @@ function setSearchLink(code, source){
 
 function fillForm(d){
   const f = d.fields || {};
+  extraCodes = [];
   $('form').classList.remove('hidden');
   const [text, cls] = badgeFor(d.source);
   $('srcBadge').className = 'badge '+cls;
@@ -806,9 +931,10 @@ function showPriceHint(price){
   priceSuggestion = (price && price.avg) ? price : null;
   $('priceHint').classList.toggle('hidden', !priceSuggestion);
   if(!priceSuggestion) return;
-  $('priceHintText').textContent = t('form.price_hint', {
-    price: priceSuggestion.avg.toFixed(2)+(priceSuggestion.currency?' '+priceSuggestion.currency:''),
-    count: priceSuggestion.count }) + ' ';
+  const shown = priceSuggestion.avg.toFixed(2)+(priceSuggestion.currency?' '+priceSuggestion.currency:'');
+  $('priceHintText').textContent = (priceSuggestion.page
+    ? t('import.price_hint', {price: shown})
+    : t('form.price_hint', {price: shown, count: priceSuggestion.count })) + ' ';
 }
 $('priceHintUse').onclick = (e) => {
   e.preventDefault();
@@ -828,6 +954,12 @@ function nfcStop(){
   nfcAbort = null;
   clearTimeout(nfcTimer); nfcTimer = null;
   $('nfcBtn').textContent = t('form.nfc_scan');
+}
+// iOS has no Web NFC at all, in Safari or an installed app: the button goes,
+// the field stays for a UID typed in or read elsewhere.
+if(!('NDEFReader' in window)){
+  $('nfcBtn').parentElement.classList.add('hidden');
+  $('nfcHint').textContent = t('form.nfc_unsupported');
 }
 $('nfcBtn').onclick = async () => {
   if(!('NDEFReader' in window)){ $('nfcHint').textContent = t('form.nfc_unsupported'); return; }
@@ -889,7 +1021,7 @@ $('form').onsubmit = async (e) => {
   $('submitBtn').disabled = true;
   try{
     const r = await fetch('/api/spool', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({barcode: currentBarcode, quantity, fields})});
+      body: JSON.stringify({barcode: currentBarcode, quantity, fields, extra_codes: extraCodes})});
     const d = await r.json();
     if(d.ok){
       // Created either way; a tag or price that did not stick is said, not

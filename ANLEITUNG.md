@@ -109,6 +109,40 @@ Die **Waage** braucht kein HTTPS. Sie spricht die App direkt über `http://<serv
 - Die kostenlose Stufe von UPCitemdb erlaubt 100 Abfragen pro Tag und IP. Was einmal gefunden wurde, merkt sich die App.
 - Der Preis wird pro Rolle eingegeben, der Preis pro kg rechnet sich über das Nettogewicht mit. Im Spoolman-Modus legt BamBuddy daraus den Spulenpreis an.
 
+## Als App installieren (iPhone und Android)
+
+Die Seite ist eine installierbare Web-App (PWA). Sie braucht HTTPS (siehe oben).
+
+- **iPhone/iPad:** In Safari öffnen → Teilen → **Zum Home-Bildschirm**.
+- **Android:** In Chrome öffnen → ⋮ → **App installieren** (oder „Zum Startbildschirm hinzufügen“).
+
+Was geht wo:
+
+| Funktion | Android (Chrome / App) | iPhone (Safari / App) |
+|---|---|---|
+| Barcode mit der Kamera, Etikett fotografieren | ja | ja |
+| 🔦 Licht beim Scannen | ja | nur wenn iOS es der Seite erlaubt; sonst erscheint der Knopf nicht |
+| NFC-Tag lesen | ja (NTAG) | nein: Apple lässt Web-Apps nicht an NFC, den Tag legt die Waage an |
+| Shop-Seite per Lesezeichen „→ Filament“ übernehmen | ja | ja |
+| Shop-Seite per **Teilen → Filament** übernehmen | ja, mit installierter App | nein: iOS bietet Web-Apps nicht im Teilen-Menü an |
+
+## Daten von einer Shop-Seite übernehmen
+
+Kennt keine Datenbank den Code (z. B. eine Artikelnummer wie `700-001-1535`), so geht es ohne Abtippen:
+
+1. In der App den Code suchen, dann **„🔍 Im Web nach diesem Code suchen“** tippen. Die App merkt sich den Code für zwei Stunden.
+2. In den Ergebnissen die Produktseite öffnen (Amazon, 3DJake, Herstellerseite …).
+3. Auf der Produktseite das Lesezeichen **„→ Filament“** antippen. Die App öffnet sich mit Name, Marke, Material, Farbe und Preis der Seite. Hat die Seite eine EAN, schlägt die App diese zusätzlich in den Datenbanken nach.
+4. Prüfen, **Hinzufügen**. Die App merkt sich die Daten für die Artikelnummer und für die EAN der Seite: Beim nächsten Scan sind sie sofort da.
+
+**Das Lesezeichen einrichten:** In der App ganz unten „📲 Shop-Knopf einrichten“ aufklappen, **Code kopieren** und der Anleitung dort folgen. Kurz:
+- **iPhone:** In Safari irgendeine Seite als Lesezeichen sichern, Name „→ Filament“. Dann Lesezeichen → Bearbeiten → das Lesezeichen öffnen → Adresse durch den kopierten Code ersetzen. Benutzen: Lesezeichen → „→ Filament“.
+- **Android:** In Chrome ein Lesezeichen anlegen, bearbeiten, Name „Filament“, URL = kopierter Code. Benutzen: in die Adresszeile „Filament“ tippen und den Lesezeichen-Eintrag mit dem Stern wählen.
+
+Das Lesezeichen läuft im eigenen Browser auf der Seite, die man gerade ansieht. Die App lädt dafür nichts von Amazon. Links aus der installierten App öffnen sich manchmal in einem eingebauten Browser ohne Lesezeichen: dort „In Safari öffnen“ bzw. „In Chrome öffnen“ wählen.
+
+**Android, noch einfacher:** Mit installierter App auf der Produktseite **Teilen → Filament** wählen, auch in der Amazon-App. Die App bekommt Titel und Link. Bei normalen Shops liest der Server die geteilte Seite einmal und holt EAN und Preis dazu. Amazon gibt Servern keine Seite heraus, dort reicht der Titel.
+
 ## Mit der SpoolmanScale verbinden
 
 In der Weboberfläche der Waage → Einstellungen → Barcode-Scanner → **filament_to_bambuddy-Adresse**: `http://<server-ip>:8088`. Scannt die Waage dann einen Code, den keine Spule kennt, fragt sie die App und bietet an, die Spule anzulegen, mit oder ohne den gefundenen Preis.
