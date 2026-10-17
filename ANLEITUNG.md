@@ -43,6 +43,17 @@ BAMBUDDY_API_KEY=bb_xxxxxxxx
 
 Danach läuft die App auf Port **8088**: `http://<server-ip>:8088`. Die Statuszeile oben zeigt 🟢, wenn BamBuddy erreichbar ist und der Schlüssel passt. Unten im Fußbereich steht die Version.
 
+### ZimaOS: „mkdir /root/.docker: read-only file system“
+
+Auf ZimaOS ist das Systemlaufwerk schreibgeschützt, auch `/root`. Docker legt dort beim Bauen seinen Konfigurationsordner an und scheitert, auch mit `sudo`. Abhilfe: Docker einen beschreibbaren Ordner unter `/DATA` geben.
+
+```bash
+sudo mkdir -p /DATA/.docker
+sudo DOCKER_CONFIG=/DATA/.docker F2B_VERSION=$(git describe --tags --always) docker compose up -d --build
+```
+
+`DOCKER_CONFIG` muss **hinter** `sudo` stehen, sonst kommt die Variable bei Docker nicht an. Dauerhaft: `export DOCKER_CONFIG=/DATA/.docker` in die `~/.profile` des eigenen Benutzers schreiben und Docker ohne `sudo` aufrufen, falls der Benutzer in der Gruppe `docker` ist.
+
 ## Den bestehenden Container umstellen
 
 Auf dem Server läuft im Moment ein Container, in den Gemini `app.py` und `index.html` von außen hineingelegt hat. Diese Dateien sind jetzt im Fork enthalten, und zwar in korrigierter Form. Die Bind-Mounts müssen weg, sonst überschreiben die alten Dateien die neuen.
@@ -106,6 +117,7 @@ In der Weboberfläche der Waage → Einstellungen → Barcode-Scanner → **fila
 
 | Symptom | Ursache und Abhilfe |
 |---|---|
+| `mkdir /root/.docker: read-only file system` | ZimaOS, siehe [oben](#zimaos-mkdir-rootdocker-read-only-file-system): `DOCKER_CONFIG=/DATA/.docker` setzen. |
 | Container startet nicht, Log zeigt `ModuleNotFoundError` | Alter Stand oder noch Bind-Mounts auf einzelne Dateien. Mounts entfernen, `git pull`, neu bauen. |
 | Statuszeile 🔴 | `BAMBUDDY_URL` falsch oder vom Container aus nicht erreichbar. `localhost` zeigt im Container auf den Container selbst; die IP oder den Hostnamen des Servers nehmen. |
 | Statuszeile 🟡 | Dem API-Schlüssel fehlt **Read Status**. |
