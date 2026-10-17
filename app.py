@@ -721,8 +721,10 @@ def import_page():
             raw = json.loads(request.args.get("data") or "{}")
         except ValueError:
             raw = {}
-    page = page_import.normalize(raw)
+    # The code the user went to the web for, or the one on the form: on a page
+    # with one entry per colour it picks the right one.
     pending = _take_pending()
+    page = page_import.normalize(raw, want_code=pending or request.args.get("code"))
 
     try:
         brands = ofd.get_brands()

@@ -243,7 +243,7 @@
 <!-- The bookmark's code. __ORIGIN__ becomes this app's address. It runs on
      the shop page in the user's browser: schema.org Product data first, then
      Amazon's title and price elements, then OpenGraph and the page title. -->
-<script type="text/plain" id="bmSrc">javascript:(function(){var P=null,q=function(s){return document.querySelector(s)},m=function(n){var e=q('meta[property="'+n+'"],meta[name="'+n+'"],meta[itemprop="'+n+'"]');return e?(e.content||''):''};[].forEach.call(document.querySelectorAll('script[type="application/ld+json"]'),function(s){try{[].concat(JSON.parse(s.textContent)).forEach(function(x){[].concat(x['@graph']||x).forEach(function(y){var t=[].concat(y['@type']);if(!P&&(t.indexOf('Product')>=0||t.indexOf('ProductGroup')>=0))P=y})})}catch(e){}});P=P||{};var o=[].concat(P.offers||[])[0]||{};if(o.offers)o=[].concat(o.offers)[0]||o;var a=q('#productTitle'),ap=q('#corePrice_feature_div .a-offscreen')||q('.a-price .a-offscreen'),b=P.brand,d={u:location.href,t:((a&&a.innerText)||P.name||m('og:title')||document.title||'').trim(),b:b?(b.name||b):'',g:P.gtin13||P.gtin||P.gtin12||P.gtin14||P.ean||m('gtin13')||'',s:P.mpn||P.sku||'',p:o.price||o.lowPrice||m('product:price:amount')||(ap?ap.textContent:''),c:o.priceCurrency||m('product:price:currency')||'',k:P.color||''};location.href='__ORIGIN__/?import='+encodeURIComponent(JSON.stringify(d))})()</script>
+<script type="text/plain" id="bmSrc">javascript:(function(){var P=null,q=function(s){return document.querySelector(s)},m=function(n){var e=q('meta[property="'+n+'"],meta[name="'+n+'"],meta[itemprop="'+n+'"]');return e?(e.content||''):''};[].forEach.call(document.querySelectorAll('script[type="application/ld+json"]'),function(s){try{[].concat(JSON.parse(s.textContent)).forEach(function(x){[].concat(x['@graph']||x).forEach(function(y){var t=[].concat(y['@type']);if((t.indexOf('Product')>=0||t.indexOf('ProductGroup')>=0)&&(!P||(!P.offers&&!P.hasVariant&&(y.offers||y.hasVariant))))P=y})})}catch(e){}});P=P||{};var o=[].concat(P.offers||[])[0]||{};if(o.offers)o=[].concat(o.offers)[0]||o;var a=q('#productTitle'),ap=q('#corePrice_feature_div .a-offscreen')||q('.a-price .a-offscreen'),b=P.brand,d={u:location.href,t:((a&&a.innerText)||P.name||m('og:title')||document.title||'').trim(),b:b?(b.name||b):'',g:P.gtin13||P.gtin||P.gtin12||P.gtin14||P.ean||m('gtin13')||'',s:P.mpn||P.sku||'',p:o.price||o.lowPrice||m('product:price:amount')||m('og:price:amount')||(ap?ap.textContent:''),c:o.priceCurrency||m('product:price:currency')||m('og:price:currency')||'',k:P.color||'',v:[].concat(P.hasVariant||[]).slice(0,60).map(function(x){var f=[].concat(x.offers||[])[0]||{};return{n:x.name,s:x.sku||x.mpn,g:x.gtin13||x.gtin,p:f.price,c:f.priceCurrency}})};location.href='__ORIGIN__/?import='+encodeURIComponent(JSON.stringify(d))})()</script>
 
 <footer style="max-width:560px;margin:0 auto;text-align:center;color:var(--muted);font-size:11px;padding:0 16px calc(16px + env(safe-area-inset-bottom))">
   {{ t('app.title') }} {{ version }}
@@ -654,6 +654,7 @@ async function importPage(query){
   setScanHint(t('import.reading'));
   await optionsReady;
   let r;
+  if(currentBarcode) query += '&code='+encodeURIComponent(currentBarcode);
   try{ r = await (await fetch('/api/import?'+query)).json(); }
   catch(e){ setScanHint(''); toast(t('import.failed'), false); return; }
   // The code searched for, else the one already on the form, else the page's EAN.
@@ -765,7 +766,9 @@ function setSearchLink(code, source){
     link.href = amazonHost() + '/gp/css/order-history';
     link.textContent = t('form.amazon_orders_link');
   }else{
-    link.href = 'https://www.google.com/search?q='+encodeURIComponent('"'+code+'" filament');
+    // The bare code: quotes and an extra word make Google miss maker
+    // numbers written with other separators.
+    link.href = 'https://www.google.com/search?q='+encodeURIComponent(code);
     link.textContent = t('form.search_link');
   }
   link.style.display = code ? '' : 'none';
