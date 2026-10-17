@@ -181,8 +181,25 @@
     <div class="row">
       <div><label>{{ t('form.nozzle_min') }}</label><input id="nozzle_temp_min" inputmode="numeric"></div>
       <div><label>{{ t('form.nozzle_max') }}</label><input id="nozzle_temp_max" inputmode="numeric"></div>
+    </div>
+
+    <!-- Price: per spool is what a receipt says, per kg is what Bambuddy
+         stores. The two are kept in step through the net weight. -->
+    <div class="row">
+      <div><label>{{ t('form.price_per_spool') }}</label><input id="price_per_spool" inputmode="decimal"></div>
       <div><label>{{ t('form.cost_per_kg') }}</label><input id="cost_per_kg" inputmode="decimal"></div>
     </div>
+    <div id="priceHint" class="hint hidden"><span id="priceHintText"></span>
+      <a id="priceHintUse" href="#" style="color:var(--green-light)">{{ t('form.price_use') }}</a></div>
+
+    <!-- The NFC tag on this spool, read with the phone (Web NFC, Chrome on
+         Android over https). Optional: the SpoolmanScale links a tag too. -->
+    <label for="tag_uid">{{ t('form.tag_uid') }}</label>
+    <div class="row">
+      <div><input id="tag_uid" autocomplete="off" spellcheck="false" placeholder="{{ t('form.tag_placeholder') }}"></div>
+      <div style="flex:0 0 120px"><button id="nfcBtn" type="button" class="btn-secondary">{{ t('form.nfc_scan') }}</button></div>
+    </div>
+    <div id="nfcHint" class="hint"></div>
 
     <label>{{ t('form.note') }}</label>
     <textarea id="note" rows="2" placeholder="{{ t('form.optional_placeholder') }}"></textarea>
@@ -573,7 +590,7 @@ function applyFields(f){
   if(f.category!=null) $('category').value = f.category;
   if(f.nozzle_temp_min!=null) $('nozzle_temp_min').value = f.nozzle_temp_min;
   if(f.nozzle_temp_max!=null) $('nozzle_temp_max').value = f.nozzle_temp_max;
-  if(f.cost_per_kg!=null) $('cost_per_kg').value = f.cost_per_kg;
+  if(f.cost_per_kg!=null){ $('cost_per_kg').value = f.cost_per_kg; priceFromKg(); }
   if(f.note!=null) $('note').value = f.note;
 }
 
@@ -587,6 +604,7 @@ function badgeFor(source){
     'spoolmandb-community': [t('badge.smdb'), 'cache'],
     label:  [t('badge.label'), 'upc'],
     amazon: [t('badge.amazon'), ''],
+    upcitemdb: [t('badge.upcitemdb'), 'upc'],
     none:   [t('badge.none'), ''],
   };
   return BADGE[source] || BADGE.none;
@@ -615,10 +633,12 @@ function fillForm(d){
   $('forgetBtn').classList.toggle('hidden', !(code && d.source==='cache'));
   // reset then apply
   ['color_name','category','nozzle_temp_min','nozzle_temp_max',
-   'cost_per_kg','note','paste_title'].forEach(id=>$(id).value='');
+   'cost_per_kg','price_per_spool','tag_uid','note','paste_title'].forEach(id=>$(id).value='');
+  $('nfcHint').textContent='';
   setSelect('material',''); setSelect('brand',''); setSelect('subtype',''); setSelect('storage_location','');
   setSelect('label_weight','1000'); $('quantity').value=1;
   applyFields(f);
+  showPriceHint(d.price);
   $('material').focus();
 }
 
@@ -735,6 +755,89 @@ $('autofillBtn').onclick = async () => {
   }catch(e){ toast(t('form.parse_request_failed'), false); }
 };
 
+// ── Price per spool ↔ cost per kg ──
+function num(v){ const n=parseFloat(String(v).replace(',','.')); return isFinite(n)&&n>0 ? n : null; }
+function kgOfSpool(){ const g=num($('label_weight').value); return g ? g/1000 : null; }
+function priceFromKg(){
+  const c=num($('cost_per_kg').value), kg=kgOfSpool();
+  $('price_per_spool').value = (c&&kg) ? (c*kg).toFixed(2) : '';
+}
+function kgFromPrice(){
+  const p=num($('price_per_spool').value), kg=kgOfSpool();
+  $('cost_per_kg').value = (p&&kg) ? (p/kg).toFixed(2) : '';
+}
+$('price_per_spool').addEventListener('input', kgFromPrice);
+$('cost_per_kg').addEventListener('input', priceFromKg);
+// A different net weight changes the price per kg, not what the spool cost.
+$('label_weight').addEventListener('change', () => { if(num($('price_per_spool').value)) kgFromPrice(); });
+
+// The average offer price UPCitemdb found for this barcode. A suggestion
+// only: the offers may be in another currency or for another pack size.
+let priceSuggestion = null;
+function showPriceHint(price){
+  priceSuggestion = (price && price.avg) ? price : null;
+  $('priceHint').classList.toggle('hidden', !priceSuggestion);
+  if(!priceSuggestion) return;
+  $('priceHintText').textContent = t('form.price_hint', {
+    price: priceSuggestion.avg.toFixed(2)+(priceSuggestion.currency?' '+priceSuggestion.currency:''),
+    count: priceSuggestion.count }) + ' ';
+}
+$('priceHintUse').onclick = (e) => {
+  e.preventDefault();
+  if(!priceSuggestion) return;
+  $('price_per_spool').value = priceSuggestion.avg.toFixed(2);
+  kgFromPrice();
+};
+
+// ── NFC tag (Web NFC: Chrome on Android, https only) ──
+// Web NFC reads NDEF tags: the NTAG stickers the SpoolmanScale writes and
+// links. Bambu Lab's own spool tags are MIFARE Classic, which Web NFC cannot
+// read at all; Chrome then reports a reading error, or nothing, depending on
+// the phone. Either way the scale can link those.
+let nfcAbort = null, nfcTimer = null;
+function nfcStop(){
+  if(nfcAbort){ try{ nfcAbort.abort(); }catch(e){} }
+  nfcAbort = null;
+  clearTimeout(nfcTimer); nfcTimer = null;
+  $('nfcBtn').textContent = t('form.nfc_scan');
+}
+$('nfcBtn').onclick = async () => {
+  if(!('NDEFReader' in window)){ $('nfcHint').textContent = t('form.nfc_unsupported'); return; }
+  if(nfcAbort){ nfcStop(); $('nfcHint').textContent=''; return; }   // second tap cancels
+  const ctrl = new AbortController();
+  nfcAbort = ctrl;
+  $('nfcBtn').textContent = t('form.nfc_cancel');
+  $('nfcHint').textContent = t('form.nfc_waiting');
+  nfcTimer = setTimeout(() => {
+    if(nfcAbort !== ctrl) return;
+    nfcStop(); $('nfcHint').textContent = t('form.nfc_timeout');
+  }, 20000);
+  try{
+    const ndef = new NDEFReader();
+    // Handlers before scan(): a tag already lying on the phone is reported
+    // the moment scanning starts.
+    ndef.onreading = (ev) => {
+      if(nfcAbort !== ctrl) return;
+      const uid = (ev.serialNumber||'').replace(/:/g,'').toUpperCase();
+      nfcStop();
+      if(!uid){ $('nfcHint').textContent = t('form.nfc_no_uid'); return; }
+      $('tag_uid').value = uid;
+      $('nfcHint').textContent = t('form.nfc_read', {uid});
+      if(navigator.vibrate) navigator.vibrate(100);
+    };
+    ndef.onreadingerror = () => {
+      if(nfcAbort !== ctrl) return;
+      nfcStop(); $('nfcHint').textContent = t('form.nfc_unreadable');
+    };
+    await ndef.scan({signal: ctrl.signal});
+  }catch(err){
+    if(nfcAbort !== ctrl) return;
+    nfcStop();
+    $('nfcHint').textContent = err && err.name==='NotAllowedError'
+      ? t('form.nfc_denied') : t('form.nfc_failed', {error: err && err.message || err});
+  }
+};
+
 // ── Submit ──
 $('form').onsubmit = async (e) => {
   e.preventDefault();
@@ -751,6 +854,7 @@ $('form').onsubmit = async (e) => {
     nozzle_temp_max: $('nozzle_temp_max').value.trim(),
     cost_per_kg: $('cost_per_kg').value.trim(),
     note: $('note').value.trim(),
+    tag_uid: $('tag_uid').value.trim(),
   };
   if(!fields.material){ toast(t('submit.material_required'), false); return; }
   const quantity = parseInt($('quantity').value)||1;
@@ -759,9 +863,15 @@ $('form').onsubmit = async (e) => {
     const r = await fetch('/api/spool', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({barcode: currentBarcode, quantity, fields})});
     const d = await r.json();
-    if(d.ok){ toast(tn('submit.added', d.created)+' ✓');
-      $('form').classList.add('hidden'); $('manual').value=''; currentBarcode=null; }
-    else { toast(t('submit.failed')+(d.errors&&d.errors.length?': '+d.errors[0]:''), false); }
+    if(d.ok){
+      // Created either way; a tag or price that did not stick is said, not
+      // hidden behind the success.
+      if(d.tag_error) toast(t('submit.tag_not_linked',{error:d.tag_error}), false);
+      else if(d.warnings&&d.warnings.length) toast(t('submit.price_not_set'), false);
+      else toast(tn('submit.added', d.created)+' ✓');
+      $('form').classList.add('hidden'); $('manual').value=''; currentBarcode=null;
+      $('tag_uid').value=''; nfcStop(); }
+    else { toast(t('submit.failed')+(d.error?': '+d.error:(d.errors&&d.errors.length?': '+d.errors[0]:'')), false); }
   }catch(e){ toast(t('submit.request_failed'), false); }
   finally{ $('submitBtn').disabled = false; }
 };
