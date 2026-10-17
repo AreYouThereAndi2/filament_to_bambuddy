@@ -20,13 +20,16 @@ KNOWN_BRANDS = [
     "Elegoo", "Anycubic", "Geeetech", "Eryone", "Amolen", "Duramic", "Sunlu",
     "eSUN", "Jayo", "Atomic", "Spectrum", "3DJake", "Comgrow", "Tinmorry",
     "Kingroon", "Flashforge", "Ziro", "Novamaker", "GST3D", "Iemai",
+    "Extrudr", "Fiberlogy", "Formfutura", "Azurefilm", "Das Filament",
+    "Rosa3D", "Devil Design", "Kexcelled", "Snapmaker", "QIDI", "Voxelab",
+    "iSANMATE", "YOUSU", "R3D", "Sakata", "Filamentive",
 ]
 
 # Base materials → canonical Bambuddy `material`. Order matters: the most
 # specific / longest token must be tried first (PETG before PET, PLA+ before PLA).
 BASE_MATERIALS = [
     ("PCTG", "PCTG"), ("PETG", "PETG"), ("PET-G", "PETG"), ("PET G", "PETG"),
-    ("PLA+", "PLA"), ("PLA PLUS", "PLA"), ("PLA", "PLA"),
+    ("PLA+", "PLA"), ("PLA PLUS", "PLA"), ("PLA-PLUS", "PLA"), ("PLA", "PLA"),
     ("ABS+", "ABS"), ("ABS", "ABS"), ("ASA", "ASA"),
     ("TPU", "TPU"), ("TPE", "TPE"),
     ("NYLON", "Nylon"), ("PA12", "Nylon"), ("PA6", "Nylon"), ("PA", "Nylon"),
@@ -36,13 +39,19 @@ BASE_MATERIALS = [
 # Subtype / finish modifiers (canonical casing on the right).
 SUBTYPE_HINTS = [
     ("CARBON FIBER", "Carbon Fiber"), ("CARBON FIBRE", "Carbon Fiber"),
+    ("KOHLEFASER", "Carbon Fiber"), ("CARBONFASER", "Carbon Fiber"),
     ("CARBON", "Carbon Fiber"), ("GLOW IN THE DARK", "Glow"), ("GLOW", "Glow"),
-    ("SILK", "Silk"), ("MATTE", "Matte"), ("MARBLE", "Marble"), ("WOOD", "Wood"),
-    ("METAL", "Metal"), ("RAINBOW", "Rainbow"), ("GRADIENT", "Gradient"),
+    ("NACHTLEUCHTEND", "Glow"), ("LEUCHTET IM DUNKELN", "Glow"),
+    ("SILK", "Silk"), ("SEIDE", "Silk"), ("MATTE", "Matte"), ("MATT", "Matte"),
+    ("MARBLE", "Marble"), ("MARMOR", "Marble"), ("WOOD", "Wood"), ("HOLZ", "Wood"),
+    ("METAL", "Metal"), ("RAINBOW", "Rainbow"), ("REGENBOGEN", "Rainbow"),
+    ("GRADIENT", "Gradient"), ("FARBVERLAUF", "Gradient"),
     ("DUAL COLOR", "Dual Color"), ("DUAL COLOUR", "Dual Color"), ("DUAL", "Dual Color"),
-    ("TRI COLOR", "Tri Color"), ("TRI COLOUR", "Tri Color"),
+    ("ZWEIFARBIG", "Dual Color"),
+    ("TRI COLOR", "Tri Color"), ("TRI COLOUR", "Tri Color"), ("DREIFARBIG", "Tri Color"),
     ("HIGH SPEED", "High Speed"), ("HYPER", "High Speed"), ("TOUGH", "Tough"),
     ("GALAXY", "Galaxy"), ("SPARKLE", "Sparkle"), ("GLITTER", "Glitter"),
+    ("GLITZER", "Glitter"),
     ("LUMINOUS", "Luminous"), ("FLUORESCENT", "Fluorescent"),
     ("TRANSLUCENT", "Translucent"), ("TRANSPARENT", "Transparent"),
     ("PLUS", "Plus"),
@@ -59,7 +68,20 @@ COLOR_HEX = {
     "Transparent": "EEEEEE", "Skin": "FFCDA0", "Olive": "808000", "Lime": "BFFF00",
     "Maroon": "800000", "Turquoise": "40E0D0", "Ivory": "FFFFF0", "Cream": "FFFDD0",
     "Tan": "D2B48C", "Khaki": "C3B091",
+    # German names, as Amazon.de titles spell them. The colour name is kept in
+    # German; only the swatch needs the value.
+    "Schwarz": "000000", "Weiß": "FFFFFF", "Weiss": "FFFFFF", "Grau": "808080",
+    "Silber": "C0C0C0", "Rot": "FF0000", "Gelb": "FFFF00", "Grün": "00A000",
+    "Gruen": "00A000", "Blau": "0050FF", "Dunkelblau": "001F5C",
+    "Marineblau": "001F5C", "Hellblau": "87CEEB", "Türkis": "40E0D0",
+    "Lila": "800080", "Violett": "7F00FF", "Rosa": "FF69B4", "Braun": "7B3F00",
+    "Kupfer": "B87333", "Natur": "EDE6D6", "Klar": "EEEEEE", "Oliv": "808000",
+    "Hellgrün": "90EE90", "Dunkelgrün": "006400", "Weinrot": "800000",
+    "Elfenbein": "FFFFF0", "Creme": "FFFDD0", "Hautfarbe": "FFCDA0",
 }
+# A see-through finish is a colour only when nothing else names one:
+# "Transparent Blau" is a blue spool.
+_CLEAR_WORDS = {"Clear", "Transparent", "Klar"}
 # Match longer colour names first (e.g. "Navy" before "Blue" isn't needed, but
 # multi-word handling is future-proofed by sorting on length).
 _COLOR_WORDS = sorted(COLOR_HEX.keys(), key=len, reverse=True)
@@ -106,6 +128,9 @@ def _find_subtypes(text_upper: str) -> list[str]:
     for token, canonical in SUBTYPE_HINTS:
         if token in text_upper and canonical not in found:
             found.append(canonical)
+    # Bambu's high-flow line, "PETG HF". Two letters, so only as a whole word.
+    if re.search(r"(?<![A-Z])HF(?![A-Z])", text_upper) and "HF" not in found:
+        found.insert(0, "HF")
     return found
 
 
@@ -118,18 +143,25 @@ def _find_color(text: str) -> tuple[str | None, str | None]:
         c1, c2 = m.group(1).title(), m.group(2).title()
         rgba = COLOR_HEX.get(c1)
         return f"{c1}-{c2}", (rgba + "FF") if rgba else None
+    clear = None
     for word in _COLOR_WORDS:
         if re.search(rf"\b{re.escape(word)}\b", text, re.IGNORECASE):
+            if word in _CLEAR_WORDS:
+                clear = clear or word
+                continue
             return word, COLOR_HEX[word] + "FF"   # RRGGBBAA, opaque
+    if clear:
+        return clear, COLOR_HEX[clear] + "FF"
     return None, None
 
 
 def _find_diameter(text: str) -> float | None:
-    m = re.search(r"\b(1\.75|2\.85|3\.00|3\.0|3)\s*mm\b", text, re.IGNORECASE)
+    # German titles write the decimal comma: "1,75 mm".
+    m = re.search(r"\b(1[.,]75|2[.,]85|3[.,]00|3[.,]0|3)\s*mm\b", text, re.IGNORECASE)
     if m:
-        return float(m.group(1))
-    m = re.search(r"\b(1\.75|2\.85)\b", text)
-    return float(m.group(1)) if m else None
+        return float(m.group(1).replace(",", "."))
+    m = re.search(r"\b(1[.,]75|2[.,]85)\b", text)
+    return float(m.group(1).replace(",", ".")) if m else None
 
 
 def _find_nozzle_temps(text: str) -> tuple[int, int] | None:
@@ -168,9 +200,9 @@ def _find_hex(text: str) -> str | None:
 
 def _find_weight_grams(text: str) -> int | None:
     """Net filament weight in grams from tokens like '1KG', '1000g', '0.5kg', '500 g'."""
-    m = re.search(r"(\d+(?:\.\d+)?)\s*(kg|kgs|kilograms?)\b", text, re.IGNORECASE)
+    m = re.search(r"(\d+(?:[.,]\d+)?)\s*(kg|kgs|kilograms?)\b", text, re.IGNORECASE)
     if m:
-        return round(float(m.group(1)) * 1000)
+        return round(float(m.group(1).replace(",", ".")) * 1000)
     m = re.search(r"(\d{3,5})\s*(g|grams?)\b", text, re.IGNORECASE)
     if m:
         return int(m.group(1))

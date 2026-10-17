@@ -26,6 +26,7 @@ if sys.version_info < (3, 10):  # noqa: UP036 - guards direct `python app.py` ru
 import json
 import logging
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -60,6 +61,28 @@ ALLOWED_SPOOL_FIELDS = {
     "brand", "label_weight", "core_weight", "nozzle_temp_min", "nozzle_temp_max",
     "note", "cost_per_kg", "category", "storage_location", "data_origin",
 }
+# The NFC tag is deliberately not in the whitelist above: that set is also
+# what the barcode cache remembers, and a tag belongs to one physical spool,
+# not to every box with the same barcode. It is handled on its own in
+# add_spool().
+_TAG_UID_RE = re.compile(r"^[0-9A-F]{8,30}$")
+
+
+def _normalize_tag_uid(raw) -> tuple[str | None, str | None]:
+    """(uid, error). Accepts "04:5A:8B…" as Web NFC reports it, or plain hex.
+
+    Bambuddy wants 8–30 hex characters (a 4-, 7- or 10-byte UID) and rejects
+    an all-zero one; checked here so the form gets a readable answer instead
+    of a 422 after the spool was already created.
+    """
+    if raw in (None, ""):
+        return None, None
+    uid = re.sub(r"[\s:\-]", "", str(raw)).upper()
+    if not uid:
+        return None, None
+    if not _TAG_UID_RE.match(uid) or set(uid) == {"0"}:
+        return None, "Tag UID must be 8-30 hex characters"
+    return uid, None
 
 # GTIN-8/12/13/14 are the only standard checksummed lengths. The floor below
 # the max (rather than an exact 8/12/13/14 match) accounts for leading zeros
@@ -546,11 +569,51 @@ def lookup():
         log.info("lookup %s: %s hit — %s", barcode, source, title or "")
         return jsonify(barcode=code, source=source, title=title, fields=clean_fields, linked_codes=linked_codes)
 
-    # 3. Not found — fill in manually (and it'll be remembered).
+    # 3. A retail barcode the filament databases don't know: ask UPCitemdb,
+    # which indexes Amazon and other shop listings, for the product title and
+    # parse that like a pasted one. Its price range comes along as a hint.
+    if kind == "gtin":
+        hit = _upc_fields(code)
+        if hit:
+            fields, title, price = hit
+            log.info("lookup %s: UPCitemdb hit — %s", barcode, title)
+            return jsonify(barcode=code, source="upcitemdb", title=title, fields=fields,
+                           linked_codes=[], price=price)
+
+    # 4. Not found — fill in manually (and it'll be remembered).
     src = "amazon" if kind == "sku" else "none"
     log.info("lookup %s: not found (source=%s)", barcode, src)
     return jsonify(barcode=code, source=src,
                    fields={"label_weight": DEFAULT_LABEL_WEIGHT}, title=None, linked_codes=[])
+
+
+def _upc_fields(code: str) -> tuple | None:
+    """UPCitemdb's title for `code`, parsed into spool fields.
+
+    Returns (fields, title, price) or None. `price` is UPCitemdb's average
+    offer price ({"avg", "currency", "count"}) or None; it is a hint for the
+    form, never written on its own, because the offers may be in another
+    currency or for another pack size.
+    """
+    import ofd
+    import upc_lookup
+    from filament_parse import _find_brand, parse_title
+
+    hit = upc_lookup.lookup(code)
+    if not hit:
+        return None
+    try:
+        brands = ofd.get_brands()
+    except Exception:
+        brands = []
+    # UPCitemdb's brand is free text ("SUNLU"); prefer the spelling a known
+    # brand list uses so the brand select doesn't grow a near-duplicate.
+    brand = None
+    if hit["brand"]:
+        brand = _find_brand(hit["brand"].upper(), brands) or hit["brand"]
+    fields = parse_title(hit["title"], brand_hint=brand, extra_brands=brands)
+    fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
+    return fields, hit["title"], hit["price"]
 
 
 def _extract_barcode(text: str) -> str | None:
@@ -624,6 +687,11 @@ def add_spool():
 
     if not (fields.get("material") or "").strip():
         return jsonify(ok=False, error="Material is required"), 400
+    tag_uid, tag_problem = _normalize_tag_uid(fields.get("tag_uid"))
+    if tag_problem:
+        return jsonify(ok=False, error=tag_problem), 400
+    if tag_uid and quantity > 1:
+        return jsonify(ok=False, error="A tag belongs to one spool - set the quantity to 1"), 400
 
     # Build a clean Bambuddy payload from whitelisted, typed fields.
     payload: dict = {}
@@ -647,13 +715,27 @@ def add_spool():
 
     headers = {"X-API-Key": BAMBUDDY_API_KEY, "Content-Type": "application/json",
                "Accept": "application/json"}
-    created, errors, spool_ids = 0, [], []
-    spools_url = f"{BAMBUDDY_URL}{_inventory_base()}/spools"
+    base = _inventory_base()
+    spoolman_mode = base == "/api/v1/spoolman/inventory"
+    # Bambuddy's own inventory takes the tag right in the create request. The
+    # Spoolman one has no tag in its create schema and drops it silently, so
+    # there the tag is linked with a second request once the spool exists.
+    if tag_uid and not spoolman_mode:
+        payload["tag_uid"] = tag_uid
+    created, errors, spool_ids, warnings = 0, [], [], []
+    spools_url = f"{BAMBUDDY_URL}{base}/spools"
     for _ in range(quantity):
         try:
             r = requests.post(spools_url, json=payload, headers=headers, timeout=30)
-            if r.status_code in (200, 201):
+            # 207: the spool exists, but Spoolman refused the price. Created
+            # all the same; the warning goes back to the form.
+            if r.status_code in (200, 201, 207):
                 created += 1
+                if r.status_code == 207:
+                    try:
+                        warnings.extend((r.json() or {}).get("warnings") or [])
+                    except ValueError:
+                        warnings.append("price_not_set")
                 try:
                     new_id = (r.json() or {}).get("id")
                 except ValueError:
@@ -667,6 +749,19 @@ def add_spool():
             log.exception("error posting spool to Bambuddy")
             errors.append(f"{type(e).__name__} — see server logs")
             break
+
+    tag_error = None
+    if tag_uid and spoolman_mode and spool_ids:
+        try:
+            tr = requests.patch(f"{spools_url}/{spool_ids[0]}/tag", json={"tag_uid": tag_uid},
+                                headers=headers, timeout=30)
+            if not tr.ok:
+                tag_error = f"{tr.status_code}: {tr.text[:200]}"
+        except Exception as e:
+            log.exception("error linking tag %s to spool %s", tag_uid, spool_ids[0])
+            tag_error = f"{type(e).__name__} — see server logs"
+        if tag_error:
+            log.warning("spool %s created, tag %s not linked: %s", spool_ids[0], tag_uid, tag_error)
 
     # Remember the confirmed details for this barcode (learning cache), plus
     # every cross-referenced sibling code — so a later scan of ANY of them
@@ -699,7 +794,8 @@ def add_spool():
         log.warning("spool add partial: %d/%d %s (barcode=%s) errors=%s",
                     created, quantity, label, barcode or "none", errors)
     return jsonify(ok=ok, created=created, requested=quantity, spool_ids=spool_ids,
-                   errors=errors, bambuddy=BAMBUDDY_URL), (200 if created else 502)
+                   errors=errors, warnings=warnings, tag_error=tag_error,
+                   bambuddy=BAMBUDDY_URL), (200 if created else 502)
 
 
 if __name__ == "__main__":

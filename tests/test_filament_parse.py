@@ -135,3 +135,44 @@ def test_no_recognisable_content():
     f = parse_title("hello world")
     assert "material" not in f
     assert "color_name" not in f
+
+
+# ── German Amazon.de titles ────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("title,expected", [
+    ("SUNLU PLA Filament 1,75mm, PLA Plus 3D Drucker Filament, Schwarz, 1KG Spule",
+     {"brand": "Sunlu", "material": "PLA", "subtype": "Plus", "color_name": "Schwarz",
+      "diameter_mm": 1.75, "label_weight": 1000}),
+    ("ELEGOO PLA Filament 1.75mm Seide Gold 1kg",
+     {"material": "PLA", "subtype": "Silk", "color_name": "Gold"}),
+    ("Bambu Lab PETG HF Filament 1,75 mm Grün 1 kg",
+     {"brand": "Bambu Lab", "material": "PETG", "subtype": "HF", "color_name": "Grün"}),
+    ("GEEETECH Matt PLA Filament 1,75mm Weiß 1kg Spule, Maßgenauigkeit +/- 0,03mm",
+     {"material": "PLA", "subtype": "Matte", "color_name": "Weiß", "rgba": "FFFFFFFF"}),
+])
+def test_german_titles(title, expected):
+    f = parse_title(title)
+    for key, value in expected.items():
+        assert f[key] == value, key
+
+
+def test_transparent_gives_way_to_a_real_colour():
+    f = parse_title("JAYO PETG Filament 1,75mm Transparent Blau 1,1 kg")
+    assert f["color_name"] == "Blau"
+    assert f["subtype"] == "Transparent"
+    assert f["label_weight"] == 1100
+
+
+def test_transparent_alone_is_the_colour():
+    f = parse_title("eSUN PETG 1.75mm Transparent 1kg")
+    assert f["color_name"] == "Transparent"
+
+
+def test_decimal_comma_diameter_and_weight():
+    assert _find_diameter("Filament 2,85 mm") == 2.85
+    assert _find_weight_grams("Spule 0,5 kg") == 500
+
+
+def test_hf_only_as_a_whole_word():
+    assert "subtype" not in parse_title("PLA Filament from Shenzhen HFX Ltd 1kg") or \
+        "HF" not in parse_title("PLA Filament from Shenzhen HFX Ltd 1kg")["subtype"]
