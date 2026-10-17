@@ -75,6 +75,10 @@ class TestShare:
         d = page_import.from_share("", "SUNLU PLA Filament Schwarz https://amzn.eu/d/abc", "")
         assert d == {"u": "https://amzn.eu/d/abc", "t": "SUNLU PLA Filament Schwarz"}
 
+    def test_share_lead_in_goes(self):
+        d = page_import.from_share("", "Schau dir das an: SUNLU PLA Seide Gold https://amzn.eu/d/x", "")
+        assert d["t"] == "SUNLU PLA Seide Gold"
+
     def test_title_kept_when_the_text_is_only_the_link(self):
         d = page_import.from_share("Polymaker PLA Pro", "https://shop.example/p", "")
         assert d["t"] == "Polymaker PLA Pro"
@@ -107,7 +111,7 @@ class TestFetchPage:
             patch("requests.get", return_value=_page(LD_PAGE)),
         ):
             d = page_import.fetch_page("https://shop.example/p")
-        assert d["t"] == "PolyTerra PLA Charcoal Black"
+        assert d["t"] == "PolyTerra PLA Charcoal Black" and d["product"] is True
         assert d["b"] == {"@type": "Brand", "name": "Polymaker"}
         assert d["g"] == "6938936716785" and d["p"] == "22.99" and d["c"] == "EUR"
 
@@ -153,7 +157,8 @@ class TestImportRoute:
         assert d["fields"]["brand"] == "Polymaker"
 
     def test_share_reads_the_link(self, client):
-        fetched = {"u": "https://shop.example/p", "t": "PolyTerra PLA Charcoal Black", "p": "22.99", "c": "EUR"}
+        fetched = {"u": "https://shop.example/p", "product": True, "t": "PolyTerra PLA Charcoal Black",
+                   "p": "22.99", "c": "EUR"}
         with (
             patch("page_import.fetch_page", return_value=fetched),
             patch("ofd.get_brands", return_value=["Polymaker"]),
@@ -161,6 +166,18 @@ class TestImportRoute:
             d = client.get("/api/import?share=1&title=&text=Look%20https://shop.example/p&url=").get_json()
         assert d["title"] == "PolyTerra PLA Charcoal Black"
         assert d["price"]["avg"] == 22.99
+
+    def test_bot_wall_does_not_replace_the_shared_name(self, client):
+        # Amazon answers a server with a page that names only itself.
+        fetched = {"u": "https://www.amazon.de/dp/B0C1", "product": False, "t": "Amazon.de"}
+        with (
+            patch("page_import.fetch_page", return_value=fetched),
+            patch("ofd.get_brands", return_value=["Sunlu"]),
+        ):
+            d = client.get("/api/import?share=1&title=&text=SUNLU%20PLA%20Seide%20Gold%20"
+                           "https://amzn.eu/d/x&url=").get_json()
+        assert d["title"] == "SUNLU PLA Seide Gold"
+        assert d["fields"]["subtype"] == "Silk" and d["host"] == "amazon.de"
 
     def test_garbage_is_an_empty_answer(self, client):
         d = client.get("/api/import?data=%7Bnot").get_json()

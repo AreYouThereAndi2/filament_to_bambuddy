@@ -161,6 +161,8 @@
       <a id="searchLink" href="#" target="_blank" rel="noopener"
          style="color:var(--green-light)">{{ t('form.search_link') }}</a>
     </div>
+    <button id="clipBtn" type="button" class="btn-secondary" style="margin-bottom:4px">{{ t('form.clip_button') }}</button>
+    <div class="hint" style="margin-bottom:6px">{{ t('form.clip_hint') }}</div>
 
     <label>{{ t('form.material') }}</label>
     <select id="material" required></select>
@@ -654,7 +656,8 @@ async function importPage(query){
   let r;
   try{ r = await (await fetch('/api/import?'+query)).json(); }
   catch(e){ setScanHint(''); toast(t('import.failed'), false); return; }
-  const base = r.pending || r.gtin || '';
+  // The code searched for, else the one already on the form, else the page's EAN.
+  const base = r.pending || currentBarcode || r.gtin || '';
   const d = base ? await onBarcode(base) : null;
   if(!d) fillForm({source:'page', fields:{}, barcode:''});
   const known = d && KNOWN.includes(d.source);
@@ -735,6 +738,17 @@ function badgeFor(source){
 // goes to the orders, where the article's name can be copied.
 const AMAZON_TLD = {de:'de', fr:'fr', it:'it', es:'es', ja:'co.jp', 'pt-br':'com.br', tr:'com.tr'};
 function amazonHost(){ return 'https://www.amazon.' + (AMAZON_TLD[I18N_LANG] || 'com'); }
+// What the shop app or browser copied with Share -> Copy: works the same on
+// iPhone and Android, in Safari, Chrome, a built-in browser or the Amazon app.
+$('clipBtn').onclick = async () => {
+  let text = '';
+  try{ text = navigator.clipboard && navigator.clipboard.readText ? await navigator.clipboard.readText() : ''; }
+  catch(e){ text = ''; }
+  text = (text||'').trim();
+  if(!text){ $('paste_title').focus(); toast(t('form.clip_empty'), false); return; }
+  $('paste_title').value = text;
+  $('autofillBtn').click();
+};
 $('searchLink').addEventListener('click', () => {
   if(!currentBarcode) return;
   fetch('/api/pending', {method:'POST', headers:{'Content-Type':'application/json'},
@@ -887,6 +901,11 @@ $('labelPhoto').onchange = async (e) => {
 $('autofillBtn').onclick = async () => {
   const pastedTitle = $('paste_title').value.trim();
   if(!pastedTitle) return;
+  // A link, or what a share sheet copies (name and link): the shop page.
+  if(/https?:\/\//i.test(pastedTitle)){
+    importPage('share=1&title=&text='+encodeURIComponent(pastedTitle)+'&url=');
+    return;
+  }
   // A single word of letters and digits is a code, not a product name: there
   // is nothing in it to fill a form from.
   if(/^[A-Z0-9][A-Z0-9-]{4,31}$/i.test(pastedTitle) && /\d/.test(pastedTitle)){

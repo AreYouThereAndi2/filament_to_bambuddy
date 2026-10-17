@@ -38,6 +38,10 @@ _UA = "Mozilla/5.0 (filament_to_bambuddy; one product page on the user's request
 
 _CURRENCY_SIGNS = {"€": "EUR", "$": "USD", "£": "GBP", "¥": "JPY", "₺": "TRY", "R$": "BRL"}
 _URL_RE = re.compile(r"https?://\S+")
+# What apps put before a shared product name: "Schau dir das an: ...".
+_SHARE_LEAD_RE = re.compile(
+    r"^(?:schau dir (?:das|dies) an|sieh dir das an|check (?:this|it) out|look at this|"
+    r"guarda questo|regarde ça|mira esto|olha isso)\b[^:]{0,20}:\s*", re.IGNORECASE)
 # What shops append to a page title: " : Amazon.de: Gewerbe, ...", " | 3DJake".
 # Not " - ...": that is as often the colour as the shop.
 _TITLE_TAIL_RE = re.compile(r"\s*(?:[:|]\s*Amazon\.[a-z.]+\b.*|\s\|\s[^|]{2,30})$")
@@ -126,7 +130,7 @@ def from_share(title: str, text: str, url: str) -> dict:
     if not url:
         m = _URL_RE.search(text)
         url = m.group(0) if m else ""
-    name = _URL_RE.sub("", text).strip(" \n\t-:|")
+    name = _SHARE_LEAD_RE.sub("", _URL_RE.sub("", text).strip(" \n\t-:|"))
     title = (title or "").strip()
     if not title or len(name) > len(title):
         title = name or title
@@ -204,6 +208,10 @@ def fetch_page(url: str) -> dict:
     title_tag = re.search(r"<title[^>]*>(.*?)</title>", html, re.DOTALL | re.IGNORECASE)
     return {
         "u": url,
+        # Whether the page described its product. Without that its title is
+        # the shop's or a bot check's ("Amazon.de", "Robot Check") and must
+        # not replace the name the user shared.
+        "product": bool(p) or bool(_meta(html, "og:title")),
         "t": p.get("name") or _meta(html, "og:title") or (title_tag.group(1) if title_tag else ""),
         "b": p.get("brand"),
         "g": p.get("gtin13") or p.get("gtin") or p.get("gtin12") or p.get("gtin14") or _meta(html, "gtin13"),

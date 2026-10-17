@@ -710,8 +710,11 @@ def import_page():
         raw = page_import.from_share(request.args.get("title", ""), request.args.get("text", ""),
                                      request.args.get("url", ""))
         fetched = page_import.fetch_page(raw["u"]) if raw["u"] else {}
-        # The page's own name beats the share text; the share text stays when
-        # the page could not be read.
+        # The page's own name beats the share text, but only when the page
+        # described its product; the share text stays otherwise.
+        if raw["t"] and not fetched.pop("product", False):
+            fetched.pop("t", None)
+        fetched.pop("product", None)
         raw = {**raw, **{k: v for k, v in fetched.items() if v}}
     else:
         try:
