@@ -1,0 +1,115 @@
+# filament_to_bambuddy: Installation und Update (deutsch)
+
+Diese Anleitung gilt für den Fork [AreYouThereAndi2/filament_to_bambuddy](https://github.com/AreYouThereAndi2/filament_to_bambuddy). Sie geht von einem Heimserver mit Docker aus, zum Beispiel einem ZimaBoard mit CasaOS. Die englische [README](README.md) beschreibt alle Funktionen im Detail.
+
+## Was die App macht
+
+- Box-Barcode (EAN/UPC, Hersteller-Nummer) mit dem Handy scannen oder eintippen.
+- Die App sucht das Produkt im eigenen Cache, in der Open Filament Database und in SpoolmanDB-Community. Kennen die beiden Datenbanken eine EAN nicht, fragt sie UPCitemdb, das die Angebote von Amazon und anderen Shops sammelt. Von dort kommen Titel, Marke und der **Durchschnittspreis pro Rolle**.
+- Formular prüfen, Preis übernehmen, auf Wunsch den NFC-Tag mit dem Handy lesen, dann **Hinzufügen**: Die Spule landet in BamBuddy, bei eingeschaltetem Spoolman-Modus in Spoolman.
+- Die **SpoolmanScale** fragt dieselbe App, wenn ihr Barcode-Scanner einen unbekannten Code liest, und legt die Spule dann selbst an.
+
+## Voraussetzungen
+
+- Docker mit `docker compose` (bei CasaOS vorhanden) und `git`.
+- BamBuddy erreichbar im Netz.
+- Ein **BamBuddy-API-Schlüssel** (BamBuddy → Settings → API Keys) mit
+  - **Manage Inventory** (legt Spulen an, Pflicht),
+  - **Read Status** (für die Verbindungsanzeige).
+
+## Neu installieren
+
+Per SSH auf den Server:
+
+```bash
+cd /DATA/AppData            # oder ein anderer Ordner für eigene Apps
+git clone https://github.com/AreYouThereAndi2/filament_to_bambuddy.git
+cd filament_to_bambuddy
+cp .env.example .env
+nano .env                   # BAMBUDDY_URL und BAMBUDDY_API_KEY eintragen
+F2B_VERSION=$(git describe --tags --always) docker compose up -d --build
+```
+
+Die `.env` sieht so aus:
+
+```ini
+BAMBUDDY_URL=http://zimaboard:8000
+BAMBUDDY_API_KEY=bb_xxxxxxxx
+# optional:
+# DEFAULT_LABEL_WEIGHT=1000
+# UPCITEMDB_KEY=...          # bezahlter UPCitemdb-Schlüssel, sonst 100 Abfragen/Tag frei
+# UPC_LOOKUP=off             # UPCitemdb ganz abschalten
+```
+
+Danach läuft die App auf Port **8088**: `http://<server-ip>:8088`. Die Statuszeile oben zeigt 🟢, wenn BamBuddy erreichbar ist und der Schlüssel passt. Unten im Fußbereich steht die Version.
+
+## Den bestehenden Container umstellen
+
+Auf dem Server läuft im Moment ein Container, in den Gemini `app.py` und `index.html` von außen hineingelegt hat. Diese Dateien sind jetzt im Fork enthalten, und zwar in korrigierter Form. Die Bind-Mounts müssen weg, sonst überschreiben die alten Dateien die neuen.
+
+1. **Daten sichern (optional, aber sinnvoll).** Der gelernte Barcode-Cache liegt im Container unter `/data`. In CasaOS unter App → Einstellungen → Volumes nachsehen, welcher Host-Ordner auf `/data` zeigt, und ihn kopieren. Ohne Sicherung lernt die App alles neu; die Datenbank-Indizes lädt sie ohnehin selbst.
+2. **Alten Container stoppen und entfernen.** In CasaOS: App → Deinstallieren. Oder per SSH: `docker ps` (Namen suchen), dann `docker rm -f <name>`.
+3. **Neu installieren** wie oben.
+4. **Alten Cache weiterverwenden:** Im `docker-compose.yml` die Zeile unter `volumes:` von `filament_data:/data` auf den alten Host-Ordner ändern, z. B.:
+   ```yaml
+       volumes:
+         - /DATA/AppData/filament_to_bambuddy/data:/data
+   ```
+   Dann `docker compose up -d --build`.
+5. **Prüfen:** `docker logs filament_to_bambuddy` darf keinen `ModuleNotFoundError` zeigen. Die Seite muss beim Scan einer Amazon-EAN die Plakette „EAN-Datenbank (UPCitemdb)“ und einen Preisvorschlag anzeigen.
+
+> Hat CasaOS den alten Container aus einem fertigen Image (`ghcr.io/hibikipr/...`) gestartet, enthält das Image keine der neuen Funktionen. Gebaut wird jetzt immer aus dem Fork (`build: .`).
+
+## Aktualisieren
+
+```bash
+cd /DATA/AppData/filament_to_bambuddy
+git pull
+F2B_VERSION=$(git describe --tags --always) docker compose up -d --build
+docker image prune -f       # alte Images aufräumen (optional)
+```
+
+Die Version im Fußbereich der Seite zeigt danach den neuen Stand, z. B. `v1.0.0` oder `v1.0.0-3-gabc1234` für Commits nach dem Tag. Die `.env` und das Daten-Volume bleiben bei einem Update erhalten.
+
+**Zurück auf einen älteren Stand:** `git checkout v1.0.0`, dann denselben `docker compose`-Befehl.
+
+## HTTPS für Kamera, NFC und App-Installation
+
+Handy-Browser geben Kamera und NFC nur über **HTTPS** frei. Über `http://192.168…:8088` funktioniert nur die Eingabe von Hand und das Foto vom Etikett.
+
+Möglichkeiten:
+
+- Ein Reverse Proxy mit Zertifikat (Nginx Proxy Manager, Caddy, Traefik), über den auch BamBuddy läuft, mit einem eigenen Hostnamen für die App.
+- Ein Cloudflare Tunnel oder `tailscale serve` auf Port 8088.
+
+Die **Waage** braucht kein HTTPS. Sie spricht die App direkt über `http://<server-ip>:8088` an.
+
+## NFC am Handy
+
+- Geht nur mit **Chrome auf Android** und nur über HTTPS.
+- Gelesen werden **NTAG**-Sticker (NTAG213/215), wie sie die SpoolmanScale beschreibt.
+- **Bambu-Lab-Tags sind MIFARE Classic.** Die kann Web NFC auf keinem Handy lesen: Chrome fragt nach der Berechtigung, und der Scan bricht danach mit einem Lesefehler ab oder liefert nichts. Die Seite sagt das jetzt. Solche Spulen auf die Waage legen, die liest und verknüpft sie.
+- Nach 20 Sekunden ohne Tag bricht der Scan ab; ein zweiter Tipp auf den Knopf bricht ihn sofort ab.
+
+## Amazon-Nummern und Preis
+
+- Eine **EAN** auf der Box geht an UPCitemdb. Kennt UPCitemdb sie, füllt der Titel das Formular, und der Durchschnittspreis erscheint unter dem Preisfeld mit „Übernehmen“. Er wird nie von selbst eingetragen.
+- Eine **ASIN** (`B0…`) oder ein Amazon-Lageretikett (`X00…`) ist kein Produkt-Barcode. Dafür den Titel aus dem Amazon-Angebot in das Feld **Produkttitel zum automatischen Ausfüllen einfügen** kopieren und **Ausfüllen** tippen. Deutsche Titel werden verstanden („Seide“, „Matt“, „Schwarz“, „1,75 mm“, „1 kg“).
+- Die kostenlose Stufe von UPCitemdb erlaubt 100 Abfragen pro Tag und IP. Was einmal gefunden wurde, merkt sich die App.
+- Der Preis wird pro Rolle eingegeben, der Preis pro kg rechnet sich über das Nettogewicht mit. Im Spoolman-Modus legt BamBuddy daraus den Spulenpreis an.
+
+## Mit der SpoolmanScale verbinden
+
+In der Weboberfläche der Waage → Einstellungen → Barcode-Scanner → **filament_to_bambuddy-Adresse**: `http://<server-ip>:8088`. Scannt die Waage dann einen Code, den keine Spule kennt, fragt sie die App und bietet an, die Spule anzulegen, mit oder ohne den gefundenen Preis.
+
+## Fehlersuche
+
+| Symptom | Ursache und Abhilfe |
+|---|---|
+| Container startet nicht, Log zeigt `ModuleNotFoundError` | Alter Stand oder noch Bind-Mounts auf einzelne Dateien. Mounts entfernen, `git pull`, neu bauen. |
+| Statuszeile 🔴 | `BAMBUDDY_URL` falsch oder vom Container aus nicht erreichbar. `localhost` zeigt im Container auf den Container selbst; die IP oder den Hostnamen des Servers nehmen. |
+| Statuszeile 🟡 | Dem API-Schlüssel fehlt **Read Status**. |
+| Hinzufügen schlägt mit 403 fehl | Dem API-Schlüssel fehlt **Manage Inventory**. |
+| Hinweis „Spoolman hat den Preis nicht übernommen“ | Die Spule ist angelegt, Spoolman hat den Preis abgelehnt. In Spoolman nachtragen. |
+| Hinweis „Tag nicht verknüpft“ | Die Spule ist angelegt, der Tag hängt schon an einer anderen Spule oder ist ungültig. |
+| EAN ohne Daten | UPCitemdb kennt sie nicht oder das Tageslimit ist erreicht. Titel einfügen oder Etikett fotografieren. |
