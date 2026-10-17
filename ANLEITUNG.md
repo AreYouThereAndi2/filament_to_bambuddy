@@ -135,6 +135,8 @@ Kennt keine Datenbank den Code (z. B. eine Artikelnummer wie `700-001-1535`), so
 3. Auf der Produktseite das Lesezeichen **„→ Filament“** antippen. Die App öffnet sich mit Name, Marke, Material, Farbe und Preis der Seite. Hat die Seite eine EAN, schlägt die App diese zusätzlich in den Datenbanken nach.
 4. Prüfen, **Hinzufügen**. Die App merkt sich die Daten für die Artikelnummer und für die EAN der Seite: Beim nächsten Scan sind sie sofort da.
 
+**Am einfachsten, ohne Einrichtung (iPhone und Android):** Auf der Produktseite oder in der Shop-App (auch Amazon) **Teilen → Kopieren**, zurück in die App und **„📋 Aus der Zwischenablage übernehmen“** tippen. Alternativ den Link oder den kopierten Text ins Feld „Produkttitel …“ einfügen und **Ausfüllen** tippen. Aus dem Link liest der Server die Seite: Bei normalen Shops kommen Name, EAN und Preis. Amazon gibt Servern keine Seite heraus, dort zählt der mitkopierte Name aus „Teilen → Kopieren“.
+
 **Das Lesezeichen einrichten:** In der App ganz unten „📲 Shop-Knopf einrichten“ aufklappen, **Code kopieren** und der Anleitung dort folgen. Kurz:
 - **iPhone:** In Safari irgendeine Seite als Lesezeichen sichern, Name „→ Filament“. Dann Lesezeichen → Bearbeiten → das Lesezeichen öffnen → Adresse durch den kopierten Code ersetzen. Benutzen: Lesezeichen → „→ Filament“.
 - **Android:** In Chrome ein Lesezeichen anlegen, bearbeiten, Name „Filament“, URL = kopierter Code. Benutzen: in die Adresszeile „Filament“ tippen und den Lesezeichen-Eintrag mit dem Stern wählen.
