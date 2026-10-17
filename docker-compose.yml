@@ -1,8 +1,13 @@
 services:
   filament-to-bambuddy:
-    build: .
-    # Or, once you publish an image:
-    # image: ghcr.io/hibikipr/filament_to_bambuddy:latest
+    build:
+      context: .
+      args:
+        # Shown in the page footer. Set it when building from a checkout:
+        #   F2B_VERSION=$(git describe --tags --always) docker compose up -d --build
+        VERSION: ${F2B_VERSION:-dev}
+    # Or, once this fork publishes an image (GitHub Actions switched on):
+    # image: ghcr.io/areyouthereandi2/filament_to_bambuddy:latest
     container_name: filament_to_bambuddy
     restart: unless-stopped
     ports:

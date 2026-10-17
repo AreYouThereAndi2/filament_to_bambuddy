@@ -2,6 +2,8 @@
 
 [![Build and publish image](https://github.com/hibikipr/filament_to_bambuddy/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/hibikipr/filament_to_bambuddy/actions/workflows/docker-publish.yml)
 
+> 🇩🇪 **Installation, Update und Fehlersuche auf Deutsch: [ANLEITUNG.md](ANLEITUNG.md).** Änderungen: [CHANGELOG.md](CHANGELOG.md).
+
 Scan a third-party filament box barcode with your phone and add the new spool to
 your [Bambuddy](https://github.com/) filament inventory.
 
@@ -139,8 +141,11 @@ docker compose up -d --build
 instead of building:
 
 ```yaml
-    image: ghcr.io/hibikipr/filament_to_bambuddy:latest
+    image: ghcr.io/areyouthereandi2/filament_to_bambuddy:latest
 ```
+
+(This fork's workflows only run once GitHub Actions is switched on for it
+under **Actions** in the repository; until then build from the checkout.)
 
 (After the first publish, set the package's visibility to **Public** in your
 GitHub package settings if you want to pull it without authenticating.)
