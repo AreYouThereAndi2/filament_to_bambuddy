@@ -2,6 +2,15 @@
 
 Releases of the fork [AreYouThereAndi2/filament_to_bambuddy](https://github.com/AreYouThereAndi2/filament_to_bambuddy). Installation and updates in German: [ANLEITUNG.md](ANLEITUNG.md).
 
+## Unreleased
+
+### New
+- **Hand a shop page back to the app.** The "→ Filament" bookmark (iOS and Android) reads the product page in the user's own browser: schema.org Product data, Amazon's title and price, OpenGraph. It opens the app with name, brand, EAN and price. The app remembers which code the user searched the web for and lands on it. On Android, **Share → Filament** does the same once the app is installed; the server reads the shared page once for its Product data.
+- The article number and the page's EAN are both remembered when the spool is added.
+- **🔦 Torch** while scanning, wherever the browser allows a page to switch it.
+- Amazon codes: an FNSKU (`X00…`) explains itself and links to the orders, and an ASIN (`B0…`) opens its listing.
+- iOS: the NFC button is hidden. Web NFC does not exist there; the field for a UID stays.
+
 ## v1.0.0
 
 This is the fork's first release. It is built for **BamBuddy with Spoolman behind it** and for the **SpoolmanScale** barcode scanner.

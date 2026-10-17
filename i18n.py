@@ -36,6 +36,7 @@ EN = {
         "server_error": "Server error",
     },
     "scan": {
+        "torch": "🔦 Light",
         "refresh_db": "⟳ Refresh DB",
         "refreshing_db": "Refreshing database…",
         "refresh_updated": "Updated: {barcodes} OFD barcodes, {brands} brands.",
@@ -116,6 +117,7 @@ EN = {
         "parse_request_failed": "Parse failed",
     },
     "badge": {
+        "page": "From {host} — check carefully",
         "cache": "remembered",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
@@ -144,6 +146,26 @@ EN = {
         "failed": "Failed",
         "request_failed": "Request failed",
     },
+    "import": {
+        "reading": "Reading the shop page …",
+        "failed": "The shop page could not be taken over",
+        "done": "Taken over from {host}: please check",
+        "empty": "The page gave no product data. Paste the article's name and tap Fill.",
+        "price_hint": "Price on the page: {price}.",
+    },
+    "bm": {
+        "title": "📲 Set up the shop button (iPhone & Android)",
+        "intro": "A bookmark that sends a shop page (Amazon, 3DJake …) back to this app: name, brand, EAN and price. Tap “Search the web” here first, then the app knows which code the page is for.",
+        "copy": "Copy the code",
+        "copied": "Copied",
+        "ios_1": "Copy the code above. In Safari, bookmark this page (Share → Add Bookmark) and name it “→ Filament”.",
+        "ios_2": "Open the bookmarks, tap Edit, open “→ Filament” and replace its address with the copied code.",
+        "ios_3": "On a shop page: Bookmarks → “→ Filament”.",
+        "android_1": "Copy the code above. In Chrome, bookmark this page (⋮ → ☆), then edit the bookmark: name “Filament”, URL = the copied code.",
+        "android_2": "On a shop page, type “Filament” into the address bar and tap the bookmark entry with the star (not the search).",
+        "android_3": "With the app installed, Share → Filament works too, from the Amazon app as well.",
+        "inapp": "Links from the installed app may open in a built-in browser without bookmarks: choose “Open in Safari” or “Open in Chrome” there.",
+    },
 }
 
 DE = {
@@ -164,6 +186,7 @@ DE = {
         "server_error": "Serverfehler",
     },
     "scan": {
+        "torch": "🔦 Licht",
         "refresh_db": "⟳ Datenbank aktualisieren",
         "refreshing_db": "Datenbank wird aktualisiert…",
         "refresh_updated": "Aktualisiert: {barcodes} OFD-Barcodes, {brands} Marken.",
@@ -244,6 +267,7 @@ DE = {
         "parse_request_failed": "Verarbeitung fehlgeschlagen",
     },
     "badge": {
+        "page": "Von {host} — bitte prüfen",
         "cache": "gespeichert",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
@@ -273,6 +297,26 @@ DE = {
         "failed": "Fehlgeschlagen",
         "request_failed": "Anfrage fehlgeschlagen",
     },
+    "import": {
+        "reading": "Shop-Seite wird gelesen …",
+        "failed": "Die Shop-Seite konnte nicht übernommen werden",
+        "done": "Von {host} übernommen: bitte prüfen",
+        "empty": "Die Seite hat keine Produktdaten geliefert. Artikelnamen einfügen und auf Ausfüllen tippen.",
+        "price_hint": "Preis auf der Seite: {price}.",
+    },
+    "bm": {
+        "title": "📲 Shop-Knopf einrichten (iPhone & Android)",
+        "intro": "Ein Lesezeichen, das eine Shop-Seite (Amazon, 3DJake …) an diese App zurückgibt: Name, Marke, EAN und Preis. Vorher hier „Im Web suchen“ tippen, dann weiß die App, zu welchem Code die Seite gehört.",
+        "copy": "Code kopieren",
+        "copied": "Kopiert",
+        "ios_1": "Code oben kopieren. In Safari diese Seite als Lesezeichen sichern (Teilen → Lesezeichen hinzufügen), Name „→ Filament“.",
+        "ios_2": "Lesezeichen öffnen, Bearbeiten tippen, „→ Filament“ öffnen und die Adresse durch den kopierten Code ersetzen.",
+        "ios_3": "Auf einer Shop-Seite: Lesezeichen → „→ Filament“.",
+        "android_1": "Code oben kopieren. In Chrome diese Seite als Lesezeichen speichern (⋮ → ☆), dann bearbeiten: Name „Filament“, URL = kopierter Code.",
+        "android_2": "Auf einer Shop-Seite „Filament“ in die Adresszeile tippen und den Lesezeichen-Eintrag mit dem Stern antippen (nicht die Suche).",
+        "android_3": "Mit installierter App geht auch Teilen → Filament, auch aus der Amazon-App.",
+        "inapp": "Links aus der installierten App öffnen sich manchmal in einem eingebauten Browser ohne Lesezeichen: dort „In Safari öffnen“ bzw. „In Chrome öffnen“ wählen.",
+    },
 }
 
 ES = {
@@ -291,6 +335,7 @@ ES = {
         "server_error": "Error del servidor",
     },
     "scan": {
+        "torch": "🔦 Luz",
         "refresh_db": "⟳ Actualizar BD",
         "refreshing_db": "Actualizando base de datos…",
         "refresh_updated": "Actualizado: {barcodes} códigos OFD, {brands} marcas.",
@@ -371,6 +416,7 @@ ES = {
         "parse_request_failed": "Error al analizar",
     },
     "badge": {
+        "page": "De {host} — revisa con cuidado",
         "cache": "recordado",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
@@ -400,6 +446,26 @@ ES = {
         "failed": "Error",
         "request_failed": "Error en la solicitud",
     },
+    "import": {
+        "reading": "Leyendo la página de la tienda …",
+        "failed": "No se pudo importar la página de la tienda",
+        "done": "Importado de {host}: revisa los datos",
+        "empty": "La página no dio datos del producto. Pega el nombre del artículo y pulsa Rellenar.",
+        "price_hint": "Precio en la página: {price}.",
+    },
+    "bm": {
+        "title": "📲 Configurar el botón de tienda (iPhone y Android)",
+        "intro": "Un marcador que devuelve una página de tienda (Amazon, 3DJake …) a esta app: nombre, marca, EAN y precio. Pulsa antes «Buscar en la web» aquí, así la app sabe a qué código pertenece la página.",
+        "copy": "Copiar el código",
+        "copied": "Copiado",
+        "ios_1": "Copia el código de arriba. En Safari, guarda esta página como marcador (Compartir → Añadir marcador) con el nombre «→ Filament».",
+        "ios_2": "Abre los marcadores, pulsa Editar, abre «→ Filament» y sustituye su dirección por el código copiado.",
+        "ios_3": "En una página de tienda: Marcadores → «→ Filament».",
+        "android_1": "Copia el código de arriba. En Chrome, guarda esta página como marcador (⋮ → ☆) y edítalo: nombre «Filament», URL = el código copiado.",
+        "android_2": "En una página de tienda, escribe «Filament» en la barra de direcciones y toca la entrada del marcador con la estrella (no la búsqueda).",
+        "android_3": "Con la app instalada también funciona Compartir → Filament, incluso desde la app de Amazon.",
+        "inapp": "Los enlaces de la app instalada pueden abrirse en un navegador integrado sin marcadores: elige allí «Abrir en Safari» o «Abrir en Chrome».",
+    },
 }
 
 FR = {
@@ -418,6 +484,7 @@ FR = {
         "server_error": "Erreur serveur",
     },
     "scan": {
+        "torch": "🔦 Lumière",
         "refresh_db": "⟳ Actualiser la BD",
         "refreshing_db": "Actualisation de la base de données…",
         "refresh_updated": "Mis à jour : {barcodes} codes OFD, {brands} marques.",
@@ -498,6 +565,7 @@ FR = {
         "parse_request_failed": "Échec de l'analyse",
     },
     "badge": {
+        "page": "De {host} — à vérifier",
         "cache": "mémorisé",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
@@ -527,6 +595,26 @@ FR = {
         "failed": "Échec",
         "request_failed": "Échec de la requête",
     },
+    "import": {
+        "reading": "Lecture de la page du magasin …",
+        "failed": "Impossible de reprendre la page du magasin",
+        "done": "Repris de {host} : à vérifier",
+        "empty": "La page n'a fourni aucune donnée produit. Collez le nom de l'article et appuyez sur Remplir.",
+        "price_hint": "Prix sur la page : {price}.",
+    },
+    "bm": {
+        "title": "📲 Configurer le bouton boutique (iPhone et Android)",
+        "intro": "Un favori qui renvoie une page de boutique (Amazon, 3DJake …) vers cette appli : nom, marque, EAN et prix. Appuyez d'abord ici sur « Rechercher sur le web », l'appli sait alors à quel code la page correspond.",
+        "copy": "Copier le code",
+        "copied": "Copié",
+        "ios_1": "Copiez le code ci-dessus. Dans Safari, ajoutez cette page aux favoris (Partager → Ajouter un signet), nom « → Filament ».",
+        "ios_2": "Ouvrez les signets, touchez Modifier, ouvrez « → Filament » et remplacez son adresse par le code copié.",
+        "ios_3": "Sur une page de boutique : Signets → « → Filament ».",
+        "android_1": "Copiez le code ci-dessus. Dans Chrome, ajoutez cette page aux favoris (⋮ → ☆), puis modifiez-le : nom « Filament », URL = le code copié.",
+        "android_2": "Sur une page de boutique, tapez « Filament » dans la barre d'adresse et touchez l'entrée du favori avec l'étoile (pas la recherche).",
+        "android_3": "Avec l'appli installée, Partager → Filament fonctionne aussi, même depuis l'appli Amazon.",
+        "inapp": "Les liens de l'appli installée peuvent s'ouvrir dans un navigateur intégré sans favoris : choisissez-y « Ouvrir dans Safari » ou « Ouvrir dans Chrome ».",
+    },
 }
 
 JA = {
@@ -545,6 +633,7 @@ JA = {
         "server_error": "サーバーエラー",
     },
     "scan": {
+        "torch": "🔦 ライト",
         "refresh_db": "⟳ データベースを更新",
         "refreshing_db": "データベースを更新中…",
         "refresh_updated": "更新完了：OFDバーコード {barcodes} 件、ブランド {brands} 件。",
@@ -622,6 +711,7 @@ JA = {
         "parse_request_failed": "解析に失敗しました",
     },
     "badge": {
+        "page": "{host} から取得 — 要確認",
         "cache": "記憶済み",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
@@ -650,6 +740,26 @@ JA = {
         "failed": "失敗しました",
         "request_failed": "リクエストに失敗しました",
     },
+    "import": {
+        "reading": "ショップページを読み込み中 …",
+        "failed": "ショップページを取り込めませんでした",
+        "done": "{host} から取り込みました：内容を確認してください",
+        "empty": "ページに商品データがありませんでした。商品名を貼り付けて自動入力をタップしてください。",
+        "price_hint": "ページ上の価格: {price}。",
+    },
+    "bm": {
+        "title": "📲 ショップボタンを設定（iPhone・Android）",
+        "intro": "ショップページ（Amazon、3DJake など）の商品名・ブランド・EAN・価格をこのアプリに送り返すブックマークです。先にここで「ウェブで検索」をタップすると、どのコードのページかをアプリが覚えます。",
+        "copy": "コードをコピー",
+        "copied": "コピーしました",
+        "ios_1": "上のコードをコピーします。Safari でこのページをブックマークに追加し（共有 → ブックマークを追加）、名前を「→ Filament」にします。",
+        "ios_2": "ブックマークを開いて「編集」をタップし、「→ Filament」を開いてアドレスをコピーしたコードに置き換えます。",
+        "ios_3": "ショップページで：ブックマーク → 「→ Filament」。",
+        "android_1": "上のコードをコピーします。Chrome でこのページをブックマークし（⋮ → ☆）、編集で名前「Filament」、URL をコピーしたコードにします。",
+        "android_2": "ショップページでアドレスバーに「Filament」と入力し、星印の付いたブックマーク候補をタップします（検索ではなく）。",
+        "android_3": "アプリをインストールしていれば、共有 → Filament も使えます（Amazon アプリからも）。",
+        "inapp": "インストールしたアプリのリンクは、ブックマークのない内蔵ブラウザで開くことがあります。その場合は「Safariで開く」または「Chromeで開く」を選んでください。",
+    },
 }
 
 IT = {
@@ -668,6 +778,7 @@ IT = {
         "server_error": "Errore del server",
     },
     "scan": {
+        "torch": "🔦 Luce",
         "refresh_db": "⟳ Aggiorna DB",
         "refreshing_db": "Aggiornamento database…",
         "refresh_updated": "Aggiornato: {barcodes} codici OFD, {brands} marchi.",
@@ -748,6 +859,7 @@ IT = {
         "parse_request_failed": "Analisi non riuscita",
     },
     "badge": {
+        "page": "Da {host} — controlla bene",
         "cache": "memorizzato",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
@@ -777,6 +889,26 @@ IT = {
         "failed": "Non riuscito",
         "request_failed": "Richiesta non riuscita",
     },
+    "import": {
+        "reading": "Lettura della pagina del negozio …",
+        "failed": "Impossibile importare la pagina del negozio",
+        "done": "Importato da {host}: controlla",
+        "empty": "La pagina non ha fornito dati di prodotto. Incolla il nome dell'articolo e tocca Compila.",
+        "price_hint": "Prezzo sulla pagina: {price}.",
+    },
+    "bm": {
+        "title": "📲 Configura il pulsante negozio (iPhone e Android)",
+        "intro": "Un segnalibro che rimanda una pagina di negozio (Amazon, 3DJake …) a questa app: nome, marca, EAN e prezzo. Tocca prima qui «Cerca sul web», così l'app sa a quale codice appartiene la pagina.",
+        "copy": "Copia il codice",
+        "copied": "Copiato",
+        "ios_1": "Copia il codice qui sopra. In Safari aggiungi questa pagina ai preferiti (Condividi → Aggiungi segnalibro) con nome «→ Filament».",
+        "ios_2": "Apri i segnalibri, tocca Modifica, apri «→ Filament» e sostituisci l'indirizzo con il codice copiato.",
+        "ios_3": "Su una pagina di negozio: Segnalibri → «→ Filament».",
+        "android_1": "Copia il codice qui sopra. In Chrome aggiungi questa pagina ai preferiti (⋮ → ☆), poi modificalo: nome «Filament», URL = il codice copiato.",
+        "android_2": "Su una pagina di negozio scrivi «Filament» nella barra degli indirizzi e tocca la voce del segnalibro con la stella (non la ricerca).",
+        "android_3": "Con l'app installata funziona anche Condividi → Filament, anche dall'app Amazon.",
+        "inapp": "I link dall'app installata possono aprirsi in un browser integrato senza segnalibri: scegli lì «Apri in Safari» o «Apri in Chrome».",
+    },
 }
 
 KO = {
@@ -795,6 +927,7 @@ KO = {
         "server_error": "서버 오류",
     },
     "scan": {
+        "torch": "🔦 조명",
         "refresh_db": "⟳ DB 새로고침",
         "refreshing_db": "데이터베이스 업데이트 중…",
         "refresh_updated": "업데이트됨: OFD 바코드 {barcodes}개, 브랜드 {brands}개.",
@@ -872,6 +1005,7 @@ KO = {
         "parse_request_failed": "분석 실패",
     },
     "badge": {
+        "page": "{host}에서 가져옴 — 확인 필요",
         "cache": "저장됨",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
@@ -900,6 +1034,26 @@ KO = {
         "failed": "실패",
         "request_failed": "요청 실패",
     },
+    "import": {
+        "reading": "쇼핑몰 페이지를 읽는 중 …",
+        "failed": "쇼핑몰 페이지를 가져오지 못했습니다",
+        "done": "{host}에서 가져왔습니다: 확인하세요",
+        "empty": "페이지에 상품 정보가 없습니다. 상품명을 붙여넣고 채우기를 누르세요.",
+        "price_hint": "페이지의 가격: {price}.",
+    },
+    "bm": {
+        "title": "📲 쇼핑 버튼 설정 (iPhone 및 Android)",
+        "intro": "쇼핑몰 페이지(Amazon, 3DJake 등)의 이름, 브랜드, EAN, 가격을 이 앱으로 보내는 북마크입니다. 먼저 여기서 '웹에서 검색'을 누르면 앱이 어떤 코드의 페이지인지 기억합니다.",
+        "copy": "코드 복사",
+        "copied": "복사됨",
+        "ios_1": "위의 코드를 복사합니다. Safari에서 이 페이지를 북마크에 추가하고(공유 → 북마크 추가) 이름을 '→ Filament'로 합니다.",
+        "ios_2": "북마크를 열고 편집을 누른 다음 '→ Filament'를 열어 주소를 복사한 코드로 바꿉니다.",
+        "ios_3": "쇼핑몰 페이지에서: 북마크 → '→ Filament'.",
+        "android_1": "위의 코드를 복사합니다. Chrome에서 이 페이지를 북마크하고(⋮ → ☆) 편집합니다: 이름 'Filament', URL = 복사한 코드.",
+        "android_2": "쇼핑몰 페이지의 주소창에 'Filament'를 입력하고 별 표시가 있는 북마크 항목을 누릅니다(검색 아님).",
+        "android_3": "앱을 설치했다면 공유 → Filament도 사용할 수 있습니다(Amazon 앱에서도).",
+        "inapp": "설치한 앱의 링크는 북마크가 없는 내장 브라우저에서 열릴 수 있습니다. 그곳에서 'Safari에서 열기' 또는 'Chrome에서 열기'를 선택하세요.",
+    },
 }
 
 PT_BR = {
@@ -918,6 +1072,7 @@ PT_BR = {
         "server_error": "Erro do servidor",
     },
     "scan": {
+        "torch": "🔦 Luz",
         "refresh_db": "⟳ Atualizar BD",
         "refreshing_db": "Atualizando banco de dados…",
         "refresh_updated": "Atualizado: {barcodes} códigos OFD, {brands} marcas.",
@@ -998,6 +1153,7 @@ PT_BR = {
         "parse_request_failed": "Falha na análise",
     },
     "badge": {
+        "page": "De {host} — confira bem",
         "cache": "memorizado",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
@@ -1027,6 +1183,26 @@ PT_BR = {
         "failed": "Falhou",
         "request_failed": "Falha na solicitação",
     },
+    "import": {
+        "reading": "Lendo a página da loja …",
+        "failed": "Não foi possível importar a página da loja",
+        "done": "Importado de {host}: confira",
+        "empty": "A página não forneceu dados do produto. Cole o nome do item e toque em Preencher.",
+        "price_hint": "Preço na página: {price}.",
+    },
+    "bm": {
+        "title": "📲 Configurar o botão da loja (iPhone e Android)",
+        "intro": "Um favorito que devolve uma página de loja (Amazon, 3DJake …) para este app: nome, marca, EAN e preço. Toque antes em “Pesquisar na web” aqui, assim o app sabe a qual código a página pertence.",
+        "copy": "Copiar o código",
+        "copied": "Copiado",
+        "ios_1": "Copie o código acima. No Safari, adicione esta página aos favoritos (Compartilhar → Adicionar favorito) com o nome “→ Filament”.",
+        "ios_2": "Abra os favoritos, toque em Editar, abra “→ Filament” e substitua o endereço pelo código copiado.",
+        "ios_3": "Em uma página de loja: Favoritos → “→ Filament”.",
+        "android_1": "Copie o código acima. No Chrome, adicione esta página aos favoritos (⋮ → ☆) e edite: nome “Filament”, URL = o código copiado.",
+        "android_2": "Em uma página de loja, digite “Filament” na barra de endereço e toque na entrada do favorito com a estrela (não na pesquisa).",
+        "android_3": "Com o app instalado, Compartilhar → Filament também funciona, inclusive no app da Amazon.",
+        "inapp": "Links do app instalado podem abrir em um navegador embutido sem favoritos: escolha ali “Abrir no Safari” ou “Abrir no Chrome”.",
+    },
 }
 
 ZH_CN = {
@@ -1045,6 +1221,7 @@ ZH_CN = {
         "server_error": "服务器错误",
     },
     "scan": {
+        "torch": "🔦 手电筒",
         "refresh_db": "⟳ 刷新数据库",
         "refreshing_db": "正在更新数据库…",
         "refresh_updated": "已更新：{barcodes} 个 OFD 条码，{brands} 个品牌。",
@@ -1122,6 +1299,7 @@ ZH_CN = {
         "parse_request_failed": "解析失败",
     },
     "badge": {
+        "page": "来自 {host} — 请核对",
         "cache": "已记住",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
@@ -1150,6 +1328,26 @@ ZH_CN = {
         "failed": "失败",
         "request_failed": "请求失败",
     },
+    "import": {
+        "reading": "正在读取商店页面 …",
+        "failed": "无法导入商店页面",
+        "done": "已从 {host} 导入：请核对",
+        "empty": "页面没有提供商品数据。请粘贴商品名称并点击填充。",
+        "price_hint": "页面上的价格：{price}。",
+    },
+    "bm": {
+        "title": "📲 设置商店按钮（iPhone 和 Android）",
+        "intro": "一个书签，可把商店页面（Amazon、3DJake 等）的名称、品牌、EAN 和价格发送回本应用。请先在这里点击“在网上搜索”，应用便会记住该页面对应的代码。",
+        "copy": "复制代码",
+        "copied": "已复制",
+        "ios_1": "复制上面的代码。在 Safari 中将此页面添加为书签（共享 → 添加书签），名称为“→ Filament”。",
+        "ios_2": "打开书签，点击编辑，打开“→ Filament”，将地址替换为复制的代码。",
+        "ios_3": "在商店页面：书签 → “→ Filament”。",
+        "android_1": "复制上面的代码。在 Chrome 中将此页面加入书签（⋮ → ☆），然后编辑：名称“Filament”，网址 = 复制的代码。",
+        "android_2": "在商店页面的地址栏输入“Filament”，点击带星号的书签条目（不是搜索）。",
+        "android_3": "安装应用后，也可以使用 共享 → Filament，包括在 Amazon 应用中。",
+        "inapp": "从已安装应用打开的链接可能在没有书签的内置浏览器中打开：请在那里选择“在 Safari 中打开”或“在 Chrome 中打开”。",
+    },
 }
 
 ZH_TW = {
@@ -1168,6 +1366,7 @@ ZH_TW = {
         "server_error": "伺服器錯誤",
     },
     "scan": {
+        "torch": "🔦 手電筒",
         "refresh_db": "⟳ 重新整理資料庫",
         "refreshing_db": "正在更新資料庫…",
         "refresh_updated": "已更新：{barcodes} 個 OFD 條碼，{brands} 個品牌。",
@@ -1245,6 +1444,7 @@ ZH_TW = {
         "parse_request_failed": "解析失敗",
     },
     "badge": {
+        "page": "來自 {host} — 請核對",
         "cache": "已記住",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
@@ -1273,6 +1473,26 @@ ZH_TW = {
         "failed": "失敗",
         "request_failed": "請求失敗",
     },
+    "import": {
+        "reading": "正在讀取商店頁面 …",
+        "failed": "無法匯入商店頁面",
+        "done": "已從 {host} 匯入：請核對",
+        "empty": "頁面沒有提供商品資料。請貼上商品名稱並點擊自動填入。",
+        "price_hint": "頁面上的價格：{price}。",
+    },
+    "bm": {
+        "title": "📲 設定商店按鈕（iPhone 與 Android）",
+        "intro": "一個書籤，可把商店頁面（Amazon、3DJake 等）的名稱、品牌、EAN 和價格傳回本應用程式。請先在這裡點擊「在網路上搜尋」，應用程式便會記住該頁面對應的代碼。",
+        "copy": "複製代碼",
+        "copied": "已複製",
+        "ios_1": "複製上方的代碼。在 Safari 中將此頁面加入書籤（分享 → 加入書籤），名稱為「→ Filament」。",
+        "ios_2": "打開書籤，點擊編輯，打開「→ Filament」，將網址替換為複製的代碼。",
+        "ios_3": "在商店頁面：書籤 → 「→ Filament」。",
+        "android_1": "複製上方的代碼。在 Chrome 中將此頁面加入書籤（⋮ → ☆），然後編輯：名稱「Filament」，網址 = 複製的代碼。",
+        "android_2": "在商店頁面的網址列輸入「Filament」，點擊帶星號的書籤項目（不是搜尋）。",
+        "android_3": "安裝應用程式後，也可以使用 分享 → Filament，包括在 Amazon 應用程式中。",
+        "inapp": "從已安裝應用程式開啟的連結可能會在沒有書籤的內建瀏覽器中開啟：請在那裡選擇「在 Safari 中開啟」或「在 Chrome 中開啟」。",
+    },
 }
 
 TR = {
@@ -1291,6 +1511,7 @@ TR = {
         "server_error": "Sunucu hatası",
     },
     "scan": {
+        "torch": "🔦 Işık",
         "refresh_db": "⟳ Veritabanını Yenile",
         "refreshing_db": "Veritabanı güncelleniyor…",
         "refresh_updated": "Güncellendi: {barcodes} OFD barkodu, {brands} marka.",
@@ -1371,6 +1592,7 @@ TR = {
         "parse_request_failed": "Ayrıştırma başarısız oldu",
     },
     "badge": {
+        "page": "{host} kaynağından — dikkatle kontrol edin",
         "cache": "hatırlandı",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
@@ -1399,6 +1621,26 @@ TR = {
         "added_plural": "{count} makara eklendi",
         "failed": "Başarısız oldu",
         "request_failed": "İstek başarısız oldu",
+    },
+    "import": {
+        "reading": "Mağaza sayfası okunuyor …",
+        "failed": "Mağaza sayfası alınamadı",
+        "done": "{host} kaynağından alındı: lütfen kontrol edin",
+        "empty": "Sayfa ürün bilgisi vermedi. Ürün adını yapıştırıp Doldur'a dokunun.",
+        "price_hint": "Sayfadaki fiyat: {price}.",
+    },
+    "bm": {
+        "title": "📲 Mağaza düğmesini kur (iPhone ve Android)",
+        "intro": "Bir mağaza sayfasını (Amazon, 3DJake …) bu uygulamaya geri gönderen bir yer imi: ad, marka, EAN ve fiyat. Önce burada “Web'de ara”ya dokunun, böylece uygulama sayfanın hangi koda ait olduğunu bilir.",
+        "copy": "Kodu kopyala",
+        "copied": "Kopyalandı",
+        "ios_1": "Yukarıdaki kodu kopyalayın. Safari'de bu sayfayı yer imlerine ekleyin (Paylaş → Yer İmi Ekle), adı “→ Filament” olsun.",
+        "ios_2": "Yer imlerini açın, Düzenle'ye dokunun, “→ Filament”i açın ve adresini kopyalanan kodla değiştirin.",
+        "ios_3": "Bir mağaza sayfasında: Yer İmleri → “→ Filament”.",
+        "android_1": "Yukarıdaki kodu kopyalayın. Chrome'da bu sayfayı yer imlerine ekleyin (⋮ → ☆), sonra düzenleyin: ad “Filament”, URL = kopyalanan kod.",
+        "android_2": "Bir mağaza sayfasında adres çubuğuna “Filament” yazın ve yıldızlı yer imi girişine dokunun (aramaya değil).",
+        "android_3": "Uygulama yüklüyse Paylaş → Filament de çalışır, Amazon uygulamasından da.",
+        "inapp": "Yüklü uygulamadaki bağlantılar yer imi olmayan yerleşik bir tarayıcıda açılabilir: orada “Safari'de aç” veya “Chrome'da aç”ı seçin.",
     },
 }
 
