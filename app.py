@@ -32,7 +32,7 @@ import time
 from pathlib import Path
 
 import requests
-from flask import Flask, jsonify, make_response, render_template, request
+from flask import Flask, Response, jsonify, make_response, render_template, request
 
 import i18n
 
@@ -883,6 +883,61 @@ def add_spool():
     return jsonify(ok=ok, created=created, requested=quantity, spool_ids=spool_ids,
                    errors=errors, warnings=warnings, tag_error=tag_error,
                    bambuddy=BAMBUDDY_URL), (200 if created else 502)
+
+
+# ---- spool labels -----------------------------------------------------------
+# Bambuddy draws its own spool labels, the same templates its inventory page
+# prints (since 1.2.5.7 also as a PNG at a thermal printer's 203 dpi). This
+# app only fetches one for the phone, which shows it and, when asked, sends
+# it to the label printer over Bluetooth: Bambuddy's layout, never printed
+# without a tap.
+LABEL_TEMPLATES = ("box_40x30", "box_62x29", "ams_holder_74x33", "ams_holder_75x55")
+LABEL_FIELDS = ("brand", "material", "hex", "name", "location", "material_number",
+                "temps", "weight", "note", "added", "qr", "spool_id")
+
+
+def _labels_path() -> str:
+    """Bambuddy's label route for the active inventory: its own spools or
+    Spoolman's, which have ids of their own."""
+    return ("/api/v1/spoolman/labels" if _inventory_base() == "/api/v1/spoolman/inventory"
+            else "/api/v1/inventory/labels")
+
+
+@app.post("/api/label")
+def spool_label():
+    """One spool's label from Bambuddy as a 203 dpi monochrome PNG."""
+    if not BAMBUDDY_API_KEY:
+        return jsonify(ok=False, error="BAMBUDDY_API_KEY not set on the server"), 400
+    body = request.get_json(force=True, silent=True) or {}
+    try:
+        spool_id = int(body.get("spool_id"))
+    except (TypeError, ValueError):
+        spool_id = 0
+    if spool_id < 1:
+        return jsonify(ok=False, error="spool_id"), 400
+    template = body.get("template") or LABEL_TEMPLATES[0]
+    if template not in LABEL_TEMPLATES:
+        return jsonify(ok=False, error="template"), 400
+    fields = body.get("fields")
+    fields = ([f for f in fields if f in LABEL_FIELDS] if isinstance(fields, list) else None)
+    payload = {"spool_ids": [spool_id], "template": template, "monochrome": True,
+               "format": "png", "dpi": 203}
+    if fields is not None:
+        payload["fields"] = fields
+    try:
+        r = requests.post(f"{BAMBUDDY_URL}{_labels_path()}", json=payload, timeout=30,
+                          headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "image/png"})
+    except Exception as e:
+        log.warning("label for spool %s: Bambuddy not reachable: %s", spool_id, e)
+        return jsonify(ok=False, error="unreachable"), 502
+    if r.ok and r.headers.get("Content-Type", "").startswith("image/png"):
+        return Response(r.content, mimetype="image/png", headers={"Cache-Control": "no-store"})
+    # 404: no such spool. 422 or a PDF: a Bambuddy from before PNG labels.
+    error = {404: "not_found", 422: "too_old"}.get(r.status_code, "failed")
+    if r.ok:
+        error = "too_old"
+    log.warning("label for spool %s: Bambuddy %s %s", spool_id, r.status_code, r.text[:200] if not r.ok else "")
+    return jsonify(ok=False, error=error, status=r.status_code), 502
 
 
 if __name__ == "__main__":
