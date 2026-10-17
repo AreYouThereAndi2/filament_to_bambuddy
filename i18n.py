@@ -122,6 +122,7 @@ EN = {
     "badge": {
         "page": "From {host} — check carefully",
         "cache": "remembered",
+        "tigertag": "TigerTag",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
         "label": "read from label photo — check carefully",
@@ -275,6 +276,7 @@ DE = {
     "badge": {
         "page": "Von {host} — bitte prüfen",
         "cache": "gespeichert",
+        "tigertag": "TigerTag",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
         "label": "vom Etikettfoto gelesen — bitte prüfen",
@@ -427,6 +429,7 @@ ES = {
     "badge": {
         "page": "De {host} — revisa con cuidado",
         "cache": "recordado",
+        "tigertag": "TigerTag",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
         "label": "leído de la foto de la etiqueta — verifica con cuidado",
@@ -579,6 +582,7 @@ FR = {
     "badge": {
         "page": "De {host} — à vérifier",
         "cache": "mémorisé",
+        "tigertag": "TigerTag",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
         "label": "lu depuis la photo de l'étiquette — à vérifier attentivement",
@@ -728,6 +732,7 @@ JA = {
     "badge": {
         "page": "{host} から取得 — 要確認",
         "cache": "記憶済み",
+        "tigertag": "TigerTag",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
         "label": "ラベル写真から読み取り — よく確認してください",
@@ -879,6 +884,7 @@ IT = {
     "badge": {
         "page": "Da {host} — controlla bene",
         "cache": "memorizzato",
+        "tigertag": "TigerTag",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
         "label": "letto dalla foto dell'etichetta — controlla attentamente",
@@ -1028,6 +1034,7 @@ KO = {
     "badge": {
         "page": "{host}에서 가져옴 — 확인 필요",
         "cache": "저장됨",
+        "tigertag": "TigerTag",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
         "label": "라벨 사진에서 읽음 — 주의해서 확인하세요",
@@ -1179,6 +1186,7 @@ PT_BR = {
     "badge": {
         "page": "De {host} — confira bem",
         "cache": "memorizado",
+        "tigertag": "TigerTag",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
         "label": "lido da foto da etiqueta — verifique com cuidado",
@@ -1328,6 +1336,7 @@ ZH_CN = {
     "badge": {
         "page": "来自 {host} — 请核对",
         "cache": "已记住",
+        "tigertag": "TigerTag",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
         "label": "从标签照片读取 — 请仔细核对",
@@ -1476,6 +1485,7 @@ ZH_TW = {
     "badge": {
         "page": "來自 {host} — 請核對",
         "cache": "已記住",
+        "tigertag": "TigerTag",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
         "label": "從標籤照片讀取 — 請仔細核對",
@@ -1627,6 +1637,7 @@ TR = {
     "badge": {
         "page": "{host} kaynağından — dikkatle kontrol edin",
         "cache": "hatırlandı",
+        "tigertag": "TigerTag",
         "ofd": "Open Filament Database",
         "smdb": "SpoolmanDB-Community",
         "label": "etiket fotoğrafından okundu — dikkatlice kontrol edin",

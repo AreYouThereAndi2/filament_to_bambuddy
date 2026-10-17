@@ -640,7 +640,7 @@ async function onBarcode(barcode){
 // may open this page in the browser rather than the installed app, and on
 // iOS the two do not share storage), so the page lands on that code.
 let extraCodes = [];
-const KNOWN = ['cache','ofd','spoolmandb-community','upcitemdb'];
+const KNOWN = ['cache','tigertag','ofd','spoolmandb-community','upcitemdb'];
 function onlyMissing(f){
   const out = {};
   for(const [k,v] of Object.entries(f||{})){
@@ -722,6 +722,7 @@ function applyFields(f){
 function badgeFor(source){
   const BADGE = {
     cache:  [t('badge.cache'), 'cache'],
+    tigertag: [t('badge.tigertag'), 'cache'],
     ofd:    [t('badge.ofd'), 'cache'],
     'spoolmandb-community': [t('badge.smdb'), 'cache'],
     label:  [t('badge.label'), 'upc'],
@@ -886,7 +887,7 @@ $('labelPhoto').onchange = async (e) => {
     const fields = Object.assign({label_weight:1000}, d.fields||{});
     // Did OCR yield anything beyond the default weight?
     const got = !!d.barcode || Object.keys(fields).some(k => k!=='label_weight');
-    const dbSource = d.source==='ofd' || d.source==='spoolmandb-community';
+    const dbSource = ['tigertag','ofd','spoolmandb-community'].includes(d.source);
     fillForm({ source: dbSource ? d.source : (got ? 'label' : 'none'),
                barcode: d.barcode || currentBarcode,
                title: dbSource ? (d.title||'') : '',  // never dump raw OCR text

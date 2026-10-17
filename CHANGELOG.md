@@ -5,6 +5,7 @@ Releases of the fork [AreYouThereAndi2/filament_to_bambuddy](https://github.com/
 ## Unreleased
 
 ### New
+- **TigerTag catalogue first.** Lookups ask [TigerTag](https://tigersystem.io)'s product catalogue (~16,000 filaments, CC0) before the Open Filament Database and SpoolmanDB-Community: makers' article numbers such as Geeetech `700-001-1535` and many EANs resolve right away, with brand, material, subtype, colour, weight and nozzle temperatures. The other databases fill what it leaves open. Refreshed daily and with **Refresh DB**; `TIGERTAG=off` leaves it out.
 - **Hand a shop page back to the app.** The "→ Filament" bookmark (iOS and Android) reads the product page in the user's own browser: schema.org Product data, Amazon's title and price, OpenGraph. It opens the app with name, brand, EAN and price. The app remembers which code the user searched the web for and lands on it. On Android, **Share → Filament** does the same once the app is installed; the server reads the shared page once for its Product data.
 - The article number and the page's EAN are both remembered when the spool is added.
 - **🔦 Torch** while scanning, wherever the browser allows a page to switch it.

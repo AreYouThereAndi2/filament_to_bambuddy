@@ -13,10 +13,12 @@ It's a small mobile web app:
    number for boxes with no retail barcode at all) — or type the number.
 2. **Look up** the product, in order:
    1. your **per-code cache** (anything you've confirmed before),
-   2. the **[Open Filament Database](https://openfilamentdatabase.org)** and
+   2. the **[TigerTag catalogue](https://tigersystem.io)** (~16,000 filaments
+      with the makers' article numbers and many EANs, CC0) first, then the
+      **[Open Filament Database](https://openfilamentdatabase.org)** and
       **[SpoolmanDB-Community](https://github.com/Icezaza2543/SpoolmanDB-Community)** —
       cross-referenced against each other so a hit in one fills in fields the
-      other is missing (e.g. print temps from one, colour from the other),
+      others are missing (e.g. print temps from one, colour from another),
    3. for a retail barcode neither knows (the Amazon long tail):
       **[UPCitemdb](https://www.upcitemdb.com)**, which indexes shop listings
       and offers — its product title is parsed into the form, and the average
@@ -180,6 +182,8 @@ Docker-specific env vars: `OFD_CACHE_FILE` and `BARCODE_CACHE_FILE` default to
 | `BARCODE_CACHE_FILE` | `barcode_cache.json` | Where learned lookups are stored |
 | `OFD_CACHE_FILE` | `ofd_index.json` | Where the OFD index is cached |
 | `SPOOLMANDB_COMMUNITY_CACHE_FILE` | `spoolmandb_community_index.json` | Where the SpoolmanDB-Community index is cached |
+| `TIGERTAG_CACHE_FILE` | `tigertag_index.json` | Where the TigerTag catalogue index is cached |
+| `TIGERTAG` | `on` | `off` leaves the TigerTag catalogue out |
 | `HOST` / `PORT` | `0.0.0.0` / `8088` | Server bind address |
 | `UPC_LOOKUP` | `on` | `off` disables the UPCitemdb fallback |
 | `UPCITEMDB_KEY` | — | Paid UPCitemdb key; without one the free trial is used (100 lookups a day per IP) |
@@ -204,6 +208,7 @@ Each created spool is tagged `data_origin = "barcode-scan"`.
 |---|---|
 | `app.py` | Flask backend: serves the page; `/api/lookup`, `/api/parse`, `/api/spool`, `/api/health`; the learning cache; posts to Bambuddy |
 | `ofd.py` | Open Filament Database client — builds the GTIN + article-number (SKU) indexes, cached/refreshed daily |
+| `tigertag.py` | TigerTag catalogue client — EAN + article-number (SKU) indexes from TigerTag's CC0 catalogue, cached/refreshed daily |
 | `spoolmandb_community.py` | SpoolmanDB-Community client — builds the GTIN + SKU indexes from the community filament repo, cached/refreshed daily |
 | `filament_parse.py` | Heuristics turning product/label text into filament fields (paste-title + label OCR), English and German |
 | `upc_lookup.py` | UPCitemdb fallback for retail barcodes the filament databases don't know; title + average offer price |
