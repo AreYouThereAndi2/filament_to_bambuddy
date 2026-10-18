@@ -277,6 +277,8 @@
   <symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-open" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
@@ -488,6 +490,52 @@
       <button id="submitBtn" type="submit" class="btn-primary">{{ t('form.submit') }}</button>
     </div>
   </form>
+
+  <!-- A spool that already exists, opened from the QR code on its label:
+       link a tag, move it, correct what is left, print a new label. -->
+  <section id="spoolCard" class="card hidden" aria-labelledby="spTitle">
+    <div class="form-head">
+      <h2 id="spTitle" class="card-title grow" style="margin:0"></h2>
+      <button id="spClose" type="button" class="icon-btn" aria-label="{{ t('spool.close') }}"><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="spool" aria-hidden="true">
+      <svg viewBox="0 0 100 100" id="spReel">
+        <circle class="flange" cx="50" cy="50" r="46"/>
+        <circle class="wind" cx="50" cy="50" r="41"/>
+        <circle class="groove" cx="50" cy="50" r="35"/>
+        <circle class="groove" cx="50" cy="50" r="29"/>
+        <circle class="groove" cx="50" cy="50" r="23"/>
+        <circle class="hub" cx="50" cy="50" r="15"/>
+        <circle cx="50" cy="50" r="5" fill="var(--bg)"/>
+      </svg>
+      <div class="spool-text">
+        <p class="spool-mat" id="spMat"></p>
+        <div class="spool-brand" id="spBrand"></div>
+        <div class="spool-meta" id="spMeta"></div>
+      </div>
+    </div>
+    <div id="spInfo" class="codes"></div>
+    <div class="sec">
+      <h3>{{ t('spool.sec_edit') }}</h3>
+      <div class="row">
+        <div><label for="spRemain">{{ t('spool.remaining') }}</label><input id="spRemain" inputmode="decimal"></div>
+        <div><label for="spLocation">{{ t('form.storage_location') }}</label><div class="combo"><input id="spLocation" placeholder="{{ t('combo.placeholder') }}"><span class="combo-chev"></span><ul id="spLocation-list" class="combo-list" hidden></ul></div></div>
+      </div>
+      <label for="spTag">{{ t('form.tag_uid') }}</label>
+      <div class="row">
+        <div><input id="spTag" autocomplete="off" spellcheck="false" placeholder="{{ t('form.tag_placeholder') }}"></div>
+        <div style="flex:0 0 120px"><button id="spNfcBtn" type="button" class="btn-secondary">{{ t('form.nfc_scan') }}</button></div>
+      </div>
+      <div id="spNfcHint" class="hint"></div>
+      <label for="spNote">{{ t('form.note') }}</label>
+      <textarea id="spNote" rows="2" placeholder="{{ t('form.optional_placeholder') }}"></textarea>
+    </div>
+    <div class="two" style="margin-top:16px">
+      <button id="spLabel" type="button" class="btn-secondary with-ico"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span>{{ t('spool.label') }}</span></button>
+      <button id="spOpen" type="button" class="btn-secondary with-ico"><svg class="ico" aria-hidden="true"><use href="#i-open"/></svg><span>{{ t('spool.open_bb') }}</span></button>
+    </div>
+    <button id="spSave" type="button" class="btn-primary" style="margin-top:10px;min-height:52px">{{ t('spool.save') }}</button>
+  </section>
 
   <!-- A spool's label: Bambuddy's own template, shown here dot for dot as
        the label printer prints it, and printed only on a tap. -->
@@ -787,6 +835,7 @@ function makeCombo(id, opt = {}){
 }
 ['material', 'brand', 'subtype', 'storage_location'].forEach(id => makeCombo(id, {create: true}));
 ['color_name', 'label_weight'].forEach(id => makeCombo(id));
+makeCombo('spLocation', {create: true});
 
 function fillSelect(id, opts, o={}){
   if(COMBOS[id]){ COMBOS[id].options = (opts || []).map(String); return; }
@@ -815,6 +864,7 @@ async function loadOptions(){
   fillSelect('subtype', OPTS.subtypes, {blank:true});
   fillSelect('label_weight', OPTS.weights.map(String));
   fillSelect('storage_location', OPTS.locations, {blank:true});
+  fillSelect('spLocation', OPTS.locations);
   fillSelect('color_name', OPTS.colors);
   setSelect('label_weight','1000');
 }
@@ -980,6 +1030,9 @@ $('startBtn').onclick = async () => {
     $('stopBtn').classList.remove('hidden'); setScanHint(t('scan.align_barcode'));
     await reader.decodeFromVideoDevice(undefined, $('video'), (result, err) => {
       if(!result) return;
+      // The QR code on a spool's own label: open that spool, not a lookup.
+      const spoolId = spoolIdFromCode(result.getText());
+      if(spoolId){ stopScan(); openSpool(spoolId); return; }
       if(ZXingBrowser.BarcodeFormat && result.getBarcodeFormat() === ZXingBrowser.BarcodeFormat.CODE_128){
         // Code 128 has its own symbology-level checksum and start/stop
         // pattern, so a successful decode is already trustworthy — unlike a
@@ -1044,6 +1097,8 @@ $('stopBtn').onclick = stopScan;
 $('lookupBtn').onclick = () => {
   const raw = $('manual').value.trim();
   if(!raw) return;
+  const spoolId = spoolIdFromCode(raw);
+  if(spoolId){ openSpool(spoolId); return; }
   const candidate = extractGtinFromManualEntry(raw);
   if(candidate && isValidUpcEanBarcode(candidate)){
     onBarcode(candidate);
@@ -1244,6 +1299,7 @@ function setSearchLink(code, source){
 
 function fillForm(d){
   const f = d.fields || {};
+  closeSpool();
   extraCodes = [];
   $('form').classList.remove('hidden');
   const [text, cls] = badgeFor(d.source);
@@ -1564,55 +1620,155 @@ $('priceHintUse').onclick = (e) => {
 // links. Bambu Lab's own spool tags are MIFARE Classic, which Web NFC cannot
 // read at all; Chrome then reports a reading error, or nothing, depending on
 // the phone. Either way the scale can link those.
-let nfcAbort = null, nfcTimer = null;
+let nfcAbort = null, nfcTimer = null, nfcBtnEl = null;
 function nfcStop(){
   if(nfcAbort){ try{ nfcAbort.abort(); }catch(e){} }
   nfcAbort = null;
   clearTimeout(nfcTimer); nfcTimer = null;
-  $('nfcBtn').textContent = t('form.nfc_scan');
+  if(nfcBtnEl) nfcBtnEl.textContent = t('form.nfc_scan');
+  nfcBtnEl = null;
 }
-// iOS has no Web NFC at all, in Safari or an installed app: the button goes,
-// the field stays for a UID typed in or read elsewhere.
-if(!('NDEFReader' in window)){
-  $('nfcBtn').parentElement.classList.add('hidden');
-  $('nfcHint').textContent = t('form.nfc_unsupported');
-}
-$('nfcBtn').onclick = async () => {
-  if(!('NDEFReader' in window)){ $('nfcHint').textContent = t('form.nfc_unsupported'); return; }
-  if(nfcAbort){ nfcStop(); $('nfcHint').textContent=''; return; }   // second tap cancels
-  const ctrl = new AbortController();
-  nfcAbort = ctrl;
-  $('nfcBtn').textContent = t('form.nfc_cancel');
-  $('nfcHint').textContent = t('form.nfc_waiting');
-  nfcTimer = setTimeout(() => {
-    if(nfcAbort !== ctrl) return;
-    nfcStop(); $('nfcHint').textContent = t('form.nfc_timeout');
-  }, 20000);
-  try{
-    const ndef = new NDEFReader();
-    // Handlers before scan(): a tag already lying on the phone is reported
-    // the moment scanning starts.
-    ndef.onreading = (ev) => {
-      if(nfcAbort !== ctrl) return;
-      const uid = (ev.serialNumber||'').replace(/:/g,'').toUpperCase();
-      nfcStop();
-      if(!uid){ $('nfcHint').textContent = t('form.nfc_no_uid'); return; }
-      $('tag_uid').value = uid;
-      $('nfcHint').textContent = t('form.nfc_read', {uid});
-      if(navigator.vibrate) navigator.vibrate(100);
-    };
-    ndef.onreadingerror = () => {
-      if(nfcAbort !== ctrl) return;
-      nfcStop(); $('nfcHint').textContent = t('form.nfc_unreadable');
-    };
-    await ndef.scan({signal: ctrl.signal});
-  }catch(err){
-    if(nfcAbort !== ctrl) return;
-    nfcStop();
-    $('nfcHint').textContent = err && err.name==='NotAllowedError'
-      ? t('form.nfc_denied') : t('form.nfc_failed', {error: err && err.message || err});
+// The same reader serves the new spool's form and an existing spool's
+// record: the button reads a tag into the field next to it.
+function nfcBind(btnId, inputId, hintId){
+  const btn = $(btnId), hint = $(hintId);
+  // iOS has no Web NFC at all, in Safari or an installed app: the button
+  // goes, the field stays for a UID typed in or read elsewhere.
+  if(!('NDEFReader' in window)){
+    btn.parentElement.classList.add('hidden');
+    hint.textContent = t('form.nfc_unsupported');
+    return;
   }
+  btn.onclick = async () => {
+    if(nfcAbort){                                   // a second tap cancels
+      const same = nfcBtnEl === btn;
+      nfcStop(); hint.textContent = '';
+      if(same) return;
+    }
+    const ctrl = new AbortController();
+    nfcAbort = ctrl; nfcBtnEl = btn;
+    btn.textContent = t('form.nfc_cancel');
+    hint.textContent = t('form.nfc_waiting');
+    nfcTimer = setTimeout(() => {
+      if(nfcAbort !== ctrl) return;
+      nfcStop(); hint.textContent = t('form.nfc_timeout');
+    }, 20000);
+    try{
+      const ndef = new NDEFReader();
+      // Handlers before scan(): a tag already lying on the phone is
+      // reported the moment scanning starts.
+      ndef.onreading = (ev) => {
+        if(nfcAbort !== ctrl) return;
+        const uid = (ev.serialNumber || '').replace(/:/g, '').toUpperCase();
+        nfcStop();
+        if(!uid){ hint.textContent = t('form.nfc_no_uid'); return; }
+        $(inputId).value = uid;
+        hint.textContent = t('form.nfc_read', {uid});
+        if(navigator.vibrate) navigator.vibrate(100);
+      };
+      ndef.onreadingerror = () => {
+        if(nfcAbort !== ctrl) return;
+        nfcStop(); hint.textContent = t('form.nfc_unreadable');
+      };
+      await ndef.scan({signal: ctrl.signal});
+    }catch(err){
+      if(nfcAbort !== ctrl) return;
+      nfcStop();
+      hint.textContent = err && err.name === 'NotAllowedError'
+        ? t('form.nfc_denied') : t('form.nfc_failed', {error: err && err.message || err});
+    }
+  };
+}
+nfcBind('nfcBtn', 'tag_uid', 'nfcHint');
+nfcBind('spNfcBtn', 'spTag', 'spNfcHint');
+
+// ── An existing spool's record, opened from the QR code on its label ──
+// BamBuddy's labels (and the page's own) carry <bambuddy>/inventory?spool=<id>;
+// Spoolman's carry web+spoolman:s-<id> or its /spool/show/<id> page. "#12"
+// typed into the code field opens spool 12 too.
+function spoolIdFromCode(text){
+  const s = String(text || '').trim();
+  const m = s.match(/[?&]spool=(\d+)/) || s.match(/^web\+spoolman:s-(\d+)$/i)
+         || s.match(/\/spool\/show\/(\d+)/) || s.match(/^#\s*(\d+)$/);
+  const id = m ? parseInt(m[1], 10) : 0;
+  return id > 0 ? id : null;
+}
+let spoolRec = null;
+function spoolRemaining(sp){
+  return sp.label_weight ? Math.max(0, Math.round(sp.label_weight - (sp.weight_used || 0))) : null;
+}
+async function openSpool(id){
+  setScanHint(t('spool.loading', {id}));
+  let d = null;
+  try{ d = await (await fetch('/api/spool/' + id)).json(); }catch(e){ d = null; }
+  setScanHint('');
+  if(!d || !d.ok){
+    toast(t(d && d.error === 'not_found' ? 'spool.not_found' : 'spool.load_failed', {id}), false);
+    return;
+  }
+  await optionsReady;
+  const sp = d.spool;
+  spoolRec = Object.assign({}, sp, {qr: d.qr});
+  $('form').classList.add('hidden');
+  $('spTitle').textContent = t('spool.title', {id});
+  $('spMat').textContent = [sp.material, sp.subtype].filter(Boolean).join(' ') || '—';
+  $('spBrand').textContent = sp.brand || '';
+  const left = spoolRemaining(sp);
+  $('spMeta').textContent = [sp.color_name, left != null ? t('spool.of', {remaining: left, total: sp.label_weight}) : '']
+    .filter(Boolean).join(', ');
+  $('spReel').style.setProperty('--spool', sp.rgba ? '#' + String(sp.rgba).slice(0, 6) : '#7a4b2b');
+  $('spInfo').textContent = [sp.material_number ? t('spool.article', {code: sp.material_number}) : '',
+                             sp.added ? t('spool.added', {date: sp.added}) : ''].filter(Boolean).join(', ');
+  $('spRemain').value = left != null ? left : '';
+  $('spRemain').disabled = left == null;
+  setSelect('spLocation', sp.storage_location || '');
+  $('spTag').value = sp.tag_uid || '';
+  $('spNote').value = sp.note || '';
+  $('spNfcHint').textContent = '';
+  $('spoolCard').classList.remove('hidden');
+  $('spoolCard').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+function closeSpool(){
+  nfcStop();
+  spoolRec = null;
+  $('spoolCard').classList.add('hidden');
+}
+$('spClose').onclick = closeSpool;
+$('spOpen').onclick = () => { if(spoolRec && spoolRec.qr) window.open(spoolRec.qr, '_blank', 'noopener'); };
+$('spLabel').onclick = () => {
+  if(!spoolRec) return;
+  $('labelSpool').value = spoolRec.id;
+  $('labelCard').scrollIntoView({behavior: 'smooth', block: 'start'});
+  labelPreview();
 };
+$('spSave').onclick = async () => {
+  if(!spoolRec) return;
+  const body = {};
+  const loc = $('spLocation').value.trim();
+  if(loc !== (spoolRec.storage_location || '')) body.storage_location = loc;
+  const note = $('spNote').value.trim();
+  if(note !== (spoolRec.note || '')) body.note = note;
+  const tag = $('spTag').value.replace(/[\s:\-]/g, '').toUpperCase();
+  if(tag && tag !== String(spoolRec.tag_uid || '').toUpperCase()) body.tag_uid = tag;
+  const left = spoolRemaining(spoolRec), typed = parseFloat(String($('spRemain').value).replace(',', '.'));
+  if(left != null && isFinite(typed) && typed >= 0 && Math.round(typed) !== left)
+    body.weight_used = Math.max(0, spoolRec.label_weight - typed);
+  if(!Object.keys(body).length){ toast(t('spool.nothing'), 'info'); return; }
+  $('spSave').disabled = true;
+  try{
+    const d = await (await fetch('/api/spool/' + spoolRec.id, {method: 'PATCH',
+      headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})).json();
+    if(d.ok){ toast(t('spool.saved') + ' ✓'); openSpool(spoolRec.id); }
+    else if(d.tag_error === 'tag_taken') toast(t('spool.tag_taken'), false);
+    else toast(t('spool.save_failed') + (d.error ? ': ' + d.error : (d.errors && d.errors.length ? ': ' + d.errors[0] : (d.tag_error ? ': ' + d.tag_error : ''))), false);
+  }catch(e){ toast(t('spool.save_failed'), false); }
+  finally{ $('spSave').disabled = false; }
+};
+// The page opened as /?spool=12 shows that spool.
+(function(){
+  const id = spoolIdFromCode(location.search);
+  if(id) openSpool(id);
+})();
 
 // ── Search in the user's own Spoolman ──
 // Every word typed narrows the list (maker, name, material, colour, article
