@@ -186,7 +186,15 @@ Dafür muss die App Spoolman selbst erreichen. In der `.env` die Adresse eintrag
 SPOOLMAN_URL=http://<server-ip>:7912
 ```
 
-Ohne `SPOOLMAN_URL` nimmt die App die Spoolman-Adresse aus BamBuddys Einstellungen (Schlüssel mit „Read Status“). Geht beides nicht, liest sie die Filamente über BamBuddy, dann aber ohne Temperaturen und ohne Nachtragen. Ganz unten steht, was gilt: „Spoolman direkt gelesen: 240 Filamente“ oder „Spoolman über Bambuddy …“.
+`192.168.1.5:7912` ohne `http://` und eine Adresse mit `/api/v1` am Ende gehen auch. Ohne `SPOOLMAN_URL` nimmt die App die Spoolman-Adresse aus BamBuddys Einstellungen (Schlüssel mit „Read Status“).
+
+Ganz unten auf der Seite, unter **BamBuddy-Inventar**, steht der Status:
+
+- 🟢 **Spoolman verbunden: 240 Filamente**, darunter die Adresse und woher sie kommt.
+- 🟡 **Spoolman-Adresse fehlt:** `SPOOLMAN_URL` ist im Container nicht gesetzt. Steht sie in der `.env` neben der `docker-compose.yml`? Danach `docker compose up -d`, damit der Container sie bekommt.
+- 🔴 **Spoolman unter … nicht erreichbar**, darunter der Grund: keine Antwort, Verbindung abgelehnt (vom Container aus ist `localhost` der Container selbst, also die IP des Servers nehmen), eine HTTP-Fehlernummer (Port oder Pfad falsch) oder keine Filamentliste (eine andere Adresse als Spoolman).
+
+Solange Spoolman nicht direkt erreichbar ist, liest die App die Filamente über BamBuddy. Dann fehlen Düsen- und Betttemperatur, Preis und Artikelnummer, und in Spoolman wird nichts ergänzt. **Erneut prüfen** fragt sofort wieder, statt die zwei Minuten abzuwarten, die die Liste sonst gemerkt wird.
 
 ## Mit der SpoolmanScale verbinden
 

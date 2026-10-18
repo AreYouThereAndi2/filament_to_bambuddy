@@ -155,3 +155,52 @@ class TestRoutes:
         with patch("requests.post", return_value=_resp(201, {"id": 5})) as post:
             client.post("/api/spool", json={"fields": {"material": "PLA", "spoolman_filament_id": 12}})
         assert "spoolman_filament_id" not in post.call_args.kwargs["json"]
+
+
+class TestSpoolmanStatus:
+    """The page says whether Spoolman is read directly, and if not, why."""
+
+    @pytest.mark.parametrize("raw,url", [
+        ("192.168.1.5:7912", "http://192.168.1.5:7912"),
+        ("http://spoolman:7912/", "http://spoolman:7912"),
+        ("http://spoolman:7912/api/v1", "http://spoolman:7912"),
+        ("https://sm.example/api/v1/", "https://sm.example"),
+        ("", ""),
+    ])
+    def test_address_normalized(self, raw, url):
+        assert app_module._normalize_spoolman_url(raw) == url
+
+    def _status(self, client, get):
+        with patch("requests.get", side_effect=get):
+            return client.get("/api/settings?check=1").get_json()["spoolman"]
+
+    def test_connected(self, client):
+        st = self._status(client, _get)
+        assert st["direct"] and st["filaments"] == 2 and st["error"] is None
+        assert st["url"] == "http://sm" and st["source"] == "env"
+
+    def test_refused_falls_back_and_says_why(self, client):
+        import requests as rq
+
+        def get(url, **_):
+            if url.startswith("http://sm/"):
+                raise rq.exceptions.ConnectionError("refused")
+            return _resp(payload=[{"id": 1, "name": "PLA"}])
+        st = self._status(client, get)
+        assert not st["direct"] and st["error"] == "unreachable" and st["filaments"] == 1
+
+    def test_wrong_path(self, client):
+        st = self._status(client, lambda url, **_: _resp(404) if url.startswith("http://sm/") else _resp(payload=[]))
+        assert st["error"] == "http" and st["detail"] == "404" and st["filaments"] == 0
+
+    def test_not_spoolman(self, client):
+        st = self._status(client, lambda url, **_: _resp(payload={"detail": "no"}) if url.startswith("http://sm/")
+                          else _resp(payload=[]))
+        assert st["error"] == "not_spoolman"
+
+    def test_no_address(self, client, monkeypatch):
+        monkeypatch.setattr(app_module, "SPOOLMAN_URL", "")
+        # Bambuddy's settings name no Spoolman address either.
+        st = self._status(client, lambda url, **_: _resp(payload={"spoolman_url": ""}) if "settings" in url
+                          else _resp(payload=[]))
+        assert st["error"] == "no_url" and st["url"] is None

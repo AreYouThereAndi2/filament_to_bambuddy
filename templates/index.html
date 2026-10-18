@@ -230,6 +230,13 @@
 
   footer .inv{max-width:320px;margin:10px auto 12px;text-align:left}
   footer .inv label{text-align:left}
+  /* The user's Spoolman: one status line, what it means below it. */
+  .smstat{display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding:10px 12px;border-radius:12px;
+    background:var(--surface);border:1px solid var(--card-border);box-shadow:var(--card-shadow);text-align:left}
+  .smstat .status-dot{margin-top:5px}
+  .smstat-title{font:600 14px/1.3 var(--display);color:var(--text);overflow-wrap:anywhere}
+  .smstat .hint{margin-top:3px}
+  .smstat a{font-size:12.5px}
   @media (prefers-reduced-motion:reduce){
     .vf-scanline{animation:none;top:50%}
     .spool .wind{transition:none}
@@ -491,6 +498,14 @@
       <option value="local">{{ t('settings.local') }}</option>
     </select>
     <div id="invHint" class="hint"></div>
+    <div id="smStatus" class="smstat hidden" role="status">
+      <span id="smDot" class="status-dot"></span>
+      <div style="min-width:0">
+        <div id="smTitle" class="smstat-title"></div>
+        <div id="smMore" class="hint"></div>
+        <a id="smCheck" href="#">{{ t('settings.sm_check') }}</a>
+      </div>
+    </div>
   </div>
   {{ t('app.title') }} {{ version }}
 </footer>
@@ -1456,12 +1471,40 @@ function showInv(d){
     hint = d.probe && d.probe !== 200 ? t('settings.probe_denied', {code: d.probe})
          : t('settings.detected', {mode: t('settings.'+d.active)});
   }
-  if(d.spoolman) hint = [hint, t(d.spoolman.direct ? 'settings.sm_direct' : 'settings.sm_via_bb',
-                                {n: d.spoolman.filaments})].filter(Boolean).join(' · ');
   $('invHint').textContent = hint;
   $('invHint').classList.toggle('err', !!(d.probe && d.probe !== 200 && d.inventory_mode === 'auto'));
+  showSpoolmanStatus(d.spoolman);
+}
+// Whether the app reads the user's Spoolman itself, and if not, why and what
+// is missing until it does. Only in Spoolman mode.
+function showSpoolmanStatus(sm){
+  $('smStatus').classList.toggle('hidden', !sm);
+  if(!sm) return;
+  let dot, title, more = '';
+  if(sm.direct){
+    dot = 'var(--brand)';
+    title = t('settings.sm_ok', {n: sm.filaments});
+    more = t(sm.source === 'bambuddy' ? 'settings.sm_url_bb' : 'settings.sm_url_env', {url: sm.url});
+  }else{
+    const why = sm.error === 'http' ? t('settings.sm_err_http', {code: sm.detail})
+              : t('settings.sm_err_'+(sm.error || 'unreachable'));
+    dot = sm.error === 'no_url' ? 'var(--warn)' : 'var(--danger)';
+    title = sm.error === 'no_url' ? t('settings.sm_no_url') : t('settings.sm_failed', {url: sm.url});
+    // The reason as a sentence of its own, then what the app does meanwhile.
+    const reason = sm.error === 'no_url' ? '' : why.charAt(0).toUpperCase() + why.slice(1) + (/[.?!。？]$/.test(why) ? '' : '.');
+    more = [reason, sm.filaments ? t('settings.sm_fallback', {n: sm.filaments}) : t('settings.sm_none')].filter(Boolean).join(' ');
+  }
+  $('smDot').style.background = dot;
+  $('smTitle').textContent = title;
+  $('smMore').textContent = more;
 }
 fetch('/api/settings').then(r => r.json()).then(showInv).catch(() => {});
+$('smCheck').onclick = async (e) => {
+  e.preventDefault();
+  $('smTitle').textContent = t('settings.sm_checking');
+  try{ showInv(await (await fetch('/api/settings?check=1')).json()); }
+  catch(err){ $('smTitle').textContent = t('settings.save_failed'); }
+};
 $('invMode').onchange = async () => {
   try{
     const r = await fetch('/api/settings', {method:'POST', headers:{'Content-Type':'application/json'},

@@ -5,6 +5,8 @@ Releases of the fork [AreYouThereAndi2/filament_to_bambuddy](https://github.com/
 ## Unreleased
 
 ### New
+- **Spoolman status.** Under the inventory select a status line says whether the app reads your Spoolman itself: green with the number of filaments and the address (and whether it came from `SPOOLMAN_URL` or BamBuddy), amber when no address is set, red with the reason when it is set but not read (no answer, connection refused, an HTTP code, or an answer that is not Spoolman), and what the app does meanwhile. **Check again** reads Spoolman at once. The reason also goes to the log.
+- `SPOOLMAN_URL` is taken as meant: without `http://`, with a trailing slash or with `/api/v1` on the end.
 - **Light, dark or as the system says.** A button at the top right switches between the three; the choice stays in this browser and is applied before the page is drawn, so it never flashes the other look. The browser bar follows.
 - **A new mark.** A spool from the side whose windings are a barcode, with the strand running off: the app's job in one picture. Used in the header, as the favicon and for the home-screen icons.
 - Line icons instead of emoji on the buttons and headings; the connection line under the title keeps to two lines until tapped.
