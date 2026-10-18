@@ -100,7 +100,7 @@ class TestInventoryModeSwitch:
     def test_auto_reports_the_probe(self, client):
         with patch("requests.get", return_value=_resp(403)):
             d = client.get("/api/settings").get_json()
-        assert d == {"inventory_mode": "auto", "active": "local", "probe": 403}
+        assert d == {"inventory_mode": "auto", "active": "local", "probe": 403, "spoolman": None}
 
     def test_env_default_and_bad_value(self, client, monkeypatch):
         monkeypatch.setenv("INVENTORY_MODE", "spoolman")

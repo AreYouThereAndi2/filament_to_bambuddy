@@ -275,6 +275,9 @@
       <div id="barcodeLine"></div>
       <div id="titleLine"></div>
       <div id="linkedCodesLine" style="font-size:12.5px"></div>
+      <!-- The filament in the user's Spoolman this spool will be made on. -->
+      <div id="smLine" class="hint hidden"><span id="smText"></span>
+        <a id="smUnlink" href="#">{{ t('form.sm_unlink') }}</a></div>
     </div>
 
     <!-- Where the fields came from: the text read from the label or pasted,
@@ -336,12 +339,14 @@
       <h3>{{ t('form.sec_stock') }}</h3>
       <div class="row">
         <div><label for="label_weight">{{ t('form.net_weight') }}</label><select id="label_weight"></select></div>
-        <div><label for="quantity">{{ t('form.quantity') }}</label><input id="quantity" inputmode="numeric" value="1"></div>
+        <div><label for="core_weight">{{ t('form.core_weight') }}</label><input id="core_weight" inputmode="numeric" placeholder="{{ t('form.optional_placeholder') }}"></div>
       </div>
       <div class="row">
+        <div><label for="quantity">{{ t('form.quantity') }}</label><input id="quantity" inputmode="numeric" value="1"></div>
         <div><label for="storage_location">{{ t('form.storage_location') }}</label><select id="storage_location"></select></div>
-        <div><label for="category">{{ t('form.category') }}</label><input id="category" placeholder="{{ t('form.optional_placeholder') }}"></div>
       </div>
+      <label for="category">{{ t('form.category') }}</label>
+      <input id="category" placeholder="{{ t('form.optional_placeholder') }}">
     </div>
 
     <div class="sec">
@@ -824,7 +829,7 @@ async function onBarcode(barcode){
 // may open this page in the browser rather than the installed app, and on
 // iOS the two do not share storage), so the page lands on that code.
 let extraCodes = [];
-const KNOWN = ['cache','tigertag','ofd','spoolmandb-community','upcitemdb'];
+const KNOWN = ['cache','spoolman','tigertag','ofd','spoolmandb-community','upcitemdb'];
 function onlyMissing(f){
   const out = {};
   for(const [k,v] of Object.entries(f||{})){
@@ -847,6 +852,7 @@ async function importPage(query){
   if(!d) fillForm({source:'page', fields:{}, barcode:''});
   const known = d && KNOWN.includes(d.source);
   applyFields(known ? onlyMissing(r.fields) : (r.fields||{}));
+  if(r.spoolman) showSpoolman(r.spoolman);
   if(!known){
     $('srcBadge').className = 'badge upc';
     $('srcBadge').textContent = t('badge.page', {host: r.host || '?'});
@@ -886,6 +892,7 @@ function applyFields(f){
   if(f.color_name!=null) $('color_name').value = f.color_name;
   if(f.rgba){ const c=hexToColorInput(f.rgba); if(c) $('color_picker').value=c; }
   if(f.label_weight!=null) setSelect('label_weight', f.label_weight);
+  if(f.core_weight!=null) $('core_weight').value = f.core_weight;
   if(f.storage_location!=null) setSelect('storage_location', f.storage_location);
   if(f.category!=null) $('category').value = f.category;
   if(f.nozzle_temp_min!=null) $('nozzle_temp_min').value = f.nozzle_temp_min;
@@ -896,6 +903,17 @@ function applyFields(f){
   if(f.note!=null) $('note').value = f.note;
   updateSpool();
 }
+
+// The filament in the user's Spoolman the spool will be made on, carrying
+// its temperatures, empty-spool weight and price. Unlinked, Bambuddy finds
+// or makes one by material, brand and colour.
+let smFilament = null;
+function showSpoolman(sm){
+  smFilament = sm && sm.id ? sm : null;
+  $('smLine').classList.toggle('hidden', !smFilament);
+  $('smText').textContent = smFilament ? t('form.sm_linked', {name: smFilament.name || ('#'+smFilament.id)}) : '';
+}
+$('smUnlink').addEventListener('click', e => { e.preventDefault(); showSpoolman(null); });
 
 // The reel at the top of the form: the picked colour, and what it is.
 function updateSpool(){
@@ -918,6 +936,7 @@ function updateSpool(){
 function badgeFor(source){
   const BADGE = {
     cache:  [t('badge.cache'), 'cache'],
+    spoolman: [t('badge.spoolman'), 'cache'],
     tigertag: [t('badge.tigertag'), 'cache'],
     ofd:    [t('badge.ofd'), 'cache'],
     'spoolmandb-community': [t('badge.smdb'), 'cache'],
@@ -992,13 +1011,14 @@ function fillForm(d){
   // 'Forget' only makes sense for a remembered (cache) entry with a barcode.
   $('forgetBtn').classList.toggle('hidden', !(code && d.source==='cache'));
   // reset then apply
-  ['color_name','category','nozzle_temp_min','nozzle_temp_max','bed_temp_min','bed_temp_max',
+  ['color_name','category','core_weight','nozzle_temp_min','nozzle_temp_max','bed_temp_min','bed_temp_max',
    'cost_per_kg','price_per_spool','tag_uid','note','paste_title'].forEach(id=>$(id).value='');
   $('nfcHint').textContent='';
   $('whyBox').classList.add('hidden');
   setSelect('material',''); setSelect('brand',''); setSelect('subtype',''); setSelect('storage_location','');
   setSelect('label_weight','1000'); $('quantity').value=1;
   applyFields(f);
+  showSpoolman(d.spoolman);
   // A product name a database or the shop gave stands in the title field
   // too, ready to be changed and filled again.
   if(d.title && d.source !== 'none' && d.source !== 'amazon') $('paste_title').value = d.title;
@@ -1091,7 +1111,7 @@ $('labelPhoto').onchange = async (e) => {
     // Did OCR yield anything beyond the default weight?
     const got = !!d.barcode || Object.keys(fields).some(k => k!=='label_weight');
     const dbSource = ['tigertag','ofd','spoolmandb-community'].includes(d.source);
-    fillForm({ source: dbSource ? d.source : (got ? 'label' : 'none'),
+    fillForm({ source: dbSource ? d.source : (got ? 'label' : 'none'), spoolman: d.spoolman,
                barcode: d.barcode || currentBarcode,
                title: dbSource ? (d.title||'') : '',  // never dump raw OCR text
                linked_codes: dbSource ? (d.linked_codes||[]) : [],
@@ -1138,6 +1158,7 @@ function showWhy(d){
     let from;
     if(w.by === 'rule') from = t('why.by_rule', {match: w.rule});
     else if(w.by === 'db') from = t('why.by_db');
+    else if(w.by === 'spoolman') from = t('why.by_spoolman');
     else if(w.by === 'default') from = t('why.by_default');
     else from = (w.spans||[]).length ? w.spans.map(([a, b]) => t('why.quote', {text: text.slice(a, b)})).join(' + ') : t('why.by_guess');
     const v = k === 'rgba' ? '#'+String(fields[k]).slice(0, 6) : fields[k];
@@ -1231,6 +1252,7 @@ $('autofillBtn').onclick = async () => {
   try{
     const d = await (await fetch('/api/parse?title='+encodeURIComponent(pastedTitle))).json();
     applyFields(d.fields||{});
+    if(d.spoolman) showSpoolman(d.spoolman);
     showWhy(d);
     if(d.barcode){
       currentBarcode = d.barcode;
@@ -1349,6 +1371,8 @@ function showInv(d){
     hint = d.probe && d.probe !== 200 ? t('settings.probe_denied', {code: d.probe})
          : t('settings.detected', {mode: t('settings.'+d.active)});
   }
+  if(d.spoolman) hint = [hint, t(d.spoolman.direct ? 'settings.sm_direct' : 'settings.sm_via_bb',
+                                {n: d.spoolman.filaments})].filter(Boolean).join(' · ');
   $('invHint').textContent = hint;
   $('invHint').classList.toggle('err', !!(d.probe && d.probe !== 200 && d.inventory_mode === 'auto'));
 }
@@ -1698,6 +1722,7 @@ $('form').onsubmit = async (e) => {
     color_name: $('color_name').value.trim(),
     rgba: colorInputToRgba($('color_picker').value),
     label_weight: $('label_weight').value.trim(),
+    core_weight: $('core_weight').value.trim(),
     storage_location: $('storage_location').value.trim(),
     category: $('category').value.trim(),
     nozzle_temp_min: $('nozzle_temp_min').value.trim(),
@@ -1708,6 +1733,7 @@ $('form').onsubmit = async (e) => {
     note: $('note').value.trim(),
     tag_uid: $('tag_uid').value.trim(),
   };
+  if(smFilament) fields.spoolman_filament_id = smFilament.id;
   if(!fields.material){ toast(t('submit.material_required'), false); return; }
   const quantity = parseInt($('quantity').value)||1;
   $('submitBtn').disabled = true;
@@ -1720,9 +1746,10 @@ $('form').onsubmit = async (e) => {
       // hidden behind the success.
       if(d.tag_error) toast(t('submit.tag_not_linked',{error:d.tag_error}), false);
       else if(d.warnings&&d.warnings.length) toast(t('submit.price_not_set'), false);
+      else if(d.filament_filled && d.filament_filled.length) toast(tn('submit.added', d.created)+' ✓ '+t('submit.filament_filled'));
       else toast(tn('submit.added', d.created)+' ✓');
       $('form').classList.add('hidden'); $('manual').value=''; currentBarcode=null;
-      $('tag_uid').value=''; nfcStop();
+      $('tag_uid').value=''; nfcStop(); showSpoolman(null);
       labelOffer(d.spool_ids); }
     else { toast(t('submit.failed')+(d.error?': '+d.error:(d.errors&&d.errors.length?': '+d.errors[0]:'')), false); }
   }catch(e){ toast(t('submit.request_failed'), false); }

@@ -492,13 +492,147 @@ def _inventory_base() -> str:
     return base
 
 
+def _spoolman_mode() -> bool:
+    return _inventory_base() == _INVENTORY_BASES["spoolman"]
+
+
+# The user's own Spoolman, read directly: its filaments carry what Bambuddy's
+# catalog picker leaves out (temperatures, article number, price), and empty
+# fields of a filament can be filled in. SPOOLMAN_URL is where this server
+# reaches it ("http://spoolman:7912"); without it, Bambuddy's own Spoolman
+# address is tried (that needs the key's "Read Status", and the address must
+# be reachable from here too). Bambuddy's picker is the fallback for reading.
+SPOOLMAN_URL = os.getenv("SPOOLMAN_URL", "").strip().rstrip("/")
+_SPOOLMAN_URL_TTL = 600.0
+_spoolman_url_cache: dict = {"at": 0.0, "url": None}
+_SPOOLMAN_FILAMENTS_TTL = 120.0
+_spoolman_filaments_cache: dict = {"at": 0.0, "list": None, "direct": None}
+
+
+def _spoolman_url() -> str | None:
+    if SPOOLMAN_URL:
+        return SPOOLMAN_URL
+    now = time.monotonic()
+    if _spoolman_url_cache["at"] and now - _spoolman_url_cache["at"] < _SPOOLMAN_URL_TTL:
+        return _spoolman_url_cache["url"]
+    url = None
+    if BAMBUDDY_API_KEY:
+        try:
+            r = requests.get(f"{BAMBUDDY_URL}/api/v1/settings/spoolman",
+                             headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=10)
+            if r.ok:
+                url = str((r.json() or {}).get("spoolman_url") or "").strip().rstrip("/") or None
+        except Exception:
+            log.debug("Spoolman address not read from Bambuddy", exc_info=True)
+    _spoolman_url_cache.update(at=now, url=url)
+    return url
+
+
+def _spoolman_filaments(force: bool = False) -> list:
+    """The filaments in the user's Spoolman, [] outside Spoolman mode. Kept
+    two minutes: one scan asks several times, and a filament added in
+    Spoolman shows up soon after."""
+    if not _spoolman_mode():
+        return []
+    now = time.monotonic()
+    cached = _spoolman_filaments_cache["list"]
+    if cached is not None and not force and now - _spoolman_filaments_cache["at"] < _SPOOLMAN_FILAMENTS_TTL:
+        return cached
+    filaments, direct = None, False
+    url = _spoolman_url()
+    if url:
+        try:
+            r = requests.get(f"{url}/api/v1/filament", headers={"Accept": "application/json"}, timeout=10)
+            if r.ok and isinstance(r.json(), list):
+                filaments, direct = r.json(), True
+        except Exception as e:
+            log.info("Spoolman at %s not reachable (%s), asking Bambuddy", url, type(e).__name__)
+    if filaments is None and BAMBUDDY_API_KEY:
+        try:
+            r = requests.get(f"{BAMBUDDY_URL}{_INVENTORY_BASES['spoolman']}/filaments",
+                             headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=15)
+            if r.ok and isinstance(r.json(), list):
+                filaments = r.json()
+        except Exception:
+            log.debug("Spoolman filaments not read through Bambuddy", exc_info=True)
+    filaments = [f for f in (filaments or []) if isinstance(f, dict) and isinstance(f.get("id"), int)]
+    _spoolman_filaments_cache.update(at=now, list=filaments, direct=direct)
+    return filaments
+
+
+def _spoolman_direct() -> bool:
+    """Whether this server reads the user's Spoolman itself, so it can also
+    write a filament's empty fields."""
+    _spoolman_filaments()
+    return bool(_spoolman_filaments_cache["direct"])
+
+
+def _link_spoolman(fields: dict, title: str | None = None, code: str | None = None) -> tuple[dict, dict | None]:
+    """`fields` with the user's own Spoolman filament on top, found by code or
+    by brand, material and colour: (fields, {"id", "name"} or None). The
+    filament's id goes along in `spoolman_filament_id`, so the spool is
+    created on that filament."""
+    import spoolman_match
+    try:
+        filaments = _spoolman_filaments()
+    except Exception:
+        log.debug("Spoolman filaments failed", exc_info=True)
+        filaments = []
+    if not filaments:
+        return fields, None
+    f, by = (spoolman_match.by_code(filaments, code) if code else None), "code"
+    if f is None:
+        f, by = spoolman_match.by_name(filaments, fields, title), "name"
+    if f is None:
+        return fields, None
+    out = spoolman_match.overlay(fields, f)
+    out["spoolman_filament_id"] = f["id"]
+    return out, {"id": f["id"], "name": spoolman_match.title_of(f), "by": by}
+
+
+def _fill_spoolman_filament(spool_id: int, fields: dict, code: str | None) -> list:
+    """Fill what the new spool's filament leaves empty in Spoolman (the
+    temperatures, the empty spool's weight, the price, the scanned code as
+    its article number) from the form. Directly in Spoolman, so only with
+    its address; nothing the filament has is replaced. The keys written."""
+    import spoolman_match
+    url = _spoolman_url()
+    if not url:
+        return []
+    try:
+        r = requests.get(f"{url}/api/v1/spool/{spool_id}", headers={"Accept": "application/json"}, timeout=10)
+        filament = (r.json() or {}).get("filament") if r.ok else None
+        if not isinstance(filament, dict) or not isinstance(filament.get("id"), int):
+            return []
+        patch = spoolman_match.empty_filament_fields(filament, fields, code)
+        if not patch:
+            return []
+        pr = requests.patch(f"{url}/api/v1/filament/{filament['id']}", json=patch,
+                            headers={"Accept": "application/json"}, timeout=10)
+        if not pr.ok:
+            log.warning("Spoolman filament %s not filled: %s %s", filament["id"], pr.status_code, pr.text[:200])
+            return []
+        _spoolman_filaments_cache.update(at=0.0)
+        log.info("Spoolman filament %s filled: %s", filament["id"], ", ".join(sorted(patch)))
+        return sorted(patch)
+    except Exception as e:
+        log.info("Spoolman filament for spool %s not filled (%s)", spool_id, type(e).__name__)
+        return []
+
+
 @app.get("/api/settings")
 def get_settings():
-    """The inventory mode as set, and what Bambuddy itself says when asked."""
+    """The inventory mode as set, what Bambuddy itself says when asked, and
+    whether the user's Spoolman is read directly."""
     settings = load_settings()
     base = _inventory_base()
+    spoolman = None
+    if base == _INVENTORY_BASES["spoolman"]:
+        count = len(_spoolman_filaments())
+        spoolman = {"filaments": count, "direct": bool(_spoolman_filaments_cache["direct"])}
     return jsonify(**settings, active="spoolman" if base == _INVENTORY_BASES["spoolman"] else "local",
-                   probe=_inventory_mode_cache.get("probe") if settings["inventory_mode"] == "auto" else None)
+                   probe=_inventory_mode_cache.get("probe") if settings["inventory_mode"] == "auto" else None,
+                   spoolman=spoolman)
 
 
 @app.post("/api/settings")
@@ -509,6 +643,7 @@ def set_settings():
         return jsonify(ok=False, error="inventory_mode"), 400
     save_settings({**load_settings(), "inventory_mode": mode})
     _inventory_mode_cache.update(at=0.0, base=None, probe=None)
+    _spoolman_filaments_cache.update(at=0.0, list=None)
     log.info("inventory mode set to %s", mode)
     return get_settings()
 
@@ -705,25 +840,44 @@ def lookup():
     if cache_hit is not None:
         log.info("lookup %s: cache hit", barcode)
         fields, enriched = _enrich(cache_hit)
+        fields, spoolman = _link_spoolman(fields, None, code)
         return jsonify(barcode=code, source="cache", fields=fields, title=None, linked_codes=[],
-                       enriched=enriched)
+                       enriched=enriched, spoolman=spoolman)
 
-    # 2. Cross-referenced OFD + SpoolmanDB-Community lookup.
+    # 2. Cross-referenced OFD + SpoolmanDB-Community lookup. The user's own
+    # Spoolman filament, by code or by name, goes on top of what they found.
     external = _external_all_codes(code, kind)
     if external:
         fields, source, all_codes, title = external
         clean_fields = {k: v for k, v in fields.items() if not k.startswith("_")}
         clean_fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
         clean_fields, enriched = _enrich(clean_fields, title)
+        clean_fields, spoolman = _link_spoolman(clean_fields, title, code)
         linked_codes = [c for c in all_codes if c["code"] != code]
         log.info("lookup %s: %s hit — %s", barcode, source, title or "")
         # The filament databases know the product, not what it costs. With
         # an EAN among its codes, UPCitemdb's offers still give the price.
         price = _offer_price(code if kind == "gtin" else None, all_codes)
         return jsonify(barcode=code, source=source, title=title, fields=clean_fields,
-                       linked_codes=linked_codes, price=price, enriched=enriched)
+                       linked_codes=linked_codes, price=price, enriched=enriched, spoolman=spoolman)
 
-    # 3. A retail barcode the filament databases don't know: ask UPCitemdb,
+    # 3. A code no database knows, but a filament in the user's Spoolman
+    # carries (its article number, or an EAN in an extra field).
+    fields, spoolman = _link_spoolman({}, None, code)
+    if spoolman:
+        # Spoolman has no colour name and keeps the line in the name: read
+        # them from there, as from a box's title.
+        from filament_parse import parse_title
+        for key, value in parse_title(spoolman["name"]).items():
+            fields.setdefault(key, value)
+        fields, enriched = _enrich(fields, spoolman["name"])
+        fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
+        log.info("lookup %s: Spoolman filament %s", barcode, spoolman["id"])
+        price = _offer_price(code, []) if kind == "gtin" else None
+        return jsonify(barcode=code, source="spoolman", title=spoolman["name"], fields=fields,
+                       linked_codes=[], price=price, enriched=enriched, spoolman=spoolman)
+
+    # 4. A retail barcode the filament databases don't know: ask UPCitemdb,
     # which indexes Amazon and other shop listings, for the product title and
     # parse that like a pasted one. Its price range comes along as a hint.
     if kind == "gtin":
@@ -731,11 +885,12 @@ def lookup():
         if hit:
             fields, title, price = hit
             fields, enriched = _enrich(fields, title)
+            fields, spoolman = _link_spoolman(fields, title)
             log.info("lookup %s: UPCitemdb hit — %s", barcode, title)
             return jsonify(barcode=code, source="upcitemdb", title=title, fields=fields,
-                           linked_codes=[], price=price, enriched=enriched)
+                           linked_codes=[], price=price, enriched=enriched, spoolman=spoolman)
 
-    # 4. Not found — fill in manually (and it'll be remembered).
+    # 5. Not found — fill in manually (and it'll be remembered).
     src = "amazon" if kind == "sku" else "none"
     log.info("lookup %s: not found (source=%s)", barcode, src)
     return jsonify(barcode=code, source=src,
@@ -866,6 +1021,9 @@ def parse_endpoint():
             linked_codes = [c for c in all_codes if c["code"] != code]
 
     fields, _ = _enrich(fields, title)
+    before = dict(fields)
+    fields, spoolman = _link_spoolman(fields, title, resolved_code)
+    by.update({k: "spoolman" for k, v in fields.items() if before.get(k) != v})
     by.update({k: "db" for k in fields if k not in by})
     if "label_weight" not in fields:
         fields["label_weight"] = DEFAULT_LABEL_WEIGHT
@@ -881,7 +1039,7 @@ def parse_endpoint():
             entry["spans"] = []
         why[key] = entry
     return jsonify(fields=fields, title=out_title, barcode=resolved_code, source=source,
-                   linked_codes=linked_codes, text=title, why=why)
+                   linked_codes=linked_codes, text=title, why=why, spoolman=spoolman)
 
 
 # The code the user last went to the web for, so a shop page handed back
@@ -960,10 +1118,11 @@ def import_page():
                 title = ext_title or title
                 linked_codes = [c for c in all_codes if c["code"] != code]
     fields, _ = _enrich(fields, title)
+    fields, spoolman = _link_spoolman(fields, title, gtin)
     fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
     log.info("page import from %s: %r gtin=%s pending=%s", page["host"] or "?", title[:60], gtin, pending)
     return jsonify(fields=fields, title=title, source=source, gtin=gtin, linked_codes=linked_codes,
-                   price=page["price"], host=page["host"], pending=pending)
+                   price=page["price"], host=page["host"], pending=pending, spoolman=spoolman)
 
 
 def _bed_text(lo, hi) -> str | None:
@@ -1020,16 +1179,22 @@ def add_spool():
         payload[key] = val
     payload.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
     payload["data_origin"] = "barcode-scan"
-    # Bambuddy keeps no bed temperature on a spool, so it goes into the note.
+    base = _inventory_base()
+    spoolman_mode = base == "/api/v1/spoolman/inventory"
+    # The filament in the user's Spoolman the form found: the spool is made
+    # on it, with all it carries, instead of on one Bambuddy makes up.
+    filament_id = fields.get("spoolman_filament_id")
+    if spoolman_mode and isinstance(filament_id, int) and not isinstance(filament_id, bool) and filament_id > 0:
+        payload["spoolman_filament_id"] = filament_id
+    # Bambuddy keeps no bed temperature on a spool, so it goes into the note,
+    # unless it can go onto the Spoolman filament (see below).
     bed = _bed_text(fields.get("bed_temp_min"), fields.get("bed_temp_max"))
-    if bed:
+    if bed and not (spoolman_mode and _spoolman_direct()):
         line = i18n.get_translation(_resolve_request_locale(), "form.bed_note", range=bed)
         payload["note"] = f"{payload['note']}\n{line}" if payload.get("note") else line
 
     headers = {"X-API-Key": BAMBUDDY_API_KEY, "Content-Type": "application/json",
                "Accept": "application/json"}
-    base = _inventory_base()
-    spoolman_mode = base == "/api/v1/spoolman/inventory"
     # Bambuddy's own inventory takes the tag right in the create request. The
     # Spoolman one has no tag in its create schema and drops it silently, so
     # there the tag is linked with a second request once the spool exists.
@@ -1040,6 +1205,11 @@ def add_spool():
     for _ in range(quantity):
         try:
             r = requests.post(spools_url, json=payload, headers=headers, timeout=30)
+            if r.status_code == 404 and payload.pop("spoolman_filament_id", None):
+                # The filament was deleted in Spoolman since the lookup:
+                # Bambuddy finds or makes one by the fields instead.
+                log.info("Spoolman filament %s gone, creating without it", filament_id)
+                r = requests.post(spools_url, json=payload, headers=headers, timeout=30)
             # 207: the spool exists, but Spoolman refused the price. Created
             # all the same; the warning goes back to the form.
             if r.status_code in (200, 201, 207):
@@ -1075,6 +1245,12 @@ def add_spool():
             tag_error = f"{type(e).__name__} — see server logs"
         if tag_error:
             log.warning("spool %s created, tag %s not linked: %s", spool_ids[0], tag_uid, tag_error)
+
+    # The filament's own empty fields, filled from the form: the next spool
+    # of it carries them, and Bambuddy shows them from there.
+    filled: list = []
+    if spoolman_mode and spool_ids:
+        filled = _fill_spoolman_filament(spool_ids[0], fields, _classify_code(barcode)[0] if barcode else None)
 
     # Remember the confirmed details for this barcode (learning cache), plus
     # every cross-referenced sibling code — so a later scan of ANY of them
@@ -1113,7 +1289,7 @@ def add_spool():
         log.warning("spool add partial: %d/%d %s (barcode=%s) errors=%s",
                     created, quantity, label, barcode or "none", errors)
     return jsonify(ok=ok, created=created, requested=quantity, spool_ids=spool_ids,
-                   errors=errors, warnings=warnings, tag_error=tag_error,
+                   errors=errors, warnings=warnings, tag_error=tag_error, filament_filled=filled,
                    bambuddy=BAMBUDDY_URL), (200 if created else 502)
 
 

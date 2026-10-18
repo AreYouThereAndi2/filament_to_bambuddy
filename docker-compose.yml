@@ -15,7 +15,8 @@ services:
     # Config comes from a .env file beside this compose file (gitignored):
     #   BAMBUDDY_URL=https://your-bambuddy.example.com
     #   BAMBUDDY_API_KEY=bb_xxx
-    #   # optional: DEFAULT_LABEL_WEIGHT, UPCITEMDB_KEY, UPC_LOOKUP=off, TIGERTAG=off
+    #   # optional: DEFAULT_LABEL_WEIGHT, UPCITEMDB_KEY, UPC_LOOKUP=off, TIGERTAG=off,
+    #   #           SPOOLMAN_URL=http://spoolman:7912, INVENTORY_MODE=spoolman
     env_file:
       - .env
     volumes:

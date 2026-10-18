@@ -174,6 +174,20 @@ Ganz unten auf der Seite steht **BamBuddy-Inventar**:
 
 BamBuddy beantwortet die Frage nur einem API-Schlüssel mit **„Read Status“**. Fehlt das, steht dort in Rot „BamBuddy verweigert die Abfrage (HTTP 403)“. Dann entweder dem Schlüssel „Read Status“ geben oder hier **Spoolman** fest wählen. Die Wahl liegt in `/data/settings.json`; in der `.env` geht auch `INVENTORY_MODE=spoolman`.
 
+### Deine Filamente aus Spoolman
+
+Im Spoolman-Modus schaut die App zuerst in **deine eigenen Spoolman-Filamente**: über die Artikelnummer des Filaments (oder eine EAN in einem Extrafeld), sonst nach jedem anderen Treffer über Marke, Material und Farbe. Passt eines, stehen seine Werte im Formular (Düse, Bett, Leergewicht der Rolle, Preis), darüber „Auf dein Spoolman-Filament: …“, und die Spule wird **genau auf diesem Filament** angelegt. Mit „nicht verknüpfen“ sucht oder erstellt BamBuddy das Filament wie bisher.
+
+Nach dem Anlegen trägt die App ins Filament ein, was dort noch leer ist: Temperaturen, Leergewicht, Preis und den gescannten Code als Artikelnummer. Beim nächsten Scan desselben Codes findet sie es dann direkt.
+
+Dafür muss die App Spoolman selbst erreichen. In der `.env` die Adresse eintragen, wie der Container sie sieht:
+
+```
+SPOOLMAN_URL=http://<server-ip>:7912
+```
+
+Ohne `SPOOLMAN_URL` nimmt die App die Spoolman-Adresse aus BamBuddys Einstellungen (Schlüssel mit „Read Status“). Geht beides nicht, liest sie die Filamente über BamBuddy, dann aber ohne Temperaturen und ohne Nachtragen. Ganz unten steht, was gilt: „Spoolman direkt gelesen: 240 Filamente“ oder „Spoolman über Bambuddy …“.
+
 ## Mit der SpoolmanScale verbinden
 
 In der Weboberfläche der Waage → Einstellungen → Barcode-Scanner → **filament_to_bambuddy-Adresse**: `http://<server-ip>:8088`. Scannt die Waage dann einen Code, den keine Spule kennt, fragt sie die App und bietet an, die Spule anzulegen, mit oder ohne den gefundenen Preis.
