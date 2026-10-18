@@ -15,7 +15,7 @@ Diese Anleitung gilt für den Fork [AreYouThereAndi2/filament_to_bambuddy](https
 - BamBuddy erreichbar im Netz.
 - Ein **BamBuddy-API-Schlüssel** (BamBuddy → Settings → API Keys) mit
   - **Manage Inventory** (legt Spulen an, Pflicht),
-  - **Read Status** (für die Verbindungsanzeige).
+  - **Read Status** (Verbindungsanzeige, Inventar-Modus, Druckprofile und Druckermodelle).
 
 ## Neu installieren
 
@@ -145,8 +145,8 @@ Aus dem Link liest der Server die Seite: Bei normalen Shops kommen Name, EAN und
 Die Karte **🏷️ Etikett drucken** holt das Etikett einer Spule fertig von BamBuddy, in BamBuddys eigenen Vorlagen. Das geht auch im Spoolman-Modus. Dafür braucht es **BamBuddy 1.2.5.7 oder neuer**: Erst ab dieser Version liefert BamBuddy Etiketten als Bild.
 
 1. Die Spulen-ID eingeben, also die # aus BamBuddy. Nach dem Anlegen einer Spule steht ihre ID schon da; bei mehreren Spulen kann man sie antippen.
-2. Unter **Vorlage** ein Format wählen. **Eigenes Layout** (Standard) nutzt die ganze Rolle und druckt jede angehakte Zeile: Marke, Material, Farbe und Farbcode, Lagerort, Düsentemperatur, Gewicht, Artikelnummer, Notiz (darin z. B. das Druckbett), Datum, Spulennummer und QR-Code. Passen nicht alle in die größte Schrift, wird sie kleiner. Die Vorlagen von BamBuddy gibt es weiter; **Box 40 × 30 mm** lässt aber weg, wofür kein Platz ist, deshalb fehlten dort Lagerort und Temperatur. Der QR-Code öffnet die Spule in BamBuddy unter der *External URL* aus BamBuddys Einstellungen (oder `BAMBUDDY_PUBLIC_URL`).
-3. Unter **Etikettenrolle und Zeilen** die Rolle (Standard 50 × 30 mm) und die Zeilen einstellen. Das Handy merkt sich beides.
+2. Unter **Vorlage** ein Format wählen. **Eigenes Layout** (Standard) nutzt die ganze Rolle mit den Zeilen, die du eingeschaltet hast: Marke, Material, Farbe, Farbcode, Lagerort, Düsentemperatur, Gewicht, Artikelnummer, Druckprofil, Notiz (darin z. B. das Druckbett), Datum, Spulennummer und QR-Code. Die Vorlagen von BamBuddy gibt es weiter; **Box 40 × 30 mm** lässt aber weg, wofür kein Platz ist, deshalb fehlten dort Lagerort und Temperatur. Der QR-Code öffnet die Spule in BamBuddy unter der *External URL* aus BamBuddys Einstellungen (oder `BAMBUDDY_PUBLIC_URL`).
+3. Unter **Etikettenrolle und Zeilen** die Rolle (Standard 50 × 30 mm) einstellen und das Etikett **selbst anordnen**: Jede Zeile ein- oder ausschalten, mit ▲ ▼ verschieben, Größe XS–XL, **B** für fett, **■** für weiß auf schwarzem Band. Dazu QR-Code rechts, links oder keiner (klein, mittel, groß) und wie die Zeilen die Höhe füllen (letzte Zeile unten, von oben, gleichmäßig verteilt). Ein Beispiel-Etikett über den Zeilen zeigt jede Änderung sofort, mit der zuletzt angezeigten Spule. Passt nicht alles auf die Rolle, wird alles gleichmäßig kleiner. **Zurück zur Standard-Anordnung** setzt alles zurück. Das Handy merkt sich die Anordnung.
 4. **Vorschau** zeigt das Etikett Punkt für Punkt so, wie der Drucker es druckt.
 5. Erst **🖨️ Drucken** schickt es los. Beim ersten Mal fragt Chrome, welcher Drucker es sein soll: den **PM240** wählen.
 
@@ -173,6 +173,8 @@ Ganz unten auf der Seite steht **BamBuddy-Inventar**:
 - **BamBuddys eigenes Inventar:** `/api/v1/inventory`.
 
 BamBuddy beantwortet die Frage nur einem API-Schlüssel mit **„Read Status“**. Fehlt das, steht dort in Rot „BamBuddy verweigert die Abfrage (HTTP 403)“. Dann entweder dem Schlüssel „Read Status“ geben oder hier **Spoolman** fest wählen. Die Wahl liegt in `/data/settings.json`; in der `.env` geht auch `INVENTORY_MODE=spoolman`.
+
+Antwortet BamBuddy, gilt immer BamBuddys Einstellung, auch wenn hier etwas anderes fest gewählt ist: Eine Spule im anderen Inventar würde BamBuddy nicht anzeigen, und die Waage folgt ohnehin BamBuddy. Die Seite sagt dann in Rot, welches Inventar benutzt wird. Die feste Wahl gilt nur, wenn BamBuddy die Frage verweigert.
 
 ### Deine Filamente aus Spoolman
 
@@ -201,12 +203,25 @@ Ganz unten auf der Seite, unter **BamBuddy-Inventar**, steht der Status:
 
 Solange Spoolman nicht direkt erreichbar ist, liest die App die Filamente über BamBuddy. Dann fehlen Düsen- und Betttemperatur, Preis und Artikelnummer, und in Spoolman wird nichts ergänzt. **Erneut prüfen** fragt sofort wieder, statt die zwei Minuten abzuwarten, die die Liste sonst gemerkt wird.
 
+## Druckprofile (importierte Slicer-Profile)
+
+Profile, die in BamBuddy importiert sind (**Settings → Profiles**, aus OrcaSlicer oder Bambu Studio, von jedem Hersteller), verknüpft die App mit den Spulen. BamBuddy schreibt das Profil der Spule (Temperaturen, Fluss, Pressure Advance) in den AMS-Slot, in den sie kommt.
+
+- **Je Druckertyp ein Profil.** Importierte Profile gibt es pro Druckermodell („eSUN PLA+ @BBL X1C“, „… @BBL P1S“, auch „… 0.2 nozzle“). Die App liest deine Drucker aus BamBuddy und gibt der Spule für **jedes deiner Druckermodelle** dessen Profil derselben Linie. Bei mehreren Modellen landet das des häufigsten Modells an der Spule selbst, die übrigen als BamBuddys „Profil je Druckermodell“, ebenso Profile für andere Düsen. Profile, die du in BamBuddy selbst gesetzt hast, bleiben.
+- **Im Formular** (Druck & Preis → **Druckprofil**) schlägt die App das passende Profil aus Hersteller, Material und Linie vor („Matte“, „Silk“, „PLA+“ statt „PLA“) und zeigt darunter, was jeder Drucker lädt. Antippen und tippen sucht in allen importierten Profilen; **Kein Profil** lässt BamBuddy das allgemeine nehmen.
+- **In der Spulenakte** (QR-Code scannen) lässt sich das Profil ändern. Hat die Spule keins, steht der Vorschlag da und wird mit **Speichern** übernommen.
+- **Für den ganzen Bestand:** **Dein Bestand → Druckprofile zuordnen → Prüfen** listet jede Spule ohne Profil mit dem passenden. Erst **N Spulen verknüpfen** schreibt es. Spulen, die schon ein importiertes Profil haben, bekommen dabei nur die Profile für fehlende Druckermodelle.
+
+Profile und Drucker liest die App mit dem Recht **Read Status** des API-Schlüssels.
+
 ## Eine vorhandene Spule öffnen (QR-Code)
 
 Den QR-Code auf dem Etikett einer Spule mit **Barcode scannen** lesen. Das geht mit BamBuddys Etiketten, den eigenen der App und Spoolmans `web+spoolman:s-…`. Statt einer Suche öffnet sich dann **Spule #12** mit Material, Marke, Farbe, Restgewicht, Artikelnummer und Datum. Dort lässt sich:
 
 - **ein NFC-Tag nachträglich verknüpfen:** *Scannen* tippen und den Tag ans Handy halten (Chrome auf Android) oder die UID eintippen. Hängt der Tag schon an einer anderen Spule, sagt die App das.
-- **Lagerort, Notiz und Restgewicht ändern**, dann **Änderungen speichern**.
+- **Lagerort, Notiz und Restgewicht ändern**, dann **Änderungen speichern**. Das Restgewicht ist netto, ohne Leerspule. Mit der Küchenwaage samt Spule gewogen? Den Wert unter **Gewogen (brutto)** eintragen, die App zieht die Leerspule ab.
+- **das Druckprofil ändern** (siehe *Druckprofile*).
+- Hängt an der Spule ein **Bambu-RFID** (vom AMS oder der Waage), steht das dabei. Hinter Spoolman hat eine Spule nur einen Tag: Ein anderer Tag würde den RFID ersetzen, daran erkennen AMS und Waage die Spule. Die App fragt vorher.
 - **das Etikett neu drucken:** springt zur Etikett-Karte mit der Spulennummer.
 - **die Spule in BamBuddy öffnen.**
 

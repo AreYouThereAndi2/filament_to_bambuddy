@@ -719,9 +719,8 @@ def _fill_spoolman_filament(spool_id: int, fields: dict, code: str | None) -> li
 # The filament profiles imported into Bambuddy (OrcaSlicer, Bambu Studio),
 # and the printers they are for. A profile belongs to a printer model, so a
 # spool gets one per model the user has (see presets.py); Bambuddy loads the
-# one of the printer the spool goes into. Listing the profiles needs the
-# key's "Settings: Read", the printers "Printers: Read". Read again after
-# five minutes, so a profile imported or a printer added there shows here.
+# one of the printer the spool goes into. Listing the profiles and the
+# printers needs the key's "Read Status". Read again after five minutes, so a profile imported or a printer added there shows here.
 _PRESETS_TTL = 300.0
 _presets_cache: dict = {"at": 0.0, "list": None, "models": None, "model_map": None, "error": None}
 
