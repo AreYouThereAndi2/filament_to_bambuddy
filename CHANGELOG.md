@@ -5,6 +5,12 @@ Releases of the fork [AreYouThereAndi2/filament_to_bambuddy](https://github.com/
 ## Unreleased
 
 ### New
+- **Search your Spoolman.** Under *Scan barcode*, in Spoolman mode: "…or search your Spoolman". Every word typed narrows the list (maker, name, material, colour, article number), with the colour as a dot and material, weight and article number below. Taking one fills the form from that filament and links the spool to it; a code scanned before stays on the form.
+- **Fields you can type in.** Material, maker, subtype, colour name, net weight and storage location are type-ahead lists instead of drop-downs: typing narrows the list, a tap or Enter takes an entry, and what the list does not have is offered as "Add “…”". Typed in another case ("pet"), a known entry takes the list's spelling. Keyboard: arrows, Enter, Escape.
+- **The inventory status folds away.** Below the inventory select only a light and one line remain (green connected, amber address missing, red not reachable or refused); a tap shows the details and *Check again*.
+
+### Fixed
+- "Amazon code" was shown for every unknown article number. It now appears only for Amazon's own codes (ASIN `B0…`, FNSKU `X0…`); other unknown codes read "not in the database".
 - **Spoolman status.** Under the inventory select a status line says whether the app reads your Spoolman itself: green with the number of filaments and the address (and whether it came from `SPOOLMAN_URL` or BamBuddy), amber when no address is set, red with the reason when it is set but not read (no answer, connection refused, an HTTP code, or an answer that is not Spoolman), and what the app does meanwhile. **Check again** reads Spoolman at once. The reason also goes to the log.
 - `SPOOLMAN_URL` is taken as meant: without `http://`, with a trailing slash or with `/api/v1` on the end.
 - **Light, dark or as the system says.** A button at the top right switches between the three; the choice stays in this browser and is applied before the page is drawn, so it never flashes the other look. The browser bar follows.

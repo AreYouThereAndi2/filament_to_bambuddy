@@ -212,3 +212,45 @@ def empty_filament_fields(f: dict, fields: dict, code: str | None = None) -> dic
     if code and not str(f.get("article_number") or "").strip():
         patch["article_number"] = code
     return patch
+
+
+def _haystack(f: dict) -> str:
+    return _norm(" ".join(str(x) for x in (vendor_name(f), f.get("name"), f.get("material"),
+                                           f.get("color_name"), f.get("article_number")) if x))
+
+
+# The haystacks of the last list searched: Spoolman's list stays the same
+# object until it is read again, so typing searches it without rebuilding.
+_HAY_CACHE: dict = {"list": None, "hays": []}
+
+
+def search(filaments: list, query: str, limit: int = 25) -> list:
+    """The filaments every word of `query` is found in (maker, name,
+    material, colour, article number), best first: the more words that
+    start a word there, the shorter the name, the higher."""
+    words = _norm(query).split()
+    if not words:
+        return []
+    if _HAY_CACHE["list"] is not filaments:
+        _HAY_CACHE.update(list=filaments, hays=[" " + _haystack(f) for f in filaments])
+    hits = []
+    for f, hay in zip(filaments, _HAY_CACHE["hays"], strict=True):
+        if not all(w in hay for w in words):
+            continue
+        starts = sum(1 for w in words if " " + w in hay)
+        hits.append((-starts, len(hay), f))
+    hits.sort(key=lambda h: (h[0], h[1]))
+    return [h[2] for h in hits[:limit]]
+
+
+def search_item(f: dict) -> dict:
+    """One search hit as the page lists it."""
+    sub = [str(f.get("material") or "").strip()]
+    weight = _num(f.get("weight"))
+    if weight:
+        sub.append(f"{round(weight)} g")
+    if f.get("article_number"):
+        sub.append(str(f["article_number"]).strip())
+    rgb = str(f.get("color_hex") or "").lstrip("#")
+    return {"id": f["id"], "title": title_of(f), "sub": ", ".join(s for s in sub if s),
+            "color": "#" + rgb[:6] if _rgb(rgb) else None}

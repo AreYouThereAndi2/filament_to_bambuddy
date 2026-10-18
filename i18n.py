@@ -36,6 +36,10 @@ EN = {
         "server_error": "Server error",
     },
     "scan": {
+        "catalog_failed": "The filament could not be loaded",
+        "catalog_none": "Nothing found",
+        "catalog_placeholder": "Maker, material, colour, article no.",
+        "catalog_label": "…or search your Spoolman",
         "torch": "🔦 Light",
         "refresh_db": "⟳ Refresh DB",
         "refreshing_db": "Refreshing database…",
@@ -245,6 +249,9 @@ EN = {
         "delete": "Delete",
     },
     "settings": {
+        "probe_short": "BamBuddy refuses the question",
+        "sm_no_url_short": "Spoolman address missing",
+        "sm_failed_short": "Spoolman not reachable",
         "sm_ok": "Spoolman connected: {n} filaments",
         "sm_url_env": "Read directly from {url} (SPOOLMAN_URL). Temperatures, empty spool weight, price and article number come from your filaments; empty fields are filled in when a spool is added.",
         "sm_url_bb": "Read directly from {url} (address from BamBuddy). Temperatures, empty spool weight, price and article number come from your filaments; empty fields are filled in when a spool is added.",
@@ -272,6 +279,10 @@ EN = {
         "light": "Look: light",
         "dark": "Look: dark",
     },
+    "combo": {
+        "placeholder": "Type…",
+        "create": "Add “{value}”",
+    },
 }
 
 DE = {
@@ -292,6 +303,10 @@ DE = {
         "server_error": "Serverfehler",
     },
     "scan": {
+        "catalog_failed": "Das Filament konnte nicht geladen werden",
+        "catalog_none": "Nichts gefunden",
+        "catalog_placeholder": "Marke, Material, Farbe, Artikelnr.",
+        "catalog_label": "…oder in deinem Spoolman suchen",
         "torch": "🔦 Licht",
         "refresh_db": "⟳ Datenbank aktualisieren",
         "refreshing_db": "Datenbank wird aktualisiert…",
@@ -502,6 +517,9 @@ DE = {
         "delete": "Löschen",
     },
     "settings": {
+        "probe_short": "BamBuddy verweigert die Abfrage",
+        "sm_no_url_short": "Spoolman-Adresse fehlt",
+        "sm_failed_short": "Spoolman nicht erreichbar",
         "sm_ok": "Spoolman verbunden: {n} Filamente",
         "sm_url_env": "Direkt gelesen von {url} (SPOOLMAN_URL). Temperaturen, Leergewicht, Preis und Artikelnummer kommen aus deinen Filamenten; leere Felder werden beim Anlegen ergänzt.",
         "sm_url_bb": "Direkt gelesen von {url} (Adresse aus BamBuddy). Temperaturen, Leergewicht, Preis und Artikelnummer kommen aus deinen Filamenten; leere Felder werden beim Anlegen ergänzt.",
@@ -529,6 +547,10 @@ DE = {
         "light": "Design: hell",
         "dark": "Design: dunkel",
     },
+    "combo": {
+        "placeholder": "Tippen…",
+        "create": "„{value}“ anlegen",
+    },
 }
 
 ES = {
@@ -547,6 +569,10 @@ ES = {
         "server_error": "Error del servidor",
     },
     "scan": {
+        "catalog_failed": "No se pudo cargar el filamento",
+        "catalog_none": "No se encontró nada",
+        "catalog_placeholder": "Marca, material, color, referencia",
+        "catalog_label": "…o busca en tu Spoolman",
         "torch": "🔦 Luz",
         "refresh_db": "⟳ Actualizar BD",
         "refreshing_db": "Actualizando base de datos…",
@@ -757,6 +783,9 @@ ES = {
         "delete": "Eliminar",
     },
     "settings": {
+        "probe_short": "BamBuddy rechaza la consulta",
+        "sm_no_url_short": "Falta la dirección de Spoolman",
+        "sm_failed_short": "Spoolman no responde",
         "sm_ok": "Spoolman conectado: {n} filamentos",
         "sm_url_env": "Leído directamente de {url} (SPOOLMAN_URL). Temperaturas, peso de la bobina vacía, precio y referencia vienen de tus filamentos; los campos vacíos se completan al añadir una bobina.",
         "sm_url_bb": "Leído directamente de {url} (dirección de BamBuddy). Temperaturas, peso de la bobina vacía, precio y referencia vienen de tus filamentos; los campos vacíos se completan al añadir una bobina.",
@@ -784,6 +813,10 @@ ES = {
         "light": "Aspecto: claro",
         "dark": "Aspecto: oscuro",
     },
+    "combo": {
+        "placeholder": "Escribe…",
+        "create": "Añadir «{value}»",
+    },
 }
 
 FR = {
@@ -802,6 +835,10 @@ FR = {
         "server_error": "Erreur serveur",
     },
     "scan": {
+        "catalog_failed": "Le filament n'a pas pu être chargé",
+        "catalog_none": "Rien trouvé",
+        "catalog_placeholder": "Marque, matière, couleur, référence",
+        "catalog_label": "…ou chercher dans ton Spoolman",
         "torch": "🔦 Lumière",
         "refresh_db": "⟳ Actualiser la BD",
         "refreshing_db": "Actualisation de la base de données…",
@@ -1012,6 +1049,9 @@ FR = {
         "delete": "Supprimer",
     },
     "settings": {
+        "probe_short": "BamBuddy refuse la requête",
+        "sm_no_url_short": "Adresse de Spoolman manquante",
+        "sm_failed_short": "Spoolman injoignable",
         "sm_ok": "Spoolman connecté : {n} filaments",
         "sm_url_env": "Lu directement sur {url} (SPOOLMAN_URL). Températures, poids de la bobine vide, prix et référence viennent de tes filaments ; les champs vides sont complétés à l'ajout d'une bobine.",
         "sm_url_bb": "Lu directement sur {url} (adresse de BamBuddy). Températures, poids de la bobine vide, prix et référence viennent de tes filaments ; les champs vides sont complétés à l'ajout d'une bobine.",
@@ -1039,6 +1079,10 @@ FR = {
         "light": "Apparence : claire",
         "dark": "Apparence : sombre",
     },
+    "combo": {
+        "placeholder": "Saisir…",
+        "create": "Ajouter « {value} »",
+    },
 }
 
 JA = {
@@ -1057,6 +1101,10 @@ JA = {
         "server_error": "サーバーエラー",
     },
     "scan": {
+        "catalog_failed": "フィラメントを読み込めませんでした",
+        "catalog_none": "見つかりません",
+        "catalog_placeholder": "メーカー、素材、色、品番",
+        "catalog_label": "…またはSpoolmanで検索",
         "torch": "🔦 ライト",
         "refresh_db": "⟳ データベースを更新",
         "refreshing_db": "データベースを更新中…",
@@ -1263,6 +1311,9 @@ JA = {
         "delete": "削除",
     },
     "settings": {
+        "probe_short": "BamBuddyが問い合わせを拒否しています",
+        "sm_no_url_short": "Spoolmanのアドレスがありません",
+        "sm_failed_short": "Spoolmanに接続できません",
         "sm_ok": "Spoolmanに接続済み: フィラメント {n} 件",
         "sm_url_env": "{url} から直接読み込みました (SPOOLMAN_URL)。温度、空スプール重量、価格、品番はあなたのフィラメントから取得し、スプール追加時に空欄を補完します。",
         "sm_url_bb": "{url} から直接読み込みました (BamBuddyのアドレス)。温度、空スプール重量、価格、品番はあなたのフィラメントから取得し、スプール追加時に空欄を補完します。",
@@ -1290,6 +1341,10 @@ JA = {
         "light": "表示: ライト",
         "dark": "表示: ダーク",
     },
+    "combo": {
+        "placeholder": "入力…",
+        "create": "「{value}」を追加",
+    },
 }
 
 IT = {
@@ -1308,6 +1363,10 @@ IT = {
         "server_error": "Errore del server",
     },
     "scan": {
+        "catalog_failed": "Impossibile caricare il filamento",
+        "catalog_none": "Nessun risultato",
+        "catalog_placeholder": "Marca, materiale, colore, codice",
+        "catalog_label": "…oppure cerca nel tuo Spoolman",
         "torch": "🔦 Luce",
         "refresh_db": "⟳ Aggiorna DB",
         "refreshing_db": "Aggiornamento database…",
@@ -1518,6 +1577,9 @@ IT = {
         "delete": "Elimina",
     },
     "settings": {
+        "probe_short": "BamBuddy rifiuta la richiesta",
+        "sm_no_url_short": "Manca l'indirizzo di Spoolman",
+        "sm_failed_short": "Spoolman non raggiungibile",
         "sm_ok": "Spoolman collegato: {n} filamenti",
         "sm_url_env": "Letto direttamente da {url} (SPOOLMAN_URL). Temperature, peso della bobina vuota, prezzo e codice articolo vengono dai tuoi filamenti; i campi vuoti vengono completati quando aggiungi una bobina.",
         "sm_url_bb": "Letto direttamente da {url} (indirizzo da BamBuddy). Temperature, peso della bobina vuota, prezzo e codice articolo vengono dai tuoi filamenti; i campi vuoti vengono completati quando aggiungi una bobina.",
@@ -1545,6 +1607,10 @@ IT = {
         "light": "Aspetto: chiaro",
         "dark": "Aspetto: scuro",
     },
+    "combo": {
+        "placeholder": "Scrivi…",
+        "create": "Aggiungi «{value}»",
+    },
 }
 
 KO = {
@@ -1563,6 +1629,10 @@ KO = {
         "server_error": "서버 오류",
     },
     "scan": {
+        "catalog_failed": "필라멘트를 불러오지 못했습니다",
+        "catalog_none": "찾은 항목 없음",
+        "catalog_placeholder": "제조사, 재질, 색상, 품번",
+        "catalog_label": "…또는 내 Spoolman에서 검색",
         "torch": "🔦 조명",
         "refresh_db": "⟳ DB 새로고침",
         "refreshing_db": "데이터베이스 업데이트 중…",
@@ -1769,6 +1839,9 @@ KO = {
         "delete": "삭제",
     },
     "settings": {
+        "probe_short": "BamBuddy가 요청을 거부함",
+        "sm_no_url_short": "Spoolman 주소 없음",
+        "sm_failed_short": "Spoolman에 연결할 수 없음",
         "sm_ok": "Spoolman 연결됨: 필라멘트 {n}개",
         "sm_url_env": "{url}에서 직접 읽었습니다 (SPOOLMAN_URL). 온도, 빈 스풀 무게, 가격, 품번은 내 필라멘트에서 가져오고, 스풀을 추가할 때 빈 필드를 채웁니다.",
         "sm_url_bb": "{url}에서 직접 읽었습니다 (BamBuddy의 주소). 온도, 빈 스풀 무게, 가격, 품번은 내 필라멘트에서 가져오고, 스풀을 추가할 때 빈 필드를 채웁니다.",
@@ -1796,6 +1869,10 @@ KO = {
         "light": "화면: 라이트",
         "dark": "화면: 다크",
     },
+    "combo": {
+        "placeholder": "입력…",
+        "create": "“{value}” 추가",
+    },
 }
 
 PT_BR = {
@@ -1814,6 +1891,10 @@ PT_BR = {
         "server_error": "Erro do servidor",
     },
     "scan": {
+        "catalog_failed": "Não foi possível carregar o filamento",
+        "catalog_none": "Nada encontrado",
+        "catalog_placeholder": "Marca, material, cor, código",
+        "catalog_label": "…ou procure no seu Spoolman",
         "torch": "🔦 Luz",
         "refresh_db": "⟳ Atualizar BD",
         "refreshing_db": "Atualizando banco de dados…",
@@ -2024,6 +2105,9 @@ PT_BR = {
         "delete": "Excluir",
     },
     "settings": {
+        "probe_short": "O BamBuddy recusa a consulta",
+        "sm_no_url_short": "Falta o endereço do Spoolman",
+        "sm_failed_short": "Spoolman inacessível",
         "sm_ok": "Spoolman conectado: {n} filamentos",
         "sm_url_env": "Lido diretamente de {url} (SPOOLMAN_URL). Temperaturas, peso do carretel vazio, preço e código do artigo vêm dos seus filamentos; campos vazios são preenchidos ao adicionar um carretel.",
         "sm_url_bb": "Lido diretamente de {url} (endereço do BamBuddy). Temperaturas, peso do carretel vazio, preço e código do artigo vêm dos seus filamentos; campos vazios são preenchidos ao adicionar um carretel.",
@@ -2051,6 +2135,10 @@ PT_BR = {
         "light": "Aparência: clara",
         "dark": "Aparência: escura",
     },
+    "combo": {
+        "placeholder": "Digite…",
+        "create": "Adicionar “{value}”",
+    },
 }
 
 ZH_CN = {
@@ -2069,6 +2157,10 @@ ZH_CN = {
         "server_error": "服务器错误",
     },
     "scan": {
+        "catalog_failed": "无法加载该耗材",
+        "catalog_none": "未找到",
+        "catalog_placeholder": "品牌、材料、颜色、货号",
+        "catalog_label": "…或在你的 Spoolman 中搜索",
         "torch": "🔦 手电筒",
         "refresh_db": "⟳ 刷新数据库",
         "refreshing_db": "正在更新数据库…",
@@ -2275,6 +2367,9 @@ ZH_CN = {
         "delete": "删除",
     },
     "settings": {
+        "probe_short": "BamBuddy 拒绝了查询",
+        "sm_no_url_short": "缺少 Spoolman 地址",
+        "sm_failed_short": "无法连接 Spoolman",
         "sm_ok": "已连接 Spoolman：{n} 种耗材",
         "sm_url_env": "直接从 {url} 读取（SPOOLMAN_URL）。温度、空盘重量、价格和货号来自你的耗材；添加料盘时会补全空字段。",
         "sm_url_bb": "直接从 {url} 读取（BamBuddy 中的地址）。温度、空盘重量、价格和货号来自你的耗材；添加料盘时会补全空字段。",
@@ -2302,6 +2397,10 @@ ZH_CN = {
         "light": "外观：浅色",
         "dark": "外观：深色",
     },
+    "combo": {
+        "placeholder": "输入…",
+        "create": "添加“{value}”",
+    },
 }
 
 ZH_TW = {
@@ -2320,6 +2419,10 @@ ZH_TW = {
         "server_error": "伺服器錯誤",
     },
     "scan": {
+        "catalog_failed": "無法載入該線材",
+        "catalog_none": "找不到",
+        "catalog_placeholder": "品牌、材料、顏色、貨號",
+        "catalog_label": "…或在你的 Spoolman 中搜尋",
         "torch": "🔦 手電筒",
         "refresh_db": "⟳ 重新整理資料庫",
         "refreshing_db": "正在更新資料庫…",
@@ -2526,6 +2629,9 @@ ZH_TW = {
         "delete": "刪除",
     },
     "settings": {
+        "probe_short": "BamBuddy 拒絕了查詢",
+        "sm_no_url_short": "缺少 Spoolman 位址",
+        "sm_failed_short": "無法連線 Spoolman",
         "sm_ok": "已連線 Spoolman：{n} 種線材",
         "sm_url_env": "直接從 {url} 讀取（SPOOLMAN_URL）。溫度、空盤重量、價格和貨號來自你的線材；新增料盤時會補全空欄位。",
         "sm_url_bb": "直接從 {url} 讀取（BamBuddy 中的位址）。溫度、空盤重量、價格和貨號來自你的線材；新增料盤時會補全空欄位。",
@@ -2553,6 +2659,10 @@ ZH_TW = {
         "light": "外觀：淺色",
         "dark": "外觀：深色",
     },
+    "combo": {
+        "placeholder": "輸入…",
+        "create": "新增「{value}」",
+    },
 }
 
 TR = {
@@ -2571,6 +2681,10 @@ TR = {
         "server_error": "Sunucu hatası",
     },
     "scan": {
+        "catalog_failed": "Filament yüklenemedi",
+        "catalog_none": "Hiçbir şey bulunamadı",
+        "catalog_placeholder": "Marka, malzeme, renk, ürün no.",
+        "catalog_label": "…ya da Spoolman'ında ara",
         "torch": "🔦 Işık",
         "refresh_db": "⟳ Veritabanını Yenile",
         "refreshing_db": "Veritabanı güncelleniyor…",
@@ -2781,6 +2895,9 @@ TR = {
         "delete": "Sil",
     },
     "settings": {
+        "probe_short": "BamBuddy sorguyu reddediyor",
+        "sm_no_url_short": "Spoolman adresi eksik",
+        "sm_failed_short": "Spoolman'a ulaşılamıyor",
         "sm_ok": "Spoolman bağlı: {n} filament",
         "sm_url_env": "Doğrudan {url} adresinden okundu (SPOOLMAN_URL). Sıcaklıklar, boş makara ağırlığı, fiyat ve ürün numarası filamentlerinden gelir; makara eklenirken boş alanlar doldurulur.",
         "sm_url_bb": "Doğrudan {url} adresinden okundu (BamBuddy'deki adres). Sıcaklıklar, boş makara ağırlığı, fiyat ve ürün numarası filamentlerinden gelir; makara eklenirken boş alanlar doldurulur.",
@@ -2807,6 +2924,10 @@ TR = {
         "auto": "Görünüm: sistem gibi",
         "light": "Görünüm: açık",
         "dark": "Görünüm: koyu",
+    },
+    "combo": {
+        "placeholder": "Yaz…",
+        "create": "“{value}” ekle",
     },
 }
 

@@ -230,13 +230,40 @@
 
   footer .inv{max-width:320px;margin:10px auto 12px;text-align:left}
   footer .inv label{text-align:left}
-  /* The user's Spoolman: one status line, what it means below it. */
-  .smstat{display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding:10px 12px;border-radius:12px;
-    background:var(--surface);border:1px solid var(--card-border);box-shadow:var(--card-shadow);text-align:left}
-  .smstat .status-dot{margin-top:5px}
-  .smstat-title{font:600 14px/1.3 var(--display);color:var(--text);overflow-wrap:anywhere}
-  .smstat .hint{margin-top:3px}
+  /* Where spools go, as one light: the details fold out on a tap. */
+  .smstat{margin-top:10px;border-radius:12px;background:var(--surface);border:1px solid var(--card-border);
+    box-shadow:var(--card-shadow);text-align:left}
+  .smstat>summary{display:flex;gap:8px;align-items:center;padding:10px 12px;cursor:pointer;list-style:none}
+  .smstat>summary::-webkit-details-marker{display:none}
+  .smstat>summary::after{content:"";width:7px;height:7px;margin-left:auto;flex:0 0 auto;
+    border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);
+    transition:transform .15s}
+  .smstat[open]>summary::after{transform:rotate(-135deg) translateY(-2px)}
+  .smstat .status-dot{margin-top:0}
+  .smstat-title{font:600 14px/1.3 var(--display);color:var(--text);overflow-wrap:anywhere;min-width:0}
+  .smstat-body{padding:0 12px 10px 28px}
+  .smstat-body .hint{margin-top:0;margin-bottom:6px}
   .smstat a{font-size:12.5px}
+
+  /* Combobox: type to narrow the list; what is not in it can be taken as new. */
+  .combo{position:relative}
+  .combo>input{padding-right:34px}
+  .combo-chev{position:absolute;right:13px;top:50%;width:8px;height:8px;pointer-events:none;
+    border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-75%) rotate(45deg)}
+  .combo-list{position:absolute;z-index:8;left:0;top:calc(100% + 4px);width:max(100%,230px);max-height:min(300px,45vh);overflow:auto;
+    margin:0;padding:4px;list-style:none;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--r-ctl);box-shadow:0 12px 30px rgba(0,0,0,.3)}
+  /* In the right-hand column the wider list opens towards the left. */
+  .row>div:last-child .combo-list{left:auto;right:0}
+  .combo-opt{padding:10px;border-radius:8px;cursor:pointer;font-size:15px;line-height:1.25;color:var(--text)}
+  .combo-opt.active,.combo-opt:hover{background:var(--raised)}
+  .combo-opt.create{color:var(--brand-strong);font-weight:600}
+  .combo-opt.empty{color:var(--muted);cursor:default;background:none}
+  .combo-opt .sub{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+  .combo-opt .sw{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:8px;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+  .combo-search>input{padding-left:38px}
+  .combo-search>.ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
   @media (prefers-reduced-motion:reduce){
     .vf-scanline{animation:none;top:50%}
     .spool .wind{transition:none}
@@ -250,6 +277,7 @@
   <symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
@@ -298,6 +326,15 @@
       <button id="torchBtn" type="button" class="hidden">{{ t('scan.torch') }}</button>
     </div>
     <button id="stopBtn" class="btn-secondary hidden" style="margin-top:10px">{{ t('scan.stop_camera') }}</button>
+    <!-- The user's own Spoolman filaments, narrowed as one types. -->
+    <div id="catalogBox" class="hidden">
+      <label for="catalog" style="margin-top:16px">{{ t('scan.catalog_label') }}</label>
+      <div class="combo combo-search">
+        <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
+        <input id="catalog" type="search" enterkeyhint="search" spellcheck="false" placeholder="{{ t('scan.catalog_placeholder') }}">
+        <ul id="catalog-list" class="combo-list" hidden></ul>
+      </div>
+    </div>
     <label for="manual" style="margin-top:16px">{{ t('scan.manual_label') }}</label>
     <div class="row">
       <div><input id="manual" placeholder="{{ t('scan.manual_placeholder') }}" autocomplete="off" spellcheck="false"></div>
@@ -388,27 +425,26 @@
     <div class="sec">
       <h3>{{ t('form.sec_filament') }}</h3>
       <label for="material">{{ t('form.material') }}</label>
-      <select id="material" required></select>
+      <div class="combo"><input id="material" required placeholder="{{ t('combo.placeholder') }}"><span class="combo-chev"></span><ul id="material-list" class="combo-list" hidden></ul></div>
       <div class="row">
-        <div><label for="brand">{{ t('form.brand') }}</label><select id="brand"></select></div>
-        <div><label for="subtype">{{ t('form.subtype') }}</label><select id="subtype"></select></div>
+        <div><label for="brand">{{ t('form.brand') }}</label><div class="combo"><input id="brand" placeholder="{{ t('combo.placeholder') }}"><span class="combo-chev"></span><ul id="brand-list" class="combo-list" hidden></ul></div></div>
+        <div><label for="subtype">{{ t('form.subtype') }}</label><div class="combo"><input id="subtype" placeholder="{{ t('combo.placeholder') }}"><span class="combo-chev"></span><ul id="subtype-list" class="combo-list" hidden></ul></div></div>
       </div>
       <div class="row">
-        <div><label for="color_name">{{ t('form.color_name') }}</label><input id="color_name" list="colorList" autocomplete="off"></div>
+        <div><label for="color_name">{{ t('form.color_name') }}</label><div class="combo"><input id="color_name" placeholder="{{ t('combo.placeholder') }}"><span class="combo-chev"></span><ul id="color_name-list" class="combo-list" hidden></ul></div></div>
         <div style="flex:0 0 96px"><label for="color_picker">{{ t('form.color') }}</label><input id="color_picker" type="color" class="swatch" value="#00ae42"></div>
       </div>
-      <datalist id="colorList"></datalist>
     </div>
 
     <div class="sec">
       <h3>{{ t('form.sec_stock') }}</h3>
       <div class="row">
-        <div><label for="label_weight">{{ t('form.net_weight') }}</label><select id="label_weight"></select></div>
+        <div><label for="label_weight">{{ t('form.net_weight') }}</label><div class="combo"><input id="label_weight" inputmode="numeric" placeholder="{{ t('combo.placeholder') }}"><span class="combo-chev"></span><ul id="label_weight-list" class="combo-list" hidden></ul></div></div>
         <div><label for="core_weight">{{ t('form.core_weight') }}</label><input id="core_weight" inputmode="numeric" placeholder="{{ t('form.optional_placeholder') }}"></div>
       </div>
       <div class="row">
         <div><label for="quantity">{{ t('form.quantity') }}</label><input id="quantity" inputmode="numeric" value="1"></div>
-        <div><label for="storage_location">{{ t('form.storage_location') }}</label><select id="storage_location"></select></div>
+        <div><label for="storage_location">{{ t('form.storage_location') }}</label><div class="combo"><input id="storage_location" placeholder="{{ t('combo.placeholder') }}"><span class="combo-chev"></span><ul id="storage_location-list" class="combo-list" hidden></ul></div></div>
       </div>
       <label for="category">{{ t('form.category') }}</label>
       <input id="category" placeholder="{{ t('form.optional_placeholder') }}">
@@ -497,15 +533,14 @@
       <option value="spoolman">{{ t('settings.spoolman') }}</option>
       <option value="local">{{ t('settings.local') }}</option>
     </select>
-    <div id="invHint" class="hint"></div>
-    <div id="smStatus" class="smstat hidden" role="status">
-      <span id="smDot" class="status-dot"></span>
-      <div style="min-width:0">
-        <div id="smTitle" class="smstat-title"></div>
+    <details id="invStatus" class="smstat hidden">
+      <summary role="status"><span id="smDot" class="status-dot"></span><span id="smTitle" class="smstat-title"></span></summary>
+      <div class="smstat-body">
+        <div id="invHint" class="hint"></div>
         <div id="smMore" class="hint"></div>
-        <a id="smCheck" href="#">{{ t('settings.sm_check') }}</a>
+        <a id="smCheck" href="#" class="hidden">{{ t('settings.sm_check') }}</a>
       </div>
-    </div>
+    </details>
   </div>
   {{ t('app.title') }} {{ version }}
 </footer>
@@ -634,17 +669,135 @@ fetch('/api/health').then(r=>r.json()).then(d=>{
 
 // ── Dropdown options (mirrors Bambuddy's spool form) ──
 let OPTS = null;
+// ── Comboboxes ──
+// A text field with its list underneath: typing narrows the list (every word
+// must appear, those starting a word first), a tap or Enter takes an entry,
+// and a value the list does not have can be taken as new. Works the same
+// with a finger, a mouse and the keyboard (arrows, Enter, Escape).
+const COMBOS = {};
+function comboNorm(v){ return String(v || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, ''); }
+function comboMatch(options, q){
+  const words = comboNorm(q).split(/\s+/).filter(Boolean);
+  if(!words.length) return options.slice();
+  const hits = [];
+  for(const o of options){
+    const n = ' ' + comboNorm(o);
+    if(!words.every(w => n.includes(w))) continue;
+    hits.push([words.filter(w => n.includes(' ' + w)).length, n.length, o]);
+  }
+  hits.sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+  return hits.map(h => h[2]);
+}
+function makeCombo(id, opt = {}){
+  const input = $(id), list = $(id + '-list');
+  const c = COMBOS[id] = {options: [], items: [], active: -1};
+  input.setAttribute('role', 'combobox');
+  input.setAttribute('aria-autocomplete', 'list');
+  input.setAttribute('aria-expanded', 'false');
+  input.setAttribute('aria-controls', list.id);
+  input.setAttribute('autocomplete', 'off');
+  list.setAttribute('role', 'listbox');
+  let seq = 0, committed = input.value;
+  async function refresh(){
+    const q = input.value.trim(), my = ++seq;
+    let items;
+    if(opt.source){
+      items = await opt.source(q);
+      if(my !== seq) return;   // a later keystroke already asked again
+    }else{
+      items = comboMatch(c.options, q).slice(0, 80).map(v => ({value: v, label: v}));
+      if(opt.create && q && !c.options.some(v => comboNorm(v) === comboNorm(q)))
+        items.push({value: q, label: t('combo.create', {value: q}), create: true});
+    }
+    c.items = items; c.active = -1; draw();
+  }
+  function draw(){
+    list.innerHTML = '';
+    c.items.forEach((it, i) => {
+      const li = document.createElement('li');
+      li.id = id + '-opt-' + i;
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', String(i === c.active));
+      li.className = 'combo-opt' + (it.create ? ' create' : '') + (it.empty ? ' empty' : '') + (i === c.active ? ' active' : '');
+      if(opt.render && !it.empty) opt.render(li, it); else li.textContent = it.label;
+      // Keep the focus in the field, so the tap is not a blur first.
+      li.addEventListener('pointerdown', e => e.preventDefault());
+      li.addEventListener('click', () => pick(i));
+      list.appendChild(li);
+    });
+    const open = c.items.length > 0 && document.activeElement === input;
+    const wasOpen = !list.hidden;
+    list.hidden = !open;
+    input.setAttribute('aria-expanded', String(open));
+    // On a phone the list may open under the keyboard or the Add bar: move
+    // the page up so the list shows.
+    if(open && !wasOpen){
+      const bottom = list.getBoundingClientRect().bottom, room = (window.visualViewport || window).height || innerHeight;
+      if(bottom > room - 90) window.scrollBy({top: bottom - room + 110, behavior: 'smooth'});
+    }
+    if(open && c.active >= 0){
+      input.setAttribute('aria-activedescendant', id + '-opt-' + c.active);
+      list.children[c.active].scrollIntoView({block: 'nearest'});
+    }else input.removeAttribute('aria-activedescendant');
+  }
+  function close(){ seq++; list.hidden = true; input.setAttribute('aria-expanded', 'false'); c.active = -1; }
+  function commit(){
+    // A known entry typed in other case ("pet") takes the list's spelling.
+    const same = !opt.source && c.options.find(v => v !== input.value && comboNorm(v) === comboNorm(input.value.trim()));
+    if(same) input.value = same;
+    if(input.value === committed) return;
+    committed = input.value;
+    input.dispatchEvent(new Event('change', {bubbles: true}));
+  }
+  function pick(i){
+    const it = c.items[i];
+    if(!it || it.empty) return;
+    close();
+    if(opt.onPick){ opt.onPick(it); return; }
+    if(it.create && !c.options.includes(it.value)) c.options.unshift(it.value);
+    input.value = it.value;
+    commit();
+  }
+  // Open on a tap or on typing, not on focus alone: the form focuses fields
+  // itself, and a list popping up then would be in the way.
+  input.addEventListener('click', refresh);
+  input.addEventListener('input', refresh);
+  input.addEventListener('blur', () => { close(); commit(); });
+  input.addEventListener('keydown', e => {
+    if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+      e.preventDefault();
+      if(list.hidden){ refresh(); return; }
+      const n = c.items.length;
+      if(!n) return;
+      c.active = e.key === 'ArrowDown' ? (c.active + 1) % n : (c.active <= 0 ? n - 1 : c.active - 1);
+      draw();
+    }else if(e.key === 'Enter' && !list.hidden && (c.active >= 0 || opt.source)){
+      e.preventDefault();
+      pick(c.active >= 0 ? c.active : 0);
+    }else if(e.key === 'Escape' && !list.hidden){
+      e.preventDefault(); close();
+    }
+  });
+  c.setValue = v => {
+    input.value = v == null ? '' : String(v);
+    committed = input.value;
+    if(input.value && !c.options.includes(input.value)) c.options.unshift(input.value);
+  };
+  return c;
+}
+['material', 'brand', 'subtype', 'storage_location'].forEach(id => makeCombo(id, {create: true}));
+['color_name', 'label_weight'].forEach(id => makeCombo(id));
+
 function fillSelect(id, opts, o={}){
+  if(COMBOS[id]){ COMBOS[id].options = (opts || []).map(String); return; }
   const sel=$(id); sel.innerHTML='';
   if(o.blank){ const op=document.createElement('option'); op.value=''; op.textContent=o.blankText||'—'; sel.appendChild(op); }
   (opts||[]).forEach(v=>{ const op=document.createElement('option'); op.value=String(v); op.textContent=String(v); sel.appendChild(op); });
 }
-function fillDatalist(id, opts){
-  const dl=$(id); dl.innerHTML=''; (opts||[]).forEach(v=>{ const op=document.createElement('option'); op.value=v; dl.appendChild(op); });
-}
 // Set a <select>, injecting the value as an option if it isn't a known one
 // (lookups/OCR can produce values outside the preset list).
 function setSelect(id, value){
+  if(COMBOS[id]){ COMBOS[id].setValue(value); return; }
   const sel=$(id);
   if(value==null || value===''){ sel.value=''; return; }
   value=String(value);
@@ -662,7 +815,7 @@ async function loadOptions(){
   fillSelect('subtype', OPTS.subtypes, {blank:true});
   fillSelect('label_weight', OPTS.weights.map(String));
   fillSelect('storage_location', OPTS.locations, {blank:true});
-  fillDatalist('colorList', OPTS.colors);
+  fillSelect('color_name', OPTS.colors);
   setSelect('label_weight','1000');
 }
 // A shop page handed back at load fills the form; it waits for the selects.
@@ -1124,7 +1277,7 @@ function fillForm(d){
   if(d.title && d.source !== 'none' && d.source !== 'amazon') $('paste_title').value = d.title;
   updateSpool();
   showPriceHint(d.price);
-  $('material').focus();
+  $('form').scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 
 // ── OCR: read the label text from a photo (works over plain HTTP too) ──
@@ -1461,42 +1614,72 @@ $('nfcBtn').onclick = async () => {
   }
 };
 
+// ── Search in the user's own Spoolman ──
+// Every word typed narrows the list (maker, name, material, colour, article
+// number); taking one fills the form from that filament and links the spool
+// to it. A code scanned before stays on the form.
+makeCombo('catalog', {
+  source: async q => {
+    if(q.length < 2) return [];
+    try{
+      const d = await (await fetch('/api/spoolman/search?q=' + encodeURIComponent(q))).json();
+      const items = (d.items || []).map(f => ({id: f.id, label: f.title, sub: f.sub, color: f.color}));
+      return items.length ? items : [{empty: true, label: t('scan.catalog_none')}];
+    }catch(e){ return []; }
+  },
+  render: (li, it) => {
+    if(it.color){ const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = it.color; li.appendChild(sw); }
+    li.appendChild(document.createTextNode(it.label));
+    if(it.sub){ const s = document.createElement('span'); s.className = 'sub'; s.textContent = it.sub; li.appendChild(s); }
+  },
+  onPick: async it => {
+    $('catalog').value = '';
+    $('catalog').blur();
+    let d = null;
+    try{ d = await (await fetch('/api/spoolman/filament/' + it.id)).json(); }catch(e){ d = null; }
+    if(!d || !d.ok){ toast(t('scan.catalog_failed'), false); return; }
+    await optionsReady;
+    fillForm({source: 'spoolman', barcode: currentBarcode || '', title: d.title, fields: d.fields, spoolman: d.spoolman});
+  },
+});
+
 // ── Inventory mode ──
 // Bambuddy is asked whether Spoolman stands behind it; a key without
 // "Read Status" is refused the answer, and then the mode is set by hand.
 function showInv(d){
   $('invMode').value = d.inventory_mode;
-  let hint = '';
-  if(d.inventory_mode === 'auto'){
-    hint = d.probe && d.probe !== 200 ? t('settings.probe_denied', {code: d.probe})
-         : t('settings.detected', {mode: t('settings.'+d.active)});
+  const denied = d.inventory_mode === 'auto' && !!d.probe && d.probe !== 200;
+  let state = denied ? 'bad' : 'ok';
+  let title = denied ? t('settings.probe_short') : t('settings.'+d.active);
+  $('invHint').textContent = d.inventory_mode !== 'auto' ? ''
+    : denied ? t('settings.probe_denied', {code: d.probe}) : t('settings.detected', {mode: t('settings.'+d.active)});
+  $('invHint').classList.toggle('err', denied);
+  // In Spoolman mode the light is whether the app reads the user's Spoolman
+  // itself; the folded part says from where, or why not and what is missing.
+  const sm = d.spoolman;
+  let more = '';
+  if(sm){
+    const n = Number(sm.filaments || 0).toLocaleString(I18N_LANG);
+    if(sm.direct){
+      if(!denied){ state = 'ok'; title = t('settings.sm_ok', {n}); }
+      more = t(sm.source === 'bambuddy' ? 'settings.sm_url_bb' : 'settings.sm_url_env', {url: sm.url});
+    }else{
+      const why = sm.error === 'http' ? t('settings.sm_err_http', {code: sm.detail})
+                : t('settings.sm_err_'+(sm.error || 'unreachable'));
+      const noUrl = sm.error === 'no_url';
+      if(!denied){ state = noUrl ? 'warn' : 'bad'; title = t(noUrl ? 'settings.sm_no_url_short' : 'settings.sm_failed_short'); }
+      const reason = noUrl ? t('settings.sm_no_url')+'.'
+        : t('settings.sm_failed', {url: sm.url})+': '+why+(/[.?!。？]$/.test(why) ? '' : '.');
+      more = [reason, sm.filaments ? t('settings.sm_fallback', {n}) : t('settings.sm_none')].join(' ');
+    }
   }
-  $('invHint').textContent = hint;
-  $('invHint').classList.toggle('err', !!(d.probe && d.probe !== 200 && d.inventory_mode === 'auto'));
-  showSpoolmanStatus(d.spoolman);
-}
-// Whether the app reads the user's Spoolman itself, and if not, why and what
-// is missing until it does. Only in Spoolman mode.
-function showSpoolmanStatus(sm){
-  $('smStatus').classList.toggle('hidden', !sm);
-  if(!sm) return;
-  let dot, title, more = '';
-  if(sm.direct){
-    dot = 'var(--brand)';
-    title = t('settings.sm_ok', {n: sm.filaments});
-    more = t(sm.source === 'bambuddy' ? 'settings.sm_url_bb' : 'settings.sm_url_env', {url: sm.url});
-  }else{
-    const why = sm.error === 'http' ? t('settings.sm_err_http', {code: sm.detail})
-              : t('settings.sm_err_'+(sm.error || 'unreachable'));
-    dot = sm.error === 'no_url' ? 'var(--warn)' : 'var(--danger)';
-    title = sm.error === 'no_url' ? t('settings.sm_no_url') : t('settings.sm_failed', {url: sm.url});
-    // The reason as a sentence of its own, then what the app does meanwhile.
-    const reason = sm.error === 'no_url' ? '' : why.charAt(0).toUpperCase() + why.slice(1) + (/[.?!。？]$/.test(why) ? '' : '.');
-    more = [reason, sm.filaments ? t('settings.sm_fallback', {n: sm.filaments}) : t('settings.sm_none')].filter(Boolean).join(' ');
-  }
-  $('smDot').style.background = dot;
+  $('smDot').style.background = {ok: 'var(--brand)', warn: 'var(--warn)', bad: 'var(--danger)'}[state];
   $('smTitle').textContent = title;
   $('smMore').textContent = more;
+  $('smCheck').classList.toggle('hidden', !sm);
+  $('invStatus').classList.remove('hidden');
+  // The catalogue search needs the user's own filaments.
+  $('catalogBox').classList.toggle('hidden', !(sm && sm.filaments));
 }
 fetch('/api/settings').then(r => r.json()).then(showInv).catch(() => {});
 $('smCheck').onclick = async (e) => {

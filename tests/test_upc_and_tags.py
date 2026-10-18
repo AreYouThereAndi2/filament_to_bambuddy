@@ -131,6 +131,15 @@ class TestLookupRoute:
         assert not any("upcitemdb" in str(c.args[0]) for c in get.call_args_list)
 
 
+    def test_unknown_article_number_is_not_amazon(self, client):
+        with (
+            patch.object(app_module, "_external_all_codes", return_value=None),
+            patch("requests.get", return_value=MagicMock(ok=False, status_code=404)),
+        ):
+            d = client.get("/api/lookup?barcode=700-001-9999").get_json()
+        assert d["source"] == "none"
+
+
 class TestNormalizeTag:
     @pytest.mark.parametrize("raw,uid", [
         ("04:5a:8b:c2:4e:61:80", "045A8BC24E6180"),
