@@ -212,6 +212,20 @@ Den QR-Code auf dem Etikett einer Spule mit **Barcode scannen** lesen. Das geht 
 
 Ohne Kamera geht es auch: den Link vom Etikett ins Code-Feld einfügen oder `#12` eintippen.
 
+## Dein Bestand
+
+Die Karte **Dein Bestand** liest deine Spulen aus dem aktiven Inventar (BamBuddy oder Spoolman dahinter):
+
+- **Spule suchen:** Jedes Wort grenzt ein: Marke, Material, Farbe, Lagerort, Tag, Artikelnummer oder `#12`. `<200` zeigt nur Spulen mit weniger als 200 g. Ein Tipp öffnet die Spule.
+- **Nachbestellen:** Spulen unter einer Grenze (200 g, änderbar), nach Sorte gruppiert, mit Restmenge, letztem Preis und *Nachkaufen* (Websuche).
+
+Außerdem:
+
+- **Tag ans Handy halten** (Chrome auf Android): Der Knopf in der Scan-Karte liest den NFC-Tag und öffnet die Spule, an der er hängt.
+- **Schon im Bestand:** Beim Anlegen zeigt das Formular, ob es Spulen derselben Marke, desselben Materials und derselben Farbe schon gibt.
+- **Mehrere Etiketten:** In *Spulen-ID* gehen `12, 15, 20-24`; dazu *Alle aus Lagerort …* und *Heute angelegt*. *Drucken* schickt alle nacheinander an den Drucker.
+- **Leer: archivieren:** Im Spulen-Datensatz archiviert das eine aufgebrauchte Spule in BamBuddy. Sie verschwindet aus dem Bestand, ihre Daten bleiben erhalten.
+
 ## Mit der SpoolmanScale verbinden
 
 In der Weboberfläche der Waage → Einstellungen → Barcode-Scanner → **filament_to_bambuddy-Adresse**: `http://<server-ip>:8088`. Scannt die Waage dann einen Code, den keine Spule kennt, fragt sie die App und bietet an, die Spule anzulegen, mit oder ohne den gefundenen Preis.
