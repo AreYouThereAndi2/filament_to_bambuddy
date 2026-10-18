@@ -204,3 +204,32 @@ class TestSpoolmanStatus:
         st = self._status(client, lambda url, **_: _resp(payload={"spoolman_url": ""}) if "settings" in url
                           else _resp(payload=[]))
         assert st["error"] == "no_url" and st["url"] is None
+
+
+class TestCatalogSearch:
+    """The search field over the user's own filaments."""
+
+    def test_every_word_must_match(self):
+        hits = sm.search([POLY, POLY_WHITE, SUNLU], "poly white")
+        assert [f["id"] for f in hits] == [13]
+        assert sm.search([POLY, POLY_WHITE], "pm70820")[0]["id"] == 12
+        assert sm.search([POLY], "") == []
+
+    def test_word_starts_rank_first(self):
+        a = dict(SUNLU, id=30, name="PETG Glass")
+        b = dict(SUNLU, id=31, name="Hyper PETG Fiberglass")
+        assert [f["id"] for f in sm.search([b, a], "glass")] == [30, 31]
+
+    def test_item(self):
+        assert sm.search_item(POLY) == {"id": 12, "title": "Polymaker PolyTerra PLA Charcoal Black",
+                                        "sub": "PLA, 1000 g, PM70820", "color": "#333333"}
+
+    def test_routes(self, client):
+        with patch("requests.get", side_effect=_get):
+            items = client.get("/api/spoolman/search?q=cotton").get_json()["items"]
+            d = client.get("/api/spoolman/filament/12").get_json()
+            missing = client.get("/api/spoolman/filament/999")
+        assert [i["id"] for i in items] == [13]
+        assert d["source"] == "spoolman" and d["spoolman"]["id"] == 12
+        assert d["fields"]["spoolman_filament_id"] == 12 and d["fields"]["bed_temp_min"] == 55
+        assert missing.status_code == 404

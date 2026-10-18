@@ -628,6 +628,48 @@ def _link_spoolman(fields: dict, title: str | None = None, code: str | None = No
     return out, {"id": f["id"], "name": spoolman_match.title_of(f), "by": by}
 
 
+def _filament_form(fields: dict, name: str) -> tuple[dict, list]:
+    """A Spoolman filament's fields made whole for the form. Spoolman has no
+    colour name and keeps the line in the name: those are read from there,
+    as from a box's title; the databases fill what is still open."""
+    from filament_parse import parse_title
+    fields = dict(fields)
+    for key, value in parse_title(name).items():
+        fields.setdefault(key, value)
+    fields, enriched = _enrich(fields, name)
+    fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
+    return fields, enriched
+
+
+@app.get("/api/spoolman/search")
+def spoolman_search():
+    """The user's own Spoolman filaments matching what is typed, for the
+    search field: every word must appear; [] outside Spoolman mode."""
+    import spoolman_match
+    q = (request.args.get("q") or "").strip()[:80]
+    try:
+        limit = max(1, min(int(request.args.get("limit") or 25), 50))
+    except ValueError:
+        limit = 25
+    hits = spoolman_match.search(_spoolman_filaments(), q, limit) if q else []
+    return jsonify(items=[spoolman_match.search_item(f) for f in hits])
+
+
+@app.get("/api/spoolman/filament/<int:filament_id>")
+def spoolman_filament(filament_id: int):
+    """One of the user's filaments as the form takes it, linked."""
+    import spoolman_match
+    f = next((f for f in _spoolman_filaments() if f.get("id") == filament_id), None)
+    if f is None:
+        return jsonify(ok=False, error="not_found"), 404
+    name = spoolman_match.title_of(f)
+    fields = spoolman_match.form_fields(f)
+    fields["spoolman_filament_id"] = filament_id
+    fields, enriched = _filament_form(fields, name)
+    return jsonify(ok=True, source="spoolman", title=name, fields=fields, enriched=enriched,
+                   spoolman={"id": filament_id, "name": name, "by": "search"})
+
+
 def _fill_spoolman_filament(spool_id: int, fields: dict, code: str | None) -> list:
     """Fill what the new spool's filament leaves empty in Spoolman (the
     temperatures, the empty spool's weight, the price, the scanned code as
@@ -906,13 +948,7 @@ def lookup():
     # carries (its article number, or an EAN in an extra field).
     fields, spoolman = _link_spoolman({}, None, code)
     if spoolman:
-        # Spoolman has no colour name and keeps the line in the name: read
-        # them from there, as from a box's title.
-        from filament_parse import parse_title
-        for key, value in parse_title(spoolman["name"]).items():
-            fields.setdefault(key, value)
-        fields, enriched = _enrich(fields, spoolman["name"])
-        fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
+        fields, enriched = _filament_form(fields, spoolman["name"])
         log.info("lookup %s: Spoolman filament %s", barcode, spoolman["id"])
         price = _offer_price(code, []) if kind == "gtin" else None
         return jsonify(barcode=code, source="spoolman", title=spoolman["name"], fields=fields,
@@ -932,7 +968,9 @@ def lookup():
                            linked_codes=[], price=price, enriched=enriched, spoolman=spoolman)
 
     # 5. Not found — fill in manually (and it'll be remembered).
-    src = "amazon" if kind == "sku" else "none"
+    # Only Amazon's own codes are Amazon's: an ASIN (B0…) or a warehouse
+    # FNSKU (X0…). Any other unknown article number is just unknown.
+    src = "amazon" if kind == "sku" and re.fullmatch(r"[BX]0[0-9A-Z]{8}", code.upper()) else "none"
     log.info("lookup %s: not found (source=%s)", barcode, src)
     return jsonify(barcode=code, source=src,
                    fields={"label_weight": DEFAULT_LABEL_WEIGHT}, title=None, linked_codes=[])

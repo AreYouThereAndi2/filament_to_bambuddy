@@ -176,6 +176,11 @@ BamBuddy beantwortet die Frage nur einem API-Schlüssel mit **„Read Status“*
 
 ### Deine Filamente aus Spoolman
 
+**Suchen:** Unter *Barcode scannen* steht im Spoolman-Modus „…oder in deinem Spoolman suchen“. Jedes getippte Wort schränkt die Liste weiter ein (Marke, Name, Material, Farbe, Artikelnummer). Ein Treffer füllt das Formular und verknüpft die Spule mit genau diesem Filament. Ein vorher gescannter Code bleibt dabei erhalten und wird beim Anlegen als Artikelnummer eingetragen.
+
+**Auswahlfelder:** Material, Marke, Subtyp, Farbname, Nettogewicht und Lagerort sind Felder zum Tippen: Die Liste darunter zeigt nur noch Passendes. Was es noch nicht gibt, bietet sie als „„…“ anlegen“ an.
+
+
 Im Spoolman-Modus schaut die App zuerst in **deine eigenen Spoolman-Filamente**: über die Artikelnummer des Filaments (oder eine EAN in einem Extrafeld), sonst nach jedem anderen Treffer über Marke, Material und Farbe. Passt eines, stehen seine Werte im Formular (Düse, Bett, Leergewicht der Rolle, Preis), darüber „Auf dein Spoolman-Filament: …“, und die Spule wird **genau auf diesem Filament** angelegt. Mit „nicht verknüpfen“ sucht oder erstellt BamBuddy das Filament wie bisher.
 
 Nach dem Anlegen trägt die App ins Filament ein, was dort noch leer ist: Temperaturen, Leergewicht, Preis und den gescannten Code als Artikelnummer. Beim nächsten Scan desselben Codes findet sie es dann direkt.
