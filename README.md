@@ -184,6 +184,9 @@ Docker-specific env vars: `OFD_CACHE_FILE` and `BARCODE_CACHE_FILE` default to
 | `SPOOLMANDB_COMMUNITY_CACHE_FILE` | `spoolmandb_community_index.json` | Where the SpoolmanDB-Community index is cached |
 | `TIGERTAG_CACHE_FILE` | `tigertag_index.json` | Where the TigerTag catalogue index is cached |
 | `TIGERTAG` | `on` | `off` leaves the TigerTag catalogue out |
+| `INVENTORY_MODE` | `auto` | `auto` asks Bambuddy; `spoolman` / `local` set the inventory (also on the page) |
+| `SETTINGS_FILE` | `settings.json` | Where the page's inventory choice is kept |
+| `BAMBUDDY_PUBLIC_URL` | — | Address a phone reaches Bambuddy at, for label QR codes; else Bambuddy's External URL |
 | `PARSE_RULES_FILE` | `parse_rules.json` | The user's reading rules for label/title text |
 | `HOST` / `PORT` | `0.0.0.0` / `8088` | Server bind address |
 | `UPC_LOOKUP` | `on` | `off` disables the UPCitemdb fallback |

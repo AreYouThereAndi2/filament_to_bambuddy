@@ -28,7 +28,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
 # App code
-COPY app.py ofd.py filament_parse.py spoolmandb_community.py tigertag.py i18n.py upc_lookup.py page_import.py ./
+COPY app.py ofd.py filament_parse.py spoolmandb_community.py tigertag.py name_match.py i18n.py upc_lookup.py page_import.py ./
 COPY templates ./templates
 COPY static ./static
 
@@ -36,6 +36,7 @@ COPY static ./static
 ENV APP_VERSION=$VERSION \
     BARCODE_CACHE_FILE=/data/barcode_cache.json \
     PARSE_RULES_FILE=/data/parse_rules.json \
+    SETTINGS_FILE=/data/settings.json \
     OFD_CACHE_FILE=/data/ofd_index.json \
     SPOOLMANDB_COMMUNITY_CACHE_FILE=/data/spoolmandb_community_index.json \
     TIGERTAG_CACHE_FILE=/data/tigertag_index.json \

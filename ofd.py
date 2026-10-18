@@ -43,13 +43,14 @@ _MAX_ALL_JSON_BYTES = 128 * 1024 * 1024
 # Bump whenever the on-disk cache shape changes, so an old cache file (e.g.
 # pre-dating article_number/variant-code support) is treated as stale and
 # rebuilt instead of being misread.
-_CACHE_VERSION = 2
+_CACHE_VERSION = 3
 
 # In-process cache so we don't rebuild on every request.
 _GTIN_INDEX: dict | None = None
 _ARTICLE_INDEX: dict | None = None
 _VARIANT_CODES: dict | None = None
 _BRANDS: list | None = None
+_NAMES: list | None = None
 _INDEX_LOADED_AT = 0.0
 
 
@@ -142,12 +143,17 @@ def _build_index(all_json: dict) -> tuple:
             except (TypeError, ValueError):
                 pass
         for src, dst in (("min_print_temperature", "nozzle_temp_min"),
-                         ("max_print_temperature", "nozzle_temp_max")):
+                         ("max_print_temperature", "nozzle_temp_max"),
+                         ("min_bed_temperature", "bed_temp_min"),
+                         ("max_bed_temperature", "bed_temp_max")):
             if fil.get(src) is not None:
                 try:
-                    fields[dst] = int(fil[src])
+                    value = int(fil[src])
                 except (TypeError, ValueError):
-                    pass
+                    continue
+                # A bed at 0 °C is "no heated bed needed", not a setting.
+                if value > 0 or dst.startswith("nozzle"):
+                    fields[dst] = value
 
         # A descriptive title for the UI.
         title_bits = [fields.get("brand"), fil.get("name"), fields.get("color_name")]
@@ -168,6 +174,50 @@ def _build_index(all_json: dict) -> tuple:
                 codes_for_variant.append({"code": normalized_article, "kind": "sku", "is_refill": is_refill})
 
     return gtin_index, article_index, variant_codes
+
+
+def _build_names(all_json: dict) -> list:
+    """Every colour of every filament, coded or not, for the search by name:
+    [{"brand", "material", "filament", "color", "fields"}]. Most of the
+    database's ~14,000 colours have no barcode; their temperatures and
+    colours still fill in what a code hit elsewhere left open."""
+    brands = {b["id"]: b for b in all_json.get("brands", []) if "id" in b}
+    filaments = {f["id"]: f for f in all_json.get("filaments", []) if "id" in f}
+    names = []
+    for variant in all_json.get("variants", []):
+        fil = filaments.get(variant.get("filament_id"))
+        if not fil:
+            continue
+        brand = (brands.get(fil.get("brand_id")) or {}).get("name") or ""
+        material = fil.get("material") or ""
+        if not brand or not material:
+            continue
+        fields: dict = {}
+        rgba = _hex_to_rgba(variant.get("color_hex"))
+        if rgba:
+            fields["rgba"] = rgba
+        for src, dst in (("min_print_temperature", "nozzle_temp_min"),
+                         ("max_print_temperature", "nozzle_temp_max"),
+                         ("min_bed_temperature", "bed_temp_min"),
+                         ("max_bed_temperature", "bed_temp_max")):
+            try:
+                value = int(fil.get(src))
+            except (TypeError, ValueError):
+                continue
+            if value > 0:
+                fields[dst] = value
+        names.append({"brand": brand, "material": material, "filament": fil.get("name") or "",
+                      "color": variant.get("name") or "", "fields": fields})
+    return names
+
+
+def get_names() -> list:
+    """The name list of `_build_names`, empty when the database is not loaded."""
+    try:
+        _ensure_loaded()
+    except Exception:
+        return []
+    return _NAMES or []
 
 
 def _read_cache_file() -> dict | None:
@@ -191,6 +241,7 @@ def _cache_tuple(data: dict) -> tuple:
         data.get("article_index", {}),
         data.get("variant_codes", {}),
         data.get("brands", []),
+        data.get("names", []),
     )
 
 
@@ -227,6 +278,7 @@ def _refresh() -> tuple:
                 raise ValueError(f"OFD all.json exceeded {_MAX_ALL_JSON_BYTES} byte cap - aborting download")
     all_json = json.loads(bytes(chunks))
     gtin_index, article_index, variant_codes = _build_index(all_json)
+    names = _build_names(all_json)
     brands = sorted({b["name"] for b in all_json.get("brands", []) if b.get("name")})
     if not gtin_index and not article_index:
         # A 200 that parses to zero entries (e.g. upstream's dump shape
@@ -249,6 +301,7 @@ def _refresh() -> tuple:
                     "gtin_index": gtin_index,
                     "article_index": article_index,
                     "variant_codes": variant_codes,
+                    "names": names,
                     "brands": brands,
                 }
             )
@@ -256,11 +309,11 @@ def _refresh() -> tuple:
         tmp_path.replace(OFD_CACHE)
     except Exception:
         log.warning("Failed to write OFD cache file", exc_info=True)
-    return gtin_index, article_index, variant_codes, brands
+    return gtin_index, article_index, variant_codes, brands, names
 
 
 def _ensure_loaded(force: bool = False):
-    global _GTIN_INDEX, _ARTICLE_INDEX, _VARIANT_CODES, _BRANDS, _INDEX_LOADED_AT
+    global _GTIN_INDEX, _ARTICLE_INDEX, _VARIANT_CODES, _BRANDS, _NAMES, _INDEX_LOADED_AT
     if _GTIN_INDEX is not None and not force and (time.time() - _INDEX_LOADED_AT) < OFD_TTL_SECONDS:
         return
     loaded = None if force else _load_cached()
@@ -276,7 +329,8 @@ def _ensure_loaded(force: bool = False):
             loaded = _load_stale_cached()
             if loaded is None:
                 raise
-    _GTIN_INDEX, _ARTICLE_INDEX, _VARIANT_CODES, _BRANDS = loaded
+    # A cache or refresh from before the name list has four parts.
+    _GTIN_INDEX, _ARTICLE_INDEX, _VARIANT_CODES, _BRANDS, _NAMES = (*loaded, [])[:5]
     _INDEX_LOADED_AT = time.time()
 
 

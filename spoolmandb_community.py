@@ -60,7 +60,7 @@ _MAX_TOTAL_DECOMPRESSED_BYTES = 256 * 1024 * 1024
 # Bump whenever the on-disk cache shape changes, so an old cache file (e.g.
 # pre-dating `codes`/SKU support) is treated as stale and rebuilt instead of
 # being misread.
-_CACHE_VERSION = 2
+_CACHE_VERSION = 3
 
 # In-process cache so we don't re-download/rebuild on every request.
 _GTIN_INDEX: dict | None = None
@@ -69,6 +69,8 @@ _VARIANTS: list | None = None
 _BRANDS: list | None = None
 _MATERIALS: list | None = None
 _INDEX_LOADED_AT = 0.0
+# get_names() of the variants loaded now: (the variants list, its names).
+_NAMES_MEMO: tuple | None = None
 
 
 def _canon(barcode: str) -> str:
@@ -107,14 +109,14 @@ def _subtype_from_template(name_template: str) -> str | None:
     return s or None
 
 
-def _extruder_temps(filament: dict) -> tuple:
-    temp_range = filament.get("extruder_temp_range")
+def _extruder_temps(filament: dict, prefix: str = "extruder") -> tuple:
+    temp_range = filament.get(f"{prefix}_temp_range")
     if isinstance(temp_range, list) and len(temp_range) == 2:
         try:
             return int(temp_range[0]), int(temp_range[1])
         except (TypeError, ValueError):
             pass
-    single = filament.get("extruder_temp")
+    single = filament.get(f"{prefix}_temp")
     if single is not None:
         try:
             t = int(single)
@@ -139,6 +141,7 @@ def _parse_manufacturer_file(manufacturer: str, data: dict) -> list:
             except (TypeError, ValueError, KeyError):
                 label_weight = None
         nozzle_temp_min, nozzle_temp_max = _extruder_temps(filament)
+        bed_temp_min, bed_temp_max = _extruder_temps(filament, "bed")
 
         for color in filament.get("colors", []):
             color_name = color.get("name")
@@ -161,6 +164,8 @@ def _parse_manufacturer_file(manufacturer: str, data: dict) -> list:
                     "label_weight": label_weight,
                     "nozzle_temp_min": nozzle_temp_min,
                     "nozzle_temp_max": nozzle_temp_max,
+                    "bed_temp_min": bed_temp_min,
+                    "bed_temp_max": bed_temp_max,
                     "eans": eans,
                     "eans_refill": eans_refill,
                     "codes": codes,
@@ -179,6 +184,8 @@ _BARCODE_FIELD_KEYS = (
     "label_weight",
     "nozzle_temp_min",
     "nozzle_temp_max",
+    "bed_temp_min",
+    "bed_temp_max",
     "_title",
 )
 
@@ -420,6 +427,29 @@ def get_materials() -> list:
     except Exception:
         return []
     return _MATERIALS
+
+
+def get_names() -> list:
+    """Every colour of every filament, coded or not, for the search by name:
+    [{"brand", "material", "filament", "color", "fields"}]."""
+    global _NAMES_MEMO
+    try:
+        _ensure_loaded()
+    except Exception:
+        return []
+    if _NAMES_MEMO and _NAMES_MEMO[0] is _VARIANTS:
+        return _NAMES_MEMO[1]
+    names = []
+    for v in _VARIANTS or []:
+        if not v.get("manufacturer") or not v.get("material"):
+            continue
+        fields = {k: v.get(k) for k in ("rgba", "nozzle_temp_min", "nozzle_temp_max",
+                                        "bed_temp_min", "bed_temp_max") if v.get(k)}
+        names.append({"brand": v["manufacturer"], "material": v["material"],
+                      "filament": v.get("subtype") or "", "color": v.get("color_name") or "",
+                      "fields": fields})
+    _NAMES_MEMO = (_VARIANTS, names)
+    return names
 
 
 def lookup(barcode: str) -> tuple | None:

@@ -434,7 +434,29 @@ DEFAULT_BRANDS = ["Bambu Lab", "Polymaker", "eSUN", "Overture", "SUNLU", "Inland
 # is read from Bambuddy itself and kept for a minute, so switching it there
 # takes effect here without a restart.
 _INVENTORY_MODE_TTL = 60.0
-_inventory_mode_cache: dict = {"at": 0.0, "base": None}
+_inventory_mode_cache: dict = {"at": 0.0, "base": None, "probe": None}
+_INVENTORY_BASES = {"local": "/api/v1/inventory", "spoolman": "/api/v1/spoolman/inventory"}
+# The probe needs the API key's "Read Status"; without it Bambuddy answers
+# 403 and the guess is the local inventory, which is wrong behind Spoolman.
+# So the mode can also be set: "auto" (asked), "local" or "spoolman", from
+# INVENTORY_MODE or the page, which stores it in SETTINGS_FILE.
+SETTINGS_FILE = Path(os.getenv("SETTINGS_FILE", "settings.json"))
+INVENTORY_MODES = ("auto", "local", "spoolman")
+
+
+def load_settings() -> dict:
+    try:
+        data = json.loads(SETTINGS_FILE.read_text()) if SETTINGS_FILE.exists() else {}
+    except Exception:
+        data = {}
+    mode = data.get("inventory_mode") or os.getenv("INVENTORY_MODE", "auto").strip().lower()
+    return {"inventory_mode": mode if mode in INVENTORY_MODES else "auto"}
+
+
+def save_settings(settings: dict):
+    tmp = SETTINGS_FILE.with_suffix(SETTINGS_FILE.suffix + ".tmp")
+    tmp.write_text(json.dumps(settings, indent=2))
+    tmp.replace(SETTINGS_FILE)
 
 
 def _truthy(value) -> bool:
@@ -445,24 +467,50 @@ def _truthy(value) -> bool:
 
 def _inventory_base() -> str:
     """Path prefix of Bambuddy's active inventory, without a trailing slash."""
+    mode = load_settings()["inventory_mode"]
+    if mode in _INVENTORY_BASES:
+        return _INVENTORY_BASES[mode]
     now = time.monotonic()
     cached = _inventory_mode_cache["base"]
     if cached and now - _inventory_mode_cache["at"] < _INVENTORY_MODE_TTL:
         return cached
     base = "/api/v1/inventory"
+    probe = None
     if BAMBUDDY_API_KEY:
         try:
             r = requests.get(f"{BAMBUDDY_URL}/api/v1/settings/spoolman",
                              headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"},
                              timeout=10)
+            probe = r.status_code
             if r.ok and _truthy((r.json() or {}).get("spoolman_enabled")):
                 base = "/api/v1/spoolman/inventory"
         except Exception:
             log.debug("Bambuddy Spoolman mode probe failed, using the local inventory", exc_info=True)
     if base != cached:
-        log.info("Bambuddy inventory: %s", base)
-    _inventory_mode_cache.update(at=now, base=base)
+        log.info("Bambuddy inventory: %s (mode probe HTTP %s)", base, probe)
+    _inventory_mode_cache.update(at=now, base=base, probe=probe)
     return base
+
+
+@app.get("/api/settings")
+def get_settings():
+    """The inventory mode as set, and what Bambuddy itself says when asked."""
+    settings = load_settings()
+    base = _inventory_base()
+    return jsonify(**settings, active="spoolman" if base == _INVENTORY_BASES["spoolman"] else "local",
+                   probe=_inventory_mode_cache.get("probe") if settings["inventory_mode"] == "auto" else None)
+
+
+@app.post("/api/settings")
+def set_settings():
+    body = request.get_json(force=True, silent=True) or {}
+    mode = str(body.get("inventory_mode") or "").strip().lower()
+    if mode not in INVENTORY_MODES:
+        return jsonify(ok=False, error="inventory_mode"), 400
+    save_settings({**load_settings(), "inventory_mode": mode})
+    _inventory_mode_cache.update(at=0.0, base=None, probe=None)
+    log.info("inventory mode set to %s", mode)
+    return get_settings()
 
 
 def _bambuddy_locations() -> list[str]:
@@ -656,7 +704,9 @@ def lookup():
         cache_hit = cache.get(barcode)
     if cache_hit is not None:
         log.info("lookup %s: cache hit", barcode)
-        return jsonify(barcode=code, source="cache", fields=cache_hit, title=None, linked_codes=[])
+        fields, enriched = _enrich(cache_hit)
+        return jsonify(barcode=code, source="cache", fields=fields, title=None, linked_codes=[],
+                       enriched=enriched)
 
     # 2. Cross-referenced OFD + SpoolmanDB-Community lookup.
     external = _external_all_codes(code, kind)
@@ -664,9 +714,14 @@ def lookup():
         fields, source, all_codes, title = external
         clean_fields = {k: v for k, v in fields.items() if not k.startswith("_")}
         clean_fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
+        clean_fields, enriched = _enrich(clean_fields, title)
         linked_codes = [c for c in all_codes if c["code"] != code]
         log.info("lookup %s: %s hit — %s", barcode, source, title or "")
-        return jsonify(barcode=code, source=source, title=title, fields=clean_fields, linked_codes=linked_codes)
+        # The filament databases know the product, not what it costs. With
+        # an EAN among its codes, UPCitemdb's offers still give the price.
+        price = _offer_price(code if kind == "gtin" else None, all_codes)
+        return jsonify(barcode=code, source=source, title=title, fields=clean_fields,
+                       linked_codes=linked_codes, price=price, enriched=enriched)
 
     # 3. A retail barcode the filament databases don't know: ask UPCitemdb,
     # which indexes Amazon and other shop listings, for the product title and
@@ -675,9 +730,10 @@ def lookup():
         hit = _upc_fields(code)
         if hit:
             fields, title, price = hit
+            fields, enriched = _enrich(fields, title)
             log.info("lookup %s: UPCitemdb hit — %s", barcode, title)
             return jsonify(barcode=code, source="upcitemdb", title=title, fields=fields,
-                           linked_codes=[], price=price)
+                           linked_codes=[], price=price, enriched=enriched)
 
     # 4. Not found — fill in manually (and it'll be remembered).
     src = "amazon" if kind == "sku" else "none"
@@ -713,6 +769,38 @@ def _upc_fields(code: str) -> tuple | None:
     fields, _ = apply_rules(hit["title"], parse_title(hit["title"], brand_hint=brand, extra_brands=brands))
     fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
     return fields, hit["title"], hit["price"]
+
+
+def _enrich(fields: dict, title: str | None = None) -> tuple[dict, list]:
+    """Fill what is still open from the filament databases searched by name
+    (brand, material, line and colour): (fields, the sources that added)."""
+    import name_match
+    import ofd
+    import spoolmandb_community
+    try:
+        return name_match.enrich(fields, title, [("ofd", ofd.get_names()),
+                                                 ("spoolmandb-community", spoolmandb_community.get_names())])
+    except Exception:
+        log.debug("name match failed", exc_info=True)
+        return dict(fields), []
+
+
+def _offer_price(gtin: str | None, all_codes: list) -> dict | None:
+    """UPCitemdb's average offer price for the product's EAN: the scanned
+    one, else the first EAN a database linked to it. None without an EAN,
+    with the lookup off, or when nobody sells it there."""
+    import upc_lookup
+    gtins = ([gtin] if gtin else []) + [c["code"] for c in all_codes
+                                        if c.get("kind") == "gtin" and not c.get("is_refill")]
+    for g in gtins[:2]:
+        try:
+            hit = upc_lookup.lookup(g)
+        except Exception:
+            log.debug("UPCitemdb price for %s failed", g, exc_info=True)
+            hit = None
+        if hit and hit.get("price"):
+            return hit["price"]
+    return None
 
 
 def _extract_barcode(text: str) -> str | None:
@@ -777,6 +865,8 @@ def parse_endpoint():
             resolved_code = code
             linked_codes = [c for c in all_codes if c["code"] != code]
 
+    fields, _ = _enrich(fields, title)
+    by.update({k: "db" for k in fields if k not in by})
     if "label_weight" not in fields:
         fields["label_weight"] = DEFAULT_LABEL_WEIGHT
         by["label_weight"] = "default"
@@ -869,10 +959,27 @@ def import_page():
                                        if not k.startswith("_") and v is not None}}
                 title = ext_title or title
                 linked_codes = [c for c in all_codes if c["code"] != code]
+    fields, _ = _enrich(fields, title)
     fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
     log.info("page import from %s: %r gtin=%s pending=%s", page["host"] or "?", title[:60], gtin, pending)
     return jsonify(fields=fields, title=title, source=source, gtin=gtin, linked_codes=linked_codes,
                    price=page["price"], host=page["host"], pending=pending)
+
+
+def _bed_text(lo, hi) -> str | None:
+    """'55–60 °C' from the form's bed fields, '60 °C' for one, None for none."""
+    vals = []
+    for v in (lo, hi):
+        try:
+            n = int(float(str(v).replace(",", ".")))
+        except (TypeError, ValueError):
+            continue
+        if 0 < n < 200:
+            vals.append(n)
+    if not vals:
+        return None
+    lo_v, hi_v = min(vals), max(vals)
+    return f"{lo_v} °C" if lo_v == hi_v else f"{lo_v}–{hi_v} °C"
 
 
 @app.post("/api/spool")
@@ -913,6 +1020,11 @@ def add_spool():
         payload[key] = val
     payload.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
     payload["data_origin"] = "barcode-scan"
+    # Bambuddy keeps no bed temperature on a spool, so it goes into the note.
+    bed = _bed_text(fields.get("bed_temp_min"), fields.get("bed_temp_max"))
+    if bed:
+        line = i18n.get_translation(_resolve_request_locale(), "form.bed_note", range=bed)
+        payload["note"] = f"{payload['note']}\n{line}" if payload.get("note") else line
 
     headers = {"X-API-Key": BAMBUDDY_API_KEY, "Content-Type": "application/json",
                "Accept": "application/json"}
@@ -971,7 +1083,7 @@ def add_spool():
     if created and barcode:
         cache = load_cache()
         remembered = {k: v for k, v in fields.items()
-                      if k in ALLOWED_SPOOL_FIELDS or k in ("diameter_mm",)}
+                      if k in ALLOWED_SPOOL_FIELDS or k in ("diameter_mm", "bed_temp_min", "bed_temp_max")}
         code, kind = _classify_code(barcode)
         cache[code] = remembered
         try:
@@ -1014,6 +1126,60 @@ def add_spool():
 LABEL_TEMPLATES = ("box_40x30", "box_62x29", "ams_holder_74x33", "ams_holder_75x55")
 LABEL_FIELDS = ("brand", "material", "hex", "name", "location", "material_number",
                 "temps", "weight", "note", "added", "qr", "spool_id")
+
+
+# Where a phone reaches Bambuddy: what its QR codes carry. Bambuddy's own
+# setting (Settings -> External URL) when it has one, else BAMBUDDY_URL;
+# BAMBUDDY_PUBLIC_URL wins over both. Asked once in ten minutes.
+_PUBLIC_URL_TTL = 600.0
+_public_url_cache: dict = {"at": 0.0, "url": None}
+
+
+def _public_bambuddy_url() -> str:
+    env = os.getenv("BAMBUDDY_PUBLIC_URL", "").strip().rstrip("/")
+    if env:
+        return env
+    now = time.monotonic()
+    if _public_url_cache["url"] and now - _public_url_cache["at"] < _PUBLIC_URL_TTL:
+        return _public_url_cache["url"]
+    url = BAMBUDDY_URL
+    try:
+        r = requests.get(f"{BAMBUDDY_URL}/api/v1/settings",
+                         headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=10)
+        if r.ok:
+            url = (str((r.json() or {}).get("external_url") or "").strip().rstrip("/")) or BAMBUDDY_URL
+    except Exception:
+        log.debug("Bambuddy external URL not read", exc_info=True)
+    _public_url_cache.update(at=now, url=url)
+    return url
+
+
+# What the page's own label layout prints, from either inventory: both
+# answer with the same field names.
+_LABEL_SPOOL_KEYS = ("brand", "material", "subtype", "color_name", "rgba", "storage_location",
+                     "nozzle_temp_min", "nozzle_temp_max", "label_weight", "note", "material_number")
+
+
+@app.get("/api/spool/<int:spool_id>")
+def spool_data(spool_id: int):
+    """One spool as the label needs it, and the address its QR code opens."""
+    if not BAMBUDDY_API_KEY:
+        return jsonify(ok=False, error="no_key"), 400
+    try:
+        r = requests.get(f"{BAMBUDDY_URL}{_inventory_base()}/spools/{spool_id}",
+                         headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=15)
+    except Exception as e:
+        log.warning("spool %s: Bambuddy not reachable: %s", spool_id, e)
+        return jsonify(ok=False, error="unreachable"), 502
+    if r.status_code == 404:
+        return jsonify(ok=False, error="not_found"), 404
+    if not r.ok:
+        return jsonify(ok=False, error="failed", status=r.status_code), 502
+    raw = r.json() or {}
+    spool = {k: raw.get(k) for k in _LABEL_SPOOL_KEYS}
+    spool["id"] = spool_id
+    spool["added"] = str(raw.get("created_at") or raw.get("registered") or "")[:10] or None
+    return jsonify(ok=True, spool=spool, qr=f"{_public_bambuddy_url()}/inventory?spool={spool_id}")
 
 
 def _labels_path() -> str:

@@ -66,6 +66,10 @@ EN = {
         ),
     },
     "form": {
+        "bed_min": "Bed min °C",
+        "bed_max": "Bed max °C",
+        "bed_note": "Print bed: {range}",
+        "price_taken": "Entered.",
         "sec_fetch": "Data from a shop page",
         "sec_filament": "Filament",
         "sec_stock": "Amount & storage",
@@ -163,6 +167,10 @@ EN = {
         "price_hint": "Price on the page: {price}.",
     },
     "label": {
+        "own": "Own layout: whole roll, every line",
+        "l_location": "Store:",
+        "l_nozzle": "Nozzle",
+        "l_added": "Since",
         "title": "🏷️ Spool label",
         "spool_id": "Spool ID",
         "template": "Template (Bambuddy)",
@@ -230,6 +238,16 @@ EN = {
         "diameter": "Diameter",
         "delete": "Delete",
     },
+    "settings": {
+        "inventory": "Bambuddy inventory",
+        "auto": "Automatic",
+        "spoolman": "Spoolman (through Bambuddy)",
+        "local": "Bambuddy's own inventory",
+        "detected": "Detected: {mode}",
+        "probe_denied": "Bambuddy refused the question (HTTP {code}): the API key lacks “Read Status”. Pick the inventory by hand.",
+        "saved": "Saved",
+        "save_failed": "Could not save",
+    },
 }
 
 DE = {
@@ -280,6 +298,10 @@ DE = {
         ),
     },
     "form": {
+        "bed_min": "Bett min °C",
+        "bed_max": "Bett max °C",
+        "bed_note": "Druckbett: {range}",
+        "price_taken": "Eingetragen.",
         "sec_fetch": "Daten von einer Shop-Seite",
         "sec_filament": "Filament",
         "sec_stock": "Menge & Lager",
@@ -378,6 +400,10 @@ DE = {
         "price_hint": "Preis auf der Seite: {price}.",
     },
     "label": {
+        "own": "Eigenes Layout: ganze Rolle, alle Zeilen",
+        "l_location": "Lager:",
+        "l_nozzle": "Düse",
+        "l_added": "Seit",
         "title": "🏷️ Etikett drucken",
         "spool_id": "Spulen-ID",
         "template": "Vorlage (BamBuddy)",
@@ -445,6 +471,16 @@ DE = {
         "diameter": "Durchmesser",
         "delete": "Löschen",
     },
+    "settings": {
+        "inventory": "BamBuddy-Inventar",
+        "auto": "Automatisch",
+        "spoolman": "Spoolman (über BamBuddy)",
+        "local": "BamBuddys eigenes Inventar",
+        "detected": "Erkannt: {mode}",
+        "probe_denied": "BamBuddy verweigert die Abfrage (HTTP {code}): dem API-Schlüssel fehlt „Read Status“. Bitte das Inventar von Hand wählen.",
+        "saved": "Gespeichert",
+        "save_failed": "Speichern fehlgeschlagen",
+    },
 }
 
 ES = {
@@ -493,6 +529,10 @@ ES = {
         ),
     },
     "form": {
+        "bed_min": "Cama mín °C",
+        "bed_max": "Cama máx °C",
+        "bed_note": "Cama: {range}",
+        "price_taken": "Introducido.",
         "sec_fetch": "Datos de una tienda",
         "sec_filament": "Filamento",
         "sec_stock": "Cantidad y almacén",
@@ -591,6 +631,10 @@ ES = {
         "price_hint": "Precio en la página: {price}.",
     },
     "label": {
+        "own": "Diseño propio: rollo entero, todas las líneas",
+        "l_location": "Lugar:",
+        "l_nozzle": "Boquilla",
+        "l_added": "Desde",
         "title": "🏷️ Etiqueta de bobina",
         "spool_id": "ID de bobina",
         "template": "Plantilla (Bambuddy)",
@@ -658,6 +702,16 @@ ES = {
         "diameter": "Diámetro",
         "delete": "Eliminar",
     },
+    "settings": {
+        "inventory": "Inventario de Bambuddy",
+        "auto": "Automático",
+        "spoolman": "Spoolman (a través de Bambuddy)",
+        "local": "Inventario propio de Bambuddy",
+        "detected": "Detectado: {mode}",
+        "probe_denied": "Bambuddy rechazó la consulta (HTTP {code}): a la clave API le falta «Read Status». Elige el inventario a mano.",
+        "saved": "Guardado",
+        "save_failed": "No se pudo guardar",
+    },
 }
 
 FR = {
@@ -706,6 +760,10 @@ FR = {
         ),
     },
     "form": {
+        "bed_min": "Plateau min °C",
+        "bed_max": "Plateau max °C",
+        "bed_note": "Plateau : {range}",
+        "price_taken": "Saisi.",
         "sec_fetch": "Données d'une boutique",
         "sec_filament": "Filament",
         "sec_stock": "Quantité et stockage",
@@ -804,6 +862,10 @@ FR = {
         "price_hint": "Prix sur la page : {price}.",
     },
     "label": {
+        "own": "Mise en page propre : rouleau entier, toutes les lignes",
+        "l_location": "Lieu :",
+        "l_nozzle": "Buse",
+        "l_added": "Depuis",
         "title": "🏷️ Étiquette de bobine",
         "spool_id": "ID de bobine",
         "template": "Modèle (Bambuddy)",
@@ -871,6 +933,16 @@ FR = {
         "diameter": "Diamètre",
         "delete": "Supprimer",
     },
+    "settings": {
+        "inventory": "Inventaire Bambuddy",
+        "auto": "Automatique",
+        "spoolman": "Spoolman (via Bambuddy)",
+        "local": "Inventaire propre de Bambuddy",
+        "detected": "Détecté : {mode}",
+        "probe_denied": "Bambuddy a refusé la requête (HTTP {code}) : la clé API n'a pas « Read Status ». Choisissez l'inventaire à la main.",
+        "saved": "Enregistré",
+        "save_failed": "Échec de l'enregistrement",
+    },
 }
 
 JA = {
@@ -916,6 +988,10 @@ JA = {
         "invalid_barcode": "有効なUPC-A/EAN-8/EAN-13バーコード、またはメーカーのSKU/型番（3文字以上）を入力してください。",
     },
     "form": {
+        "bed_min": "ベッド最低 °C",
+        "bed_max": "ベッド最高 °C",
+        "bed_note": "ベッド: {range}",
+        "price_taken": "入力しました。",
         "sec_fetch": "ショップページから取得",
         "sec_filament": "フィラメント",
         "sec_stock": "数量と保管",
@@ -1013,6 +1089,10 @@ JA = {
         "price_hint": "ページ上の価格: {price}。",
     },
     "label": {
+        "own": "独自レイアウト: ロール全体、全行",
+        "l_location": "場所:",
+        "l_nozzle": "ノズル",
+        "l_added": "開始",
         "title": "🏷️ スプールラベル",
         "spool_id": "スプールID",
         "template": "テンプレート (Bambuddy)",
@@ -1080,6 +1160,16 @@ JA = {
         "diameter": "直径",
         "delete": "削除",
     },
+    "settings": {
+        "inventory": "Bambuddy インベントリ",
+        "auto": "自動",
+        "spoolman": "Spoolman (Bambuddy 経由)",
+        "local": "Bambuddy 独自のインベントリ",
+        "detected": "検出: {mode}",
+        "probe_denied": "Bambuddy が問い合わせを拒否しました (HTTP {code}): API キーに「Read Status」がありません。インベントリを手動で選んでください。",
+        "saved": "保存しました",
+        "save_failed": "保存できませんでした",
+    },
 }
 
 IT = {
@@ -1128,6 +1218,10 @@ IT = {
         ),
     },
     "form": {
+        "bed_min": "Piatto min °C",
+        "bed_max": "Piatto max °C",
+        "bed_note": "Piatto: {range}",
+        "price_taken": "Inserito.",
         "sec_fetch": "Dati da un negozio",
         "sec_filament": "Filamento",
         "sec_stock": "Quantità e magazzino",
@@ -1226,6 +1320,10 @@ IT = {
         "price_hint": "Prezzo sulla pagina: {price}.",
     },
     "label": {
+        "own": "Layout proprio: rotolo intero, tutte le righe",
+        "l_location": "Posto:",
+        "l_nozzle": "Ugello",
+        "l_added": "Dal",
         "title": "🏷️ Etichetta bobina",
         "spool_id": "ID bobina",
         "template": "Modello (Bambuddy)",
@@ -1293,6 +1391,16 @@ IT = {
         "diameter": "Diametro",
         "delete": "Elimina",
     },
+    "settings": {
+        "inventory": "Inventario Bambuddy",
+        "auto": "Automatico",
+        "spoolman": "Spoolman (tramite Bambuddy)",
+        "local": "Inventario proprio di Bambuddy",
+        "detected": "Rilevato: {mode}",
+        "probe_denied": "Bambuddy ha rifiutato la richiesta (HTTP {code}): alla chiave API manca «Read Status». Scegli l'inventario a mano.",
+        "saved": "Salvato",
+        "save_failed": "Salvataggio non riuscito",
+    },
 }
 
 KO = {
@@ -1338,6 +1446,10 @@ KO = {
         "invalid_barcode": "유효한 UPC-A/EAN-8/EAN-13 바코드나 제조사 SKU/품번(3자 이상)을 입력하세요.",
     },
     "form": {
+        "bed_min": "베드 최소 °C",
+        "bed_max": "베드 최대 °C",
+        "bed_note": "베드: {range}",
+        "price_taken": "입력했습니다.",
         "sec_fetch": "쇼핑 페이지에서 가져오기",
         "sec_filament": "필라멘트",
         "sec_stock": "수량 및 보관",
@@ -1435,6 +1547,10 @@ KO = {
         "price_hint": "페이지의 가격: {price}.",
     },
     "label": {
+        "own": "자체 레이아웃: 롤 전체, 모든 줄",
+        "l_location": "위치:",
+        "l_nozzle": "노즐",
+        "l_added": "시작",
         "title": "🏷️ 스풀 라벨",
         "spool_id": "스풀 ID",
         "template": "템플릿 (Bambuddy)",
@@ -1502,6 +1618,16 @@ KO = {
         "diameter": "직경",
         "delete": "삭제",
     },
+    "settings": {
+        "inventory": "Bambuddy 인벤토리",
+        "auto": "자동",
+        "spoolman": "Spoolman (Bambuddy 경유)",
+        "local": "Bambuddy 자체 인벤토리",
+        "detected": "감지됨: {mode}",
+        "probe_denied": "Bambuddy가 조회를 거부했습니다 (HTTP {code}): API 키에 “Read Status”가 없습니다. 인벤토리를 직접 선택하세요.",
+        "saved": "저장됨",
+        "save_failed": "저장 실패",
+    },
 }
 
 PT_BR = {
@@ -1550,6 +1676,10 @@ PT_BR = {
         ),
     },
     "form": {
+        "bed_min": "Mesa mín °C",
+        "bed_max": "Mesa máx °C",
+        "bed_note": "Mesa: {range}",
+        "price_taken": "Preenchido.",
         "sec_fetch": "Dados de uma loja",
         "sec_filament": "Filamento",
         "sec_stock": "Quantidade e estoque",
@@ -1648,6 +1778,10 @@ PT_BR = {
         "price_hint": "Preço na página: {price}.",
     },
     "label": {
+        "own": "Layout próprio: rolo inteiro, todas as linhas",
+        "l_location": "Local:",
+        "l_nozzle": "Bico",
+        "l_added": "Desde",
         "title": "🏷️ Etiqueta do carretel",
         "spool_id": "ID do carretel",
         "template": "Modelo (Bambuddy)",
@@ -1715,6 +1849,16 @@ PT_BR = {
         "diameter": "Diâmetro",
         "delete": "Excluir",
     },
+    "settings": {
+        "inventory": "Inventário do Bambuddy",
+        "auto": "Automático",
+        "spoolman": "Spoolman (pelo Bambuddy)",
+        "local": "Inventário próprio do Bambuddy",
+        "detected": "Detectado: {mode}",
+        "probe_denied": "O Bambuddy recusou a consulta (HTTP {code}): falta “Read Status” na chave de API. Escolha o inventário manualmente.",
+        "saved": "Salvo",
+        "save_failed": "Falha ao salvar",
+    },
 }
 
 ZH_CN = {
@@ -1760,6 +1904,10 @@ ZH_CN = {
         "invalid_barcode": "请输入有效的 UPC-A/EAN-8/EAN-13 条码，或制造商 SKU/货号（至少 3 个字符）。",
     },
     "form": {
+        "bed_min": "热床最低 °C",
+        "bed_max": "热床最高 °C",
+        "bed_note": "热床：{range}",
+        "price_taken": "已填入。",
         "sec_fetch": "从商店页面获取",
         "sec_filament": "耗材",
         "sec_stock": "数量与存放",
@@ -1857,6 +2005,10 @@ ZH_CN = {
         "price_hint": "页面上的价格：{price}。",
     },
     "label": {
+        "own": "自定义布局：整卷，所有行",
+        "l_location": "位置：",
+        "l_nozzle": "喷嘴",
+        "l_added": "起始",
         "title": "🏷️ 料盘标签",
         "spool_id": "料盘 ID",
         "template": "模板 (Bambuddy)",
@@ -1924,6 +2076,16 @@ ZH_CN = {
         "diameter": "直径",
         "delete": "删除",
     },
+    "settings": {
+        "inventory": "Bambuddy 库存",
+        "auto": "自动",
+        "spoolman": "Spoolman（经由 Bambuddy）",
+        "local": "Bambuddy 自有库存",
+        "detected": "已检测：{mode}",
+        "probe_denied": "Bambuddy 拒绝了查询（HTTP {code}）：API 密钥缺少“Read Status”。请手动选择库存。",
+        "saved": "已保存",
+        "save_failed": "保存失败",
+    },
 }
 
 ZH_TW = {
@@ -1969,6 +2131,10 @@ ZH_TW = {
         "invalid_barcode": "請輸入有效的 UPC-A/EAN-8/EAN-13 條碼，或製造商 SKU/貨號（至少 3 個字元）。",
     },
     "form": {
+        "bed_min": "熱床最低 °C",
+        "bed_max": "熱床最高 °C",
+        "bed_note": "熱床：{range}",
+        "price_taken": "已填入。",
         "sec_fetch": "從商店頁面取得",
         "sec_filament": "線材",
         "sec_stock": "數量與存放",
@@ -2066,6 +2232,10 @@ ZH_TW = {
         "price_hint": "頁面上的價格：{price}。",
     },
     "label": {
+        "own": "自訂版面：整捲，所有行",
+        "l_location": "位置：",
+        "l_nozzle": "噴嘴",
+        "l_added": "起始",
         "title": "🏷️ 料盤標籤",
         "spool_id": "料盤 ID",
         "template": "範本 (Bambuddy)",
@@ -2133,6 +2303,16 @@ ZH_TW = {
         "diameter": "直徑",
         "delete": "刪除",
     },
+    "settings": {
+        "inventory": "Bambuddy 庫存",
+        "auto": "自動",
+        "spoolman": "Spoolman（經由 Bambuddy）",
+        "local": "Bambuddy 自有庫存",
+        "detected": "已偵測：{mode}",
+        "probe_denied": "Bambuddy 拒絕了查詢（HTTP {code}）：API 金鑰缺少「Read Status」。請手動選擇庫存。",
+        "saved": "已儲存",
+        "save_failed": "儲存失敗",
+    },
 }
 
 TR = {
@@ -2181,6 +2361,10 @@ TR = {
         ),
     },
     "form": {
+        "bed_min": "Tabla min °C",
+        "bed_max": "Tabla maks °C",
+        "bed_note": "Baskı tablası: {range}",
+        "price_taken": "Girildi.",
         "sec_fetch": "Mağaza sayfasından veri",
         "sec_filament": "Filament",
         "sec_stock": "Miktar ve depo",
@@ -2279,6 +2463,10 @@ TR = {
         "price_hint": "Sayfadaki fiyat: {price}.",
     },
     "label": {
+        "own": "Kendi düzen: tüm rulo, tüm satırlar",
+        "l_location": "Yer:",
+        "l_nozzle": "Nozul",
+        "l_added": "Başlangıç",
         "title": "🏷️ Makara etiketi",
         "spool_id": "Makara kimliği",
         "template": "Şablon (Bambuddy)",
@@ -2345,6 +2533,16 @@ TR = {
         "nothing": "Metinde hiçbir şey tanınmadı.",
         "diameter": "Çap",
         "delete": "Sil",
+    },
+    "settings": {
+        "inventory": "Bambuddy envanteri",
+        "auto": "Otomatik",
+        "spoolman": "Spoolman (Bambuddy üzerinden)",
+        "local": "Bambuddy'nin kendi envanteri",
+        "detected": "Algılandı: {mode}",
+        "probe_denied": "Bambuddy sorguyu reddetti (HTTP {code}): API anahtarında “Read Status” yok. Envanteri elle seçin.",
+        "saved": "Kaydedildi",
+        "save_failed": "Kaydedilemedi",
     },
 }
 
