@@ -6,8 +6,8 @@
 <title>{{ t('app.title') }}</title>
 <!-- PWA -->
 <link rel="manifest" href="/manifest.webmanifest">
-<meta name="theme-color" content="#1b1f23" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#edf0f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" id="themeColor" content="#1b1f23">
+<link rel="icon" type="image/svg+xml" href="/static/icons/logo.svg">
 <link rel="icon" type="image/png" href="/static/icons/icon-192.png">
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
@@ -18,14 +18,26 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&display=swap">
-<style>html{background:#1b1f23}@media (prefers-color-scheme:light){html{background:#edf0f2}}</style>
+<script>
+  // Light or dark as chosen on the page, else as the system says. Set before
+  // the first paint so the page never flashes the other one.
+  (function(){
+    var m = null;
+    try{ m = localStorage.getItem('f2b.theme'); }catch(e){}
+    if(m === 'light' || m === 'dark') document.documentElement.dataset.theme = m;
+  })();
+</script>
+<style>html{background:#1b1f23}html[data-theme=light]{background:#edf0f2}
+  @media (prefers-color-scheme:light){html:not([data-theme=dark]){background:#edf0f2}}</style>
 <style>
   /* Graphite, not black; BamBuddy's green only where something is done.
      The filament's own colour (--spool) is the one bold thing on the page. */
   :root{
     --bg:#1b1f23; --surface:#23282d; --raised:#2c3238; --inset:#16191c; --line:#394047;
     --text:#e8ecef; --muted:#9aa4ad; --brand:#00ae42; --brand-strong:#00c64d; --on-brand:#03200e;
-    --warn:#e8a93a; --danger:#e2553f; --focus:#6bd49a; --spool:#7a4b2b;
+    --warn:#e8a93a; --danger:#e2553f; --info:#5aa9f0; --focus:#6bd49a; --spool:#7a4b2b;
+    --card-border:var(--line); --card-shadow:none; --field:var(--inset); --fetch:var(--inset);
+    --mark-flange:#d5dbe0; --mark-wind:#00c64d; --mark-bar:#008a35;
     --display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
     --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     --r-card:18px; --r-ctl:11px;
@@ -34,11 +46,23 @@
     --green:var(--brand); --green-light:var(--brand-strong); --radius:var(--r-card);
     color-scheme:dark;
   }
+  /* The light set twice: once chosen on the page, once from the system when
+     nothing was chosen. */
+  :root[data-theme=light]{
+    --bg:#edf0f2; --surface:#ffffff; --raised:#f2f4f6; --inset:#e5e9ec; --line:#cbd3d9;
+    --text:#1a1f24; --muted:#5b6670; --brand:#00953a; --brand-strong:#007f31; --on-brand:#ffffff;
+    --warn:#a86a00; --danger:#c43c28; --info:#1f6fb8; --focus:#00953a;
+    --card-border:transparent; --card-shadow:0 1px 2px rgba(20,30,40,.08); --field:#ffffff; --fetch:var(--raised);
+    --mark-flange:#2c3238; --mark-wind:#00ae42; --mark-bar:#00702b;
+    color-scheme:light;
+  }
   @media (prefers-color-scheme:light){
-    :root{
+    :root:not([data-theme=dark]){
       --bg:#edf0f2; --surface:#ffffff; --raised:#f2f4f6; --inset:#e5e9ec; --line:#cbd3d9;
       --text:#1a1f24; --muted:#5b6670; --brand:#00953a; --brand-strong:#007f31; --on-brand:#ffffff;
-      --warn:#a86a00; --danger:#c43c28; --focus:#00953a;
+      --warn:#a86a00; --danger:#c43c28; --info:#1f6fb8; --focus:#00953a;
+      --card-border:transparent; --card-shadow:0 1px 2px rgba(20,30,40,.08); --field:#ffffff; --fetch:var(--raised);
+      --mark-flange:#2c3238; --mark-wind:#00ae42; --mark-bar:#00702b;
       color-scheme:light;
     }
   }
@@ -55,23 +79,39 @@
   header{position:sticky;top:0;z-index:5;background:var(--bg);
     padding:calc(12px + env(safe-area-inset-top)) 16px 10px}
   .bar{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:10px}
-  header h1{font:700 21px/1 var(--display);letter-spacing:.2px;margin:0;flex:1}
-  .cube{width:26px;height:26px;flex:0 0 auto}
+  header h1{font:700 22px/1 var(--display);letter-spacing:.1px;margin:0;flex:1;min-width:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header h1 .to{color:var(--muted);font-weight:500;margin:0 .12em}
+  /* The mark: a spool from the side, its windings a barcode's bars. */
+  .mark{width:38px;height:38px;flex:0 0 auto;margin:-6px 0 -6px -4px}
+  .mark .flange{fill:var(--mark-flange)} .mark .wind{fill:var(--mark-wind)}
+  .mark .code{fill:var(--mark-bar)} .mark .strand{fill:none;stroke:var(--mark-wind);stroke-width:3.4;stroke-linecap:round}
+  .icon-btn{width:40px;height:40px;padding:0;flex:0 0 auto;display:grid;place-items:center;border-radius:12px;
+    background:var(--raised);border:1px solid var(--line);color:var(--text)}
+  .icon-btn:active{background:var(--line)}
+  .icon-btn svg{width:20px;height:20px}
   .status{max-width:560px;margin:8px auto 0;display:flex;align-items:flex-start;gap:8px;
-    color:var(--muted);font-size:12.5px;line-height:1.35}
-  .status-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;margin-top:4px;background:#888}
+    color:var(--muted);font-size:12.5px;line-height:1.35;cursor:pointer}
+  /* Two lines until tapped: a long error should not push the page down. */
+  .status #health{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .status.open #health{display:block}
+  .status-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;margin-top:4px;background:var(--muted)}
+  /* Line icons in buttons and headings, drawn in the text's colour. */
+  .ico{width:1.15em;height:1.15em;flex:0 0 auto;vertical-align:-.2em;fill:none;stroke:currentColor;
+    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .with-ico{display:inline-flex;align-items:center;justify-content:center;gap:.5em}
+  .btn-secondary.with-ico{display:flex}
+  .btn-secondary.with-ico span{text-align:left}
 
   main{padding:6px 16px calc(40px + env(safe-area-inset-bottom));max-width:560px;margin:0 auto}
   .card{background:var(--surface);border-radius:var(--r-card);padding:18px;margin-bottom:14px;
-    border:1px solid var(--line)}
-  @media (prefers-color-scheme:light){.card{border-color:transparent;box-shadow:0 1px 2px rgba(20,30,40,.08)}}
+    border:1px solid var(--card-border);box-shadow:var(--card-shadow)}
   .card-title{font:600 19px/1.2 var(--display);margin:0 0 12px}
   .muted{color:var(--muted);font-size:13px}
   label{display:block;font:600 14px/1.2 var(--display);letter-spacing:.2px;color:var(--muted);margin:12px 0 5px}
   input,select,button,textarea{font-size:16px;font-family:inherit}
   input,select,textarea{width:100%;padding:11px 12px;border-radius:var(--r-ctl);border:1px solid var(--line);
-    background:var(--inset);color:var(--text)}
-  @media (prefers-color-scheme:light){input,select,textarea{background:#fff}}
+    background:var(--field);color:var(--text)}
   input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;border-color:var(--focus);
     box-shadow:0 0 0 3px color-mix(in srgb,var(--focus) 28%,transparent)}
   button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
@@ -131,15 +171,14 @@
   .badge{display:inline-block;font:600 12.5px/1 var(--display);letter-spacing:.2px;padding:5px 9px;
     border-radius:999px;background:var(--raised);color:var(--muted);border:1px solid var(--line)}
   .badge.cache{color:var(--brand-strong);border-color:color-mix(in srgb,var(--brand) 45%,transparent)}
-  .badge.upc{color:#5aa9f0;border-color:rgba(90,169,240,.45)}
+  .badge.upc{color:var(--info);border-color:color-mix(in srgb,var(--info) 45%,transparent)}
   .codes{font-size:13px;color:var(--muted);line-height:1.5}
   .codes code,.mono{font-family:ui-monospace,Menlo,monospace;color:var(--text)}
 
   /* A section of the form: a quiet heading and a hairline above it. */
   .sec{margin-top:18px;padding-top:4px;border-top:1px solid var(--line)}
   .sec>h3{font:600 15px/1 var(--display);color:var(--text);margin:12px 0 0}
-  .fetch{background:var(--inset);border:1px dashed var(--line);border-radius:14px;padding:12px;margin:4px 0 2px}
-  @media (prefers-color-scheme:light){.fetch{background:var(--raised)}}
+  .fetch{background:var(--fetch);border:1px dashed var(--line);border-radius:14px;padding:12px;margin:4px 0 2px}
   .fetch label{margin-top:0}
   .two{display:flex;gap:10px;margin-top:10px}
   .two>*{flex:1}
@@ -153,6 +192,7 @@
     box-shadow:0 6px 24px rgba(0,0,0,.4);z-index:20}
   .toast.ok{background:var(--brand);color:var(--on-brand)}
   .toast.err{background:var(--danger);color:#fff}
+  .toast.info{background:var(--raised);color:var(--text);border:1px solid var(--line)}
 
   details.bm summary{cursor:pointer;font-weight:600}
   details.bm ol{padding-left:20px;margin:6px 0}
@@ -183,7 +223,10 @@
 
   footer{max-width:560px;margin:0 auto;text-align:center;color:var(--muted);font-size:12px;
     padding:0 16px calc(18px + env(safe-area-inset-bottom))}
-  footer .tools{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  footer .tools{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+  footer .tools .btn-quiet{text-decoration:none;padding:8px 12px;border:1px solid var(--line);border-radius:999px;
+    color:var(--muted);font:600 13.5px/1 var(--display)}
+  footer .tools .btn-quiet:active{background:var(--raised)}
 
   footer .inv{max-width:320px;margin:10px auto 12px;text-align:left}
   footer .inv label{text-align:left}
@@ -195,16 +238,31 @@
 </head>
 <body>
 <div id="ptr"><span id="ptrIcon">↓</span><span id="ptrText">{{ t('ptr.pull') }}</span></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" stroke="none"/></symbol>
+</svg>
 <header>
   <div class="bar">
-    <svg class="cube" viewBox="0 0 64 64" aria-hidden="true">
-      <polygon points="32,8 8,22 32,36 56,22" fill="#00c64d"/>
-      <polygon points="8,22 8,46 32,60 32,36" fill="#00ae42"/>
-      <polygon points="56,22 56,46 32,60 32,36" fill="#009438"/>
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+      <path class="strand" d="M40 17C44 9 50 8 58 8"/>
+      <rect class="wind" x="15" y="17" width="34" height="30" rx="2"/>
+      <rect class="code" x="21.5" y="17" width="2.2" height="30"/><rect class="code" x="24.7" y="17" width="3" height="30"/>
+      <rect class="code" x="28.7" y="17" width="1.6" height="30"/><rect class="code" x="32.9" y="17" width="1" height="30"/>
+      <rect class="code" x="36.1" y="17" width="1" height="30"/><rect class="code" x="38.1" y="17" width="1.4" height="30"/>
+      <rect class="flange" x="8" y="9" width="8" height="46" rx="3.2"/>
+      <rect class="flange" x="48" y="9" width="8" height="46" rx="3.2"/>
     </svg>
-    <h1>{{ t('app.title') }}</h1>
+    <h1>{{ t('app.title')|replace('→', '<span class="to">→</span>'|safe) }}</h1>
+    <button id="themeBtn" type="button" class="icon-btn"><svg class="ico" aria-hidden="true"><use id="themeIcon" href="#i-auto"/></svg></button>
   </div>
-  <div class="status" role="status"><span id="dot" class="status-dot"></span><span id="health">{{ t('health.checking') }}</span></div>
+  <div class="status" id="statusLine" role="status"><span id="dot" class="status-dot"></span><span id="health">{{ t('health.checking') }}</span></div>
 </header>
 
 <main>
@@ -241,7 +299,7 @@
     <div id="scanHint" class="hint"></div>
 
     <div class="or">{{ t('scan.or_separator')|replace('—', '')|trim }}</div>
-    <button id="ocrBtn" class="btn-secondary">{{ t('scan.ocr_button') }}</button>
+    <button id="ocrBtn" class="btn-secondary with-ico"><svg class="ico" aria-hidden="true"><use href="#i-camera"/></svg><span>{{ t('scan.ocr_button')|bare }}</span></button>
     <input id="labelPhoto" type="file" accept="image/*" capture="environment" class="hidden">
     <div id="ocrHint" class="hint"></div>
   </section>
@@ -315,7 +373,7 @@
           <span id="fillHint">{{ t('form.fill_hint') }}</span>
           <a id="searchLink" href="#" target="_blank" rel="noopener">{{ t('form.search_link') }}</a>
         </div>
-        <button id="clipBtn" type="button" class="btn-secondary" style="margin-top:10px">{{ t('form.clip_button') }}</button>
+        <button id="clipBtn" type="button" class="btn-secondary with-ico" style="margin-top:10px"><svg class="ico" aria-hidden="true"><use href="#i-clip"/></svg><span>{{ t('form.clip_button')|bare }}</span></button>
         <div class="hint">{{ t('form.clip_hint') }}</div>
       </div>
     </div>
@@ -391,7 +449,7 @@
   <!-- A spool's label: Bambuddy's own template, shown here dot for dot as
        the label printer prints it, and printed only on a tap. -->
   <section class="card" id="labelCard">
-    <h2 class="card-title">{{ t('label.title') }}</h2>
+    <h2 class="card-title with-ico" style="justify-content:flex-start"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span>{{ t('label.title')|bare }}</span></h2>
     <div class="row">
       <div style="flex:0 0 38%"><label for="labelSpool" style="margin-top:0">{{ t('label.spool_id') }}</label><input id="labelSpool" inputmode="numeric" autocomplete="off"></div>
       <div><label for="labelTpl" style="margin-top:0">{{ t('label.template') }}</label><select id="labelTpl"></select></div>
@@ -420,8 +478,8 @@
 
 <footer>
   <div class="tools">
-    <button id="refreshDb" type="button" class="btn-quiet">{{ t('scan.refresh_db') }}</button>
-    <a id="clearCache" href="#" class="btn-quiet" style="color:var(--muted)">{{ t('scan.clear_cache') }}</a>
+    <button id="refreshDb" type="button" class="btn-quiet with-ico"><svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg><span>{{ t('scan.refresh_db')|bare }}</span></button>
+    <a id="clearCache" href="#" class="btn-quiet with-ico" style="color:var(--muted)"><svg class="ico" aria-hidden="true"><use href="#i-trash"/></svg><span>{{ t('scan.clear_cache')|bare }}</span></a>
   </div>
   <div id="refreshHint" class="hint" style="margin:0 0 6px"></div>
   <!-- Which inventory spools go to: asked of Bambuddy, or set by hand. -->
@@ -512,9 +570,36 @@ if('serviceWorker' in navigator && window.isSecureContext){
 
 function toast(msg, ok=true){
   const el=document.createElement('div');
-  el.className='toast '+(ok?'ok':'err'); el.textContent=msg;
+  el.className='toast '+(ok==='info' ? 'info' : ok ? 'ok' : 'err'); el.textContent=msg;
   document.body.appendChild(el); setTimeout(()=>el.remove(), 3500);
 }
+
+// ── Light, dark, or as the system says ──
+// The choice is kept in this browser; the head script applies it before the
+// first paint, this keeps the button and the browser's bar colour in step.
+const THEMES = ['auto', 'light', 'dark'];
+function themeNow(){
+  let m = null;
+  try{ m = localStorage.getItem('f2b.theme'); }catch(e){}
+  return THEMES.includes(m) ? m : 'auto';
+}
+function applyTheme(mode){
+  const root = document.documentElement;
+  if(mode === 'auto') delete root.dataset.theme; else root.dataset.theme = mode;
+  $('themeIcon').setAttribute('href', {auto:'#i-auto', light:'#i-sun', dark:'#i-moon'}[mode]);
+  $('themeBtn').setAttribute('aria-label', t('theme.'+mode));
+  $('themeBtn').title = t('theme.'+mode);
+  $('themeColor').content = getComputedStyle(root).getPropertyValue('--bg').trim() || '#1b1f23';
+}
+$('themeBtn').onclick = () => {
+  const next = THEMES[(THEMES.indexOf(themeNow()) + 1) % THEMES.length];
+  try{ if(next === 'auto') localStorage.removeItem('f2b.theme'); else localStorage.setItem('f2b.theme', next); }catch(e){}
+  applyTheme(next);
+  toast(t('theme.'+next), 'info');
+};
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(themeNow()));
+applyTheme(themeNow());
+$('statusLine').onclick = () => $('statusLine').classList.toggle('open');
 
 // ── Health ──
 fetch('/api/health').then(r=>r.json()).then(d=>{
@@ -522,7 +607,7 @@ fetch('/api/health').then(r=>r.json()).then(d=>{
     $('dot').style.background = 'var(--green)';
     $('health').textContent = t('health.connected', {bambuddy: d.bambuddy||'Bambuddy'});
   } else if(d.level === 'warn'){
-    $('dot').style.background = '#e0a800';  // amber: reachable, permission issue
+    $('dot').style.background = 'var(--warn)';  // amber: reachable, permission issue
     $('health').innerHTML = (d.error||t('health.permission_issue'))
       + (d.bambuddy ? '<br><span style="font-size:11px">'+d.bambuddy+'</span>' : '');
   } else {

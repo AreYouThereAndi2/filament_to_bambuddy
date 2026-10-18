@@ -239,6 +239,9 @@ def _get_version() -> str:
 APP_VERSION = _get_version()
 
 app = Flask(__name__)
+# A text without the emoji in front ("📸 Photograph…" → "Photograph…"): the
+# page draws its own line icons, the toasts keep the emoji.
+app.jinja_env.filters["bare"] = lambda text: re.sub(r"^[^\w(\"„«“]+", "", str(text)).strip()
 
 
 # ── Barcode cache (learns from your confirmed entries) ────────────────────────

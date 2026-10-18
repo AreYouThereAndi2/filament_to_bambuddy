@@ -256,6 +256,11 @@ EN = {
         "saved": "Saved",
         "save_failed": "Could not save",
     },
+    "theme": {
+        "auto": "Look: as the system",
+        "light": "Look: light",
+        "dark": "Look: dark",
+    },
 }
 
 DE = {
@@ -497,6 +502,11 @@ DE = {
         "saved": "Gespeichert",
         "save_failed": "Speichern fehlgeschlagen",
     },
+    "theme": {
+        "auto": "Design: wie das System",
+        "light": "Design: hell",
+        "dark": "Design: dunkel",
+    },
 }
 
 ES = {
@@ -735,6 +745,11 @@ ES = {
         "probe_denied": "Bambuddy rechazó la consulta (HTTP {code}): a la clave API le falta «Read Status». Elige el inventario a mano.",
         "saved": "Guardado",
         "save_failed": "No se pudo guardar",
+    },
+    "theme": {
+        "auto": "Aspecto: como el sistema",
+        "light": "Aspecto: claro",
+        "dark": "Aspecto: oscuro",
     },
 }
 
@@ -975,6 +990,11 @@ FR = {
         "saved": "Enregistré",
         "save_failed": "Échec de l'enregistrement",
     },
+    "theme": {
+        "auto": "Apparence : comme le système",
+        "light": "Apparence : claire",
+        "dark": "Apparence : sombre",
+    },
 }
 
 JA = {
@@ -1209,6 +1229,11 @@ JA = {
         "probe_denied": "Bambuddy が問い合わせを拒否しました (HTTP {code}): API キーに「Read Status」がありません。インベントリを手動で選んでください。",
         "saved": "保存しました",
         "save_failed": "保存できませんでした",
+    },
+    "theme": {
+        "auto": "表示: システムに合わせる",
+        "light": "表示: ライト",
+        "dark": "表示: ダーク",
     },
 }
 
@@ -1449,6 +1474,11 @@ IT = {
         "saved": "Salvato",
         "save_failed": "Salvataggio non riuscito",
     },
+    "theme": {
+        "auto": "Aspetto: come il sistema",
+        "light": "Aspetto: chiaro",
+        "dark": "Aspetto: scuro",
+    },
 }
 
 KO = {
@@ -1683,6 +1713,11 @@ KO = {
         "probe_denied": "Bambuddy가 조회를 거부했습니다 (HTTP {code}): API 키에 “Read Status”가 없습니다. 인벤토리를 직접 선택하세요.",
         "saved": "저장됨",
         "save_failed": "저장 실패",
+    },
+    "theme": {
+        "auto": "화면: 시스템 설정",
+        "light": "화면: 라이트",
+        "dark": "화면: 다크",
     },
 }
 
@@ -1923,6 +1958,11 @@ PT_BR = {
         "saved": "Salvo",
         "save_failed": "Falha ao salvar",
     },
+    "theme": {
+        "auto": "Aparência: como o sistema",
+        "light": "Aparência: clara",
+        "dark": "Aparência: escura",
+    },
 }
 
 ZH_CN = {
@@ -2158,6 +2198,11 @@ ZH_CN = {
         "saved": "已保存",
         "save_failed": "保存失败",
     },
+    "theme": {
+        "auto": "外观：跟随系统",
+        "light": "外观：浅色",
+        "dark": "外观：深色",
+    },
 }
 
 ZH_TW = {
@@ -2392,6 +2437,11 @@ ZH_TW = {
         "probe_denied": "Bambuddy 拒絕了查詢（HTTP {code}）：API 金鑰缺少「Read Status」。請手動選擇庫存。",
         "saved": "已儲存",
         "save_failed": "儲存失敗",
+    },
+    "theme": {
+        "auto": "外觀：跟隨系統",
+        "light": "外觀：淺色",
+        "dark": "外觀：深色",
     },
 }
 
@@ -2631,6 +2681,11 @@ TR = {
         "probe_denied": "Bambuddy sorguyu reddetti (HTTP {code}): API anahtarında “Read Status” yok. Envanteri elle seçin.",
         "saved": "Kaydedildi",
         "save_failed": "Kaydedilemedi",
+    },
+    "theme": {
+        "auto": "Görünüm: sistem gibi",
+        "light": "Görünüm: açık",
+        "dark": "Görünüm: koyu",
     },
 }
 
