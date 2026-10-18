@@ -42,7 +42,7 @@ TIGERTAG_ENABLED = os.getenv("TIGERTAG", "on").strip().lower() not in ("off", "0
 _MAX_DOWNLOAD_BYTES = 32 * 1024 * 1024
 _MAX_JSON_BYTES = 256 * 1024 * 1024
 
-_CACHE_VERSION = 1
+_CACHE_VERSION = 2
 
 # TigerTag's aspect names where the form's subtype list says it otherwise.
 _ASPECT_SUBTYPE = {
@@ -113,7 +113,8 @@ def _fields_for(entry: dict, materials: dict, aspects: dict) -> dict:
     if grams:
         fields["label_weight"] = grams
     temps = (materials.get(str(rfid.get("id_material"))) or {}).get("recommended") or {}
-    for src, dst in (("nozzleTempMin", "nozzle_temp_min"), ("nozzleTempMax", "nozzle_temp_max")):
+    for src, dst in (("nozzleTempMin", "nozzle_temp_min"), ("nozzleTempMax", "nozzle_temp_max"),
+                     ("bedTempMin", "bed_temp_min"), ("bedTempMax", "bed_temp_max")):
         if isinstance(temps.get(src), (int, float)) and temps[src] > 0:
             fields[dst] = int(temps[src])
     fields["_title"] = " ".join(b for b in (brand, title) if b)

@@ -145,7 +145,7 @@ Aus dem Link liest der Server die Seite: Bei normalen Shops kommen Name, EAN und
 Die Karte **🏷️ Etikett drucken** holt das Etikett einer Spule fertig von BamBuddy, in BamBuddys eigenen Vorlagen. Das geht auch im Spoolman-Modus. Dafür braucht es **BamBuddy 1.2.5.7 oder neuer**: Erst ab dieser Version liefert BamBuddy Etiketten als Bild.
 
 1. Die Spulen-ID eingeben, also die # aus BamBuddy. Nach dem Anlegen einer Spule steht ihre ID schon da; bei mehreren Spulen kann man sie antippen.
-2. Unter **Vorlage** ein Format wählen. Auf die 50 × 30-mm-Rolle passt **Box 40 × 30 mm**; es wird mittig gedruckt. Die anderen Vorlagen sind breiter als der 48-mm-Druckkopf.
+2. Unter **Vorlage** ein Format wählen. **Eigenes Layout** (Standard) nutzt die ganze Rolle und druckt jede angehakte Zeile: Marke, Material, Farbe und Farbcode, Lagerort, Düsentemperatur, Gewicht, Artikelnummer, Notiz (darin z. B. das Druckbett), Datum, Spulennummer und QR-Code. Passen nicht alle in die größte Schrift, wird sie kleiner. Die Vorlagen von BamBuddy gibt es weiter; **Box 40 × 30 mm** lässt aber weg, wofür kein Platz ist, deshalb fehlten dort Lagerort und Temperatur. Der QR-Code öffnet die Spule in BamBuddy unter der *External URL* aus BamBuddys Einstellungen (oder `BAMBUDDY_PUBLIC_URL`).
 3. Unter **Etikettenrolle und Zeilen** die Rolle (Standard 50 × 30 mm) und die Zeilen einstellen. Das Handy merkt sich beides.
 4. **Vorschau** zeigt das Etikett Punkt für Punkt so, wie der Drucker es druckt.
 5. Erst **🖨️ Drucken** schickt es los. Beim ersten Mal fragt Chrome, welcher Drucker es sein soll: den **PM240** wählen.
@@ -163,6 +163,30 @@ Nach **Etikett fotografieren** oder **Ausfüllen** (eingefügter Titel) erschein
 - **Als Regel merken:** Mit diesem Haken gilt die Zuordnung künftig immer, wenn das Textstück vorkommt. Beispiel: „Marmor“ → Untertyp = Marble.
   - Regeln gelten für Etikett-Fotos, eingefügte Titel und Shop-Seiten. Kennt eine Datenbank den Barcode, haben deren Daten Vorrang.
   - Unter **Eigene Regeln** lassen sie sich ansehen und löschen. Gespeichert werden sie auf dem Server in `/data/parse_rules.json`.
+
+## BamBuddy mit Spoolman: welches Inventar?
+
+Ganz unten auf der Seite steht **BamBuddy-Inventar**:
+
+- **Automatisch:** Die App fragt BamBuddy, ob Spoolman eingeschaltet ist, und zeigt darunter, was erkannt wurde.
+- **Spoolman (über BamBuddy):** Neue Spulen und Etiketten gehen über BamBuddys Spoolman-Routen (`/api/v1/spoolman/inventory`).
+- **BamBuddys eigenes Inventar:** `/api/v1/inventory`.
+
+BamBuddy beantwortet die Frage nur einem API-Schlüssel mit **„Read Status“**. Fehlt das, steht dort in Rot „BamBuddy verweigert die Abfrage (HTTP 403)“. Dann entweder dem Schlüssel „Read Status“ geben oder hier **Spoolman** fest wählen. Die Wahl liegt in `/data/settings.json`; in der `.env` geht auch `INVENTORY_MODE=spoolman`.
+
+### Deine Filamente aus Spoolman
+
+Im Spoolman-Modus schaut die App zuerst in **deine eigenen Spoolman-Filamente**: über die Artikelnummer des Filaments (oder eine EAN in einem Extrafeld), sonst nach jedem anderen Treffer über Marke, Material und Farbe. Passt eines, stehen seine Werte im Formular (Düse, Bett, Leergewicht der Rolle, Preis), darüber „Auf dein Spoolman-Filament: …“, und die Spule wird **genau auf diesem Filament** angelegt. Mit „nicht verknüpfen“ sucht oder erstellt BamBuddy das Filament wie bisher.
+
+Nach dem Anlegen trägt die App ins Filament ein, was dort noch leer ist: Temperaturen, Leergewicht, Preis und den gescannten Code als Artikelnummer. Beim nächsten Scan desselben Codes findet sie es dann direkt.
+
+Dafür muss die App Spoolman selbst erreichen. In der `.env` die Adresse eintragen, wie der Container sie sieht:
+
+```
+SPOOLMAN_URL=http://<server-ip>:7912
+```
+
+Ohne `SPOOLMAN_URL` nimmt die App die Spoolman-Adresse aus BamBuddys Einstellungen (Schlüssel mit „Read Status“). Geht beides nicht, liest sie die Filamente über BamBuddy, dann aber ohne Temperaturen und ohne Nachtragen. Ganz unten steht, was gilt: „Spoolman direkt gelesen: 240 Filamente“ oder „Spoolman über Bambuddy …“.
 
 ## Mit der SpoolmanScale verbinden
 

@@ -127,7 +127,8 @@ class TestLookupRoute:
         ):
             d = client.get("/api/lookup?barcode=B0FPQ3ZK3M").get_json()
         assert d["source"] == "amazon"
-        get.assert_not_called()
+        # Bambuddy may be asked for its inventory mode; UPCitemdb is not asked.
+        assert not any("upcitemdb" in str(c.args[0]) for c in get.call_args_list)
 
 
 class TestNormalizeTag:

@@ -66,6 +66,13 @@ EN = {
         ),
     },
     "form": {
+        "sm_unlink": "don't link",
+        "sm_linked": "On your Spoolman filament: {name}",
+        "core_weight": "Empty spool (g)",
+        "bed_min": "Bed min °C",
+        "bed_max": "Bed max °C",
+        "bed_note": "Print bed: {range}",
+        "price_taken": "Entered.",
         "sec_fetch": "Data from a shop page",
         "sec_filament": "Filament",
         "sec_stock": "Amount & storage",
@@ -125,6 +132,7 @@ EN = {
         "parse_request_failed": "Parse failed",
     },
     "badge": {
+        "spoolman": "✓ Your Spoolman",
         "page": "From {host} — check carefully",
         "cache": "remembered",
         "tigertag": "TigerTag",
@@ -147,6 +155,7 @@ EN = {
         "failed": "OCR failed: {error}",
     },
     "submit": {
+        "filament_filled": "Filament completed in Spoolman.",
         "tag_not_linked": "Spool added, but the tag was not linked: {error}",
         "price_not_set": "Spool added, but Spoolman did not take the price",
         "material_required": "Material is required",
@@ -163,6 +172,10 @@ EN = {
         "price_hint": "Price on the page: {price}.",
     },
     "label": {
+        "own": "Own layout: whole roll, every line",
+        "l_location": "Store:",
+        "l_nozzle": "Nozzle",
+        "l_added": "Since",
         "title": "🏷️ Spool label",
         "spool_id": "Spool ID",
         "template": "Template (Bambuddy)",
@@ -204,6 +217,7 @@ EN = {
         "f_spool_id": "Spool ID",
     },
     "why": {
+        "by_spoolman": "your Spoolman filament",
         "title": "🔍 How the text was read",
         "text_label": "Recognised text: correct it and read again",
         "reparse": "Read again",
@@ -229,6 +243,23 @@ EN = {
         "nothing": "Nothing was recognised in the text.",
         "diameter": "Diameter",
         "delete": "Delete",
+    },
+    "settings": {
+        "sm_via_bb": "Spoolman through Bambuddy: {n} filaments, without temperatures (set SPOOLMAN_URL)",
+        "sm_direct": "Spoolman read directly: {n} filaments",
+        "inventory": "Bambuddy inventory",
+        "auto": "Automatic",
+        "spoolman": "Spoolman (through Bambuddy)",
+        "local": "Bambuddy's own inventory",
+        "detected": "Detected: {mode}",
+        "probe_denied": "Bambuddy refused the question (HTTP {code}): the API key lacks “Read Status”. Pick the inventory by hand.",
+        "saved": "Saved",
+        "save_failed": "Could not save",
+    },
+    "theme": {
+        "auto": "Look: as the system",
+        "light": "Look: light",
+        "dark": "Look: dark",
     },
 }
 
@@ -280,6 +311,13 @@ DE = {
         ),
     },
     "form": {
+        "sm_unlink": "nicht verknüpfen",
+        "sm_linked": "Auf dein Spoolman-Filament: {name}",
+        "core_weight": "Leergewicht Rolle (g)",
+        "bed_min": "Bett min °C",
+        "bed_max": "Bett max °C",
+        "bed_note": "Druckbett: {range}",
+        "price_taken": "Eingetragen.",
         "sec_fetch": "Daten von einer Shop-Seite",
         "sec_filament": "Filament",
         "sec_stock": "Menge & Lager",
@@ -339,6 +377,7 @@ DE = {
         "parse_request_failed": "Verarbeitung fehlgeschlagen",
     },
     "badge": {
+        "spoolman": "✓ Dein Spoolman",
         "page": "Von {host} — bitte prüfen",
         "cache": "gespeichert",
         "tigertag": "TigerTag",
@@ -362,6 +401,7 @@ DE = {
         "failed": "OCR fehlgeschlagen: {error}",
     },
     "submit": {
+        "filament_filled": "Filament in Spoolman ergänzt.",
         "tag_not_linked": "Spule angelegt, aber Tag nicht verknüpft: {error}",
         "price_not_set": "Spule angelegt, aber Spoolman hat den Preis nicht übernommen",
         "material_required": "Material ist erforderlich",
@@ -378,6 +418,10 @@ DE = {
         "price_hint": "Preis auf der Seite: {price}.",
     },
     "label": {
+        "own": "Eigenes Layout: ganze Rolle, alle Zeilen",
+        "l_location": "Lager:",
+        "l_nozzle": "Düse",
+        "l_added": "Seit",
         "title": "🏷️ Etikett drucken",
         "spool_id": "Spulen-ID",
         "template": "Vorlage (BamBuddy)",
@@ -419,6 +463,7 @@ DE = {
         "f_spool_id": "Spulen-ID",
     },
     "why": {
+        "by_spoolman": "dein Spoolman-Filament",
         "title": "🔍 So wurde der Text gelesen",
         "text_label": "Erkannter Text: korrigieren und neu auswerten",
         "reparse": "Neu auswerten",
@@ -444,6 +489,23 @@ DE = {
         "nothing": "Im Text wurde nichts erkannt.",
         "diameter": "Durchmesser",
         "delete": "Löschen",
+    },
+    "settings": {
+        "sm_via_bb": "Spoolman über Bambuddy: {n} Filamente, ohne Temperaturen (SPOOLMAN_URL setzen)",
+        "sm_direct": "Spoolman direkt gelesen: {n} Filamente",
+        "inventory": "BamBuddy-Inventar",
+        "auto": "Automatisch",
+        "spoolman": "Spoolman (über BamBuddy)",
+        "local": "BamBuddys eigenes Inventar",
+        "detected": "Erkannt: {mode}",
+        "probe_denied": "BamBuddy verweigert die Abfrage (HTTP {code}): dem API-Schlüssel fehlt „Read Status“. Bitte das Inventar von Hand wählen.",
+        "saved": "Gespeichert",
+        "save_failed": "Speichern fehlgeschlagen",
+    },
+    "theme": {
+        "auto": "Design: wie das System",
+        "light": "Design: hell",
+        "dark": "Design: dunkel",
     },
 }
 
@@ -493,6 +555,13 @@ ES = {
         ),
     },
     "form": {
+        "sm_unlink": "no vincular",
+        "sm_linked": "En tu filamento de Spoolman: {name}",
+        "core_weight": "Bobina vacía (g)",
+        "bed_min": "Cama mín °C",
+        "bed_max": "Cama máx °C",
+        "bed_note": "Cama: {range}",
+        "price_taken": "Introducido.",
         "sec_fetch": "Datos de una tienda",
         "sec_filament": "Filamento",
         "sec_stock": "Cantidad y almacén",
@@ -552,6 +621,7 @@ ES = {
         "parse_request_failed": "Error al analizar",
     },
     "badge": {
+        "spoolman": "✓ Tu Spoolman",
         "page": "De {host} — revisa con cuidado",
         "cache": "recordado",
         "tigertag": "TigerTag",
@@ -575,6 +645,7 @@ ES = {
         "failed": "Error de OCR: {error}",
     },
     "submit": {
+        "filament_filled": "Filamento completado en Spoolman.",
         "tag_not_linked": "Bobina añadida, pero la etiqueta no se vinculó: {error}",
         "price_not_set": "Bobina añadida, pero Spoolman no aceptó el precio",
         "material_required": "El material es obligatorio",
@@ -591,6 +662,10 @@ ES = {
         "price_hint": "Precio en la página: {price}.",
     },
     "label": {
+        "own": "Diseño propio: rollo entero, todas las líneas",
+        "l_location": "Lugar:",
+        "l_nozzle": "Boquilla",
+        "l_added": "Desde",
         "title": "🏷️ Etiqueta de bobina",
         "spool_id": "ID de bobina",
         "template": "Plantilla (Bambuddy)",
@@ -632,6 +707,7 @@ ES = {
         "f_spool_id": "ID de bobina",
     },
     "why": {
+        "by_spoolman": "tu filamento de Spoolman",
         "title": "🔍 Cómo se leyó el texto",
         "text_label": "Texto reconocido: corrígelo y vuelve a leerlo",
         "reparse": "Leer de nuevo",
@@ -657,6 +733,23 @@ ES = {
         "nothing": "No se reconoció nada en el texto.",
         "diameter": "Diámetro",
         "delete": "Eliminar",
+    },
+    "settings": {
+        "sm_via_bb": "Spoolman a través de Bambuddy: {n} filamentos, sin temperaturas (define SPOOLMAN_URL)",
+        "sm_direct": "Spoolman leído directamente: {n} filamentos",
+        "inventory": "Inventario de Bambuddy",
+        "auto": "Automático",
+        "spoolman": "Spoolman (a través de Bambuddy)",
+        "local": "Inventario propio de Bambuddy",
+        "detected": "Detectado: {mode}",
+        "probe_denied": "Bambuddy rechazó la consulta (HTTP {code}): a la clave API le falta «Read Status». Elige el inventario a mano.",
+        "saved": "Guardado",
+        "save_failed": "No se pudo guardar",
+    },
+    "theme": {
+        "auto": "Aspecto: como el sistema",
+        "light": "Aspecto: claro",
+        "dark": "Aspecto: oscuro",
     },
 }
 
@@ -706,6 +799,13 @@ FR = {
         ),
     },
     "form": {
+        "sm_unlink": "ne pas lier",
+        "sm_linked": "Sur ton filament Spoolman : {name}",
+        "core_weight": "Bobine vide (g)",
+        "bed_min": "Plateau min °C",
+        "bed_max": "Plateau max °C",
+        "bed_note": "Plateau : {range}",
+        "price_taken": "Saisi.",
         "sec_fetch": "Données d'une boutique",
         "sec_filament": "Filament",
         "sec_stock": "Quantité et stockage",
@@ -765,6 +865,7 @@ FR = {
         "parse_request_failed": "Échec de l'analyse",
     },
     "badge": {
+        "spoolman": "✓ Ton Spoolman",
         "page": "De {host} — à vérifier",
         "cache": "mémorisé",
         "tigertag": "TigerTag",
@@ -788,6 +889,7 @@ FR = {
         "failed": "Échec OCR : {error}",
     },
     "submit": {
+        "filament_filled": "Filament complété dans Spoolman.",
         "tag_not_linked": "Bobine ajoutée, mais le tag n'a pas été lié : {error}",
         "price_not_set": "Bobine ajoutée, mais Spoolman n'a pas pris le prix",
         "material_required": "Le matériau est requis",
@@ -804,6 +906,10 @@ FR = {
         "price_hint": "Prix sur la page : {price}.",
     },
     "label": {
+        "own": "Mise en page propre : rouleau entier, toutes les lignes",
+        "l_location": "Lieu :",
+        "l_nozzle": "Buse",
+        "l_added": "Depuis",
         "title": "🏷️ Étiquette de bobine",
         "spool_id": "ID de bobine",
         "template": "Modèle (Bambuddy)",
@@ -845,6 +951,7 @@ FR = {
         "f_spool_id": "ID de bobine",
     },
     "why": {
+        "by_spoolman": "ton filament Spoolman",
         "title": "🔍 Comment le texte a été lu",
         "text_label": "Texte reconnu : corrigez-le et relisez",
         "reparse": "Relire",
@@ -870,6 +977,23 @@ FR = {
         "nothing": "Rien n'a été reconnu dans le texte.",
         "diameter": "Diamètre",
         "delete": "Supprimer",
+    },
+    "settings": {
+        "sm_via_bb": "Spoolman via Bambuddy : {n} filaments, sans températures (définir SPOOLMAN_URL)",
+        "sm_direct": "Spoolman lu directement : {n} filaments",
+        "inventory": "Inventaire Bambuddy",
+        "auto": "Automatique",
+        "spoolman": "Spoolman (via Bambuddy)",
+        "local": "Inventaire propre de Bambuddy",
+        "detected": "Détecté : {mode}",
+        "probe_denied": "Bambuddy a refusé la requête (HTTP {code}) : la clé API n'a pas « Read Status ». Choisissez l'inventaire à la main.",
+        "saved": "Enregistré",
+        "save_failed": "Échec de l'enregistrement",
+    },
+    "theme": {
+        "auto": "Apparence : comme le système",
+        "light": "Apparence : claire",
+        "dark": "Apparence : sombre",
     },
 }
 
@@ -916,6 +1040,13 @@ JA = {
         "invalid_barcode": "有効なUPC-A/EAN-8/EAN-13バーコード、またはメーカーのSKU/型番（3文字以上）を入力してください。",
     },
     "form": {
+        "sm_unlink": "リンクしない",
+        "sm_linked": "Spoolmanのフィラメントに登録: {name}",
+        "core_weight": "空スプール (g)",
+        "bed_min": "ベッド最低 °C",
+        "bed_max": "ベッド最高 °C",
+        "bed_note": "ベッド: {range}",
+        "price_taken": "入力しました。",
         "sec_fetch": "ショップページから取得",
         "sec_filament": "フィラメント",
         "sec_stock": "数量と保管",
@@ -975,6 +1106,7 @@ JA = {
         "parse_request_failed": "解析に失敗しました",
     },
     "badge": {
+        "spoolman": "✓ あなたのSpoolman",
         "page": "{host} から取得 — 要確認",
         "cache": "記憶済み",
         "tigertag": "TigerTag",
@@ -997,6 +1129,7 @@ JA = {
         "failed": "OCRに失敗しました: {error}",
     },
     "submit": {
+        "filament_filled": "Spoolmanのフィラメントを補完しました。",
         "tag_not_linked": "スプールは追加されましたが、タグは紐付けられませんでした: {error}",
         "price_not_set": "スプールは追加されましたが、Spoolmanが価格を受け付けませんでした",
         "material_required": "素材は必須です",
@@ -1013,6 +1146,10 @@ JA = {
         "price_hint": "ページ上の価格: {price}。",
     },
     "label": {
+        "own": "独自レイアウト: ロール全体、全行",
+        "l_location": "場所:",
+        "l_nozzle": "ノズル",
+        "l_added": "開始",
         "title": "🏷️ スプールラベル",
         "spool_id": "スプールID",
         "template": "テンプレート (Bambuddy)",
@@ -1054,6 +1191,7 @@ JA = {
         "f_spool_id": "スプールID",
     },
     "why": {
+        "by_spoolman": "あなたのSpoolmanフィラメント",
         "title": "🔍 テキストの読み取り結果",
         "text_label": "認識されたテキスト: 修正して再読み取り",
         "reparse": "再読み取り",
@@ -1079,6 +1217,23 @@ JA = {
         "nothing": "テキストから何も認識されませんでした。",
         "diameter": "直径",
         "delete": "削除",
+    },
+    "settings": {
+        "sm_via_bb": "Bambuddy経由のSpoolman: {n} 件のフィラメント、温度なし (SPOOLMAN_URL を設定)",
+        "sm_direct": "Spoolmanを直接読み込み: {n} 件のフィラメント",
+        "inventory": "Bambuddy インベントリ",
+        "auto": "自動",
+        "spoolman": "Spoolman (Bambuddy 経由)",
+        "local": "Bambuddy 独自のインベントリ",
+        "detected": "検出: {mode}",
+        "probe_denied": "Bambuddy が問い合わせを拒否しました (HTTP {code}): API キーに「Read Status」がありません。インベントリを手動で選んでください。",
+        "saved": "保存しました",
+        "save_failed": "保存できませんでした",
+    },
+    "theme": {
+        "auto": "表示: システムに合わせる",
+        "light": "表示: ライト",
+        "dark": "表示: ダーク",
     },
 }
 
@@ -1128,6 +1283,13 @@ IT = {
         ),
     },
     "form": {
+        "sm_unlink": "non collegare",
+        "sm_linked": "Sul tuo filamento Spoolman: {name}",
+        "core_weight": "Bobina vuota (g)",
+        "bed_min": "Piatto min °C",
+        "bed_max": "Piatto max °C",
+        "bed_note": "Piatto: {range}",
+        "price_taken": "Inserito.",
         "sec_fetch": "Dati da un negozio",
         "sec_filament": "Filamento",
         "sec_stock": "Quantità e magazzino",
@@ -1187,6 +1349,7 @@ IT = {
         "parse_request_failed": "Analisi non riuscita",
     },
     "badge": {
+        "spoolman": "✓ Il tuo Spoolman",
         "page": "Da {host} — controlla bene",
         "cache": "memorizzato",
         "tigertag": "TigerTag",
@@ -1210,6 +1373,7 @@ IT = {
         "failed": "OCR non riuscito: {error}",
     },
     "submit": {
+        "filament_filled": "Filamento completato in Spoolman.",
         "tag_not_linked": "Bobina aggiunta, ma il tag non è stato collegato: {error}",
         "price_not_set": "Bobina aggiunta, ma Spoolman non ha accettato il prezzo",
         "material_required": "Il materiale è obbligatorio",
@@ -1226,6 +1390,10 @@ IT = {
         "price_hint": "Prezzo sulla pagina: {price}.",
     },
     "label": {
+        "own": "Layout proprio: rotolo intero, tutte le righe",
+        "l_location": "Posto:",
+        "l_nozzle": "Ugello",
+        "l_added": "Dal",
         "title": "🏷️ Etichetta bobina",
         "spool_id": "ID bobina",
         "template": "Modello (Bambuddy)",
@@ -1267,6 +1435,7 @@ IT = {
         "f_spool_id": "ID bobina",
     },
     "why": {
+        "by_spoolman": "il tuo filamento Spoolman",
         "title": "🔍 Come è stato letto il testo",
         "text_label": "Testo riconosciuto: correggilo e rileggi",
         "reparse": "Rileggi",
@@ -1292,6 +1461,23 @@ IT = {
         "nothing": "Nel testo non è stato riconosciuto nulla.",
         "diameter": "Diametro",
         "delete": "Elimina",
+    },
+    "settings": {
+        "sm_via_bb": "Spoolman tramite Bambuddy: {n} filamenti, senza temperature (imposta SPOOLMAN_URL)",
+        "sm_direct": "Spoolman letto direttamente: {n} filamenti",
+        "inventory": "Inventario Bambuddy",
+        "auto": "Automatico",
+        "spoolman": "Spoolman (tramite Bambuddy)",
+        "local": "Inventario proprio di Bambuddy",
+        "detected": "Rilevato: {mode}",
+        "probe_denied": "Bambuddy ha rifiutato la richiesta (HTTP {code}): alla chiave API manca «Read Status». Scegli l'inventario a mano.",
+        "saved": "Salvato",
+        "save_failed": "Salvataggio non riuscito",
+    },
+    "theme": {
+        "auto": "Aspetto: come il sistema",
+        "light": "Aspetto: chiaro",
+        "dark": "Aspetto: scuro",
     },
 }
 
@@ -1338,6 +1524,13 @@ KO = {
         "invalid_barcode": "유효한 UPC-A/EAN-8/EAN-13 바코드나 제조사 SKU/품번(3자 이상)을 입력하세요.",
     },
     "form": {
+        "sm_unlink": "연결 안 함",
+        "sm_linked": "내 Spoolman 필라멘트에 등록: {name}",
+        "core_weight": "빈 스풀 (g)",
+        "bed_min": "베드 최소 °C",
+        "bed_max": "베드 최대 °C",
+        "bed_note": "베드: {range}",
+        "price_taken": "입력했습니다.",
         "sec_fetch": "쇼핑 페이지에서 가져오기",
         "sec_filament": "필라멘트",
         "sec_stock": "수량 및 보관",
@@ -1397,6 +1590,7 @@ KO = {
         "parse_request_failed": "분석 실패",
     },
     "badge": {
+        "spoolman": "✓ 내 Spoolman",
         "page": "{host}에서 가져옴 — 확인 필요",
         "cache": "저장됨",
         "tigertag": "TigerTag",
@@ -1419,6 +1613,7 @@ KO = {
         "failed": "OCR 실패: {error}",
     },
     "submit": {
+        "filament_filled": "Spoolman 필라멘트를 보완했습니다.",
         "tag_not_linked": "스풀은 추가되었지만 태그가 연결되지 않았습니다: {error}",
         "price_not_set": "스풀은 추가되었지만 Spoolman이 가격을 받지 않았습니다",
         "material_required": "재질은 필수입니다",
@@ -1435,6 +1630,10 @@ KO = {
         "price_hint": "페이지의 가격: {price}.",
     },
     "label": {
+        "own": "자체 레이아웃: 롤 전체, 모든 줄",
+        "l_location": "위치:",
+        "l_nozzle": "노즐",
+        "l_added": "시작",
         "title": "🏷️ 스풀 라벨",
         "spool_id": "스풀 ID",
         "template": "템플릿 (Bambuddy)",
@@ -1476,6 +1675,7 @@ KO = {
         "f_spool_id": "스풀 ID",
     },
     "why": {
+        "by_spoolman": "내 Spoolman 필라멘트",
         "title": "🔍 텍스트를 읽은 방식",
         "text_label": "인식된 텍스트: 수정하고 다시 읽기",
         "reparse": "다시 읽기",
@@ -1501,6 +1701,23 @@ KO = {
         "nothing": "텍스트에서 인식된 것이 없습니다.",
         "diameter": "직경",
         "delete": "삭제",
+    },
+    "settings": {
+        "sm_via_bb": "Bambuddy를 통한 Spoolman: 필라멘트 {n}개, 온도 없음 (SPOOLMAN_URL 설정)",
+        "sm_direct": "Spoolman 직접 읽음: 필라멘트 {n}개",
+        "inventory": "Bambuddy 인벤토리",
+        "auto": "자동",
+        "spoolman": "Spoolman (Bambuddy 경유)",
+        "local": "Bambuddy 자체 인벤토리",
+        "detected": "감지됨: {mode}",
+        "probe_denied": "Bambuddy가 조회를 거부했습니다 (HTTP {code}): API 키에 “Read Status”가 없습니다. 인벤토리를 직접 선택하세요.",
+        "saved": "저장됨",
+        "save_failed": "저장 실패",
+    },
+    "theme": {
+        "auto": "화면: 시스템 설정",
+        "light": "화면: 라이트",
+        "dark": "화면: 다크",
     },
 }
 
@@ -1550,6 +1767,13 @@ PT_BR = {
         ),
     },
     "form": {
+        "sm_unlink": "não vincular",
+        "sm_linked": "No seu filamento do Spoolman: {name}",
+        "core_weight": "Carretel vazio (g)",
+        "bed_min": "Mesa mín °C",
+        "bed_max": "Mesa máx °C",
+        "bed_note": "Mesa: {range}",
+        "price_taken": "Preenchido.",
         "sec_fetch": "Dados de uma loja",
         "sec_filament": "Filamento",
         "sec_stock": "Quantidade e estoque",
@@ -1609,6 +1833,7 @@ PT_BR = {
         "parse_request_failed": "Falha na análise",
     },
     "badge": {
+        "spoolman": "✓ Seu Spoolman",
         "page": "De {host} — confira bem",
         "cache": "memorizado",
         "tigertag": "TigerTag",
@@ -1632,6 +1857,7 @@ PT_BR = {
         "failed": "Falha no OCR: {error}",
     },
     "submit": {
+        "filament_filled": "Filamento completado no Spoolman.",
         "tag_not_linked": "Carretel adicionado, mas a tag não foi vinculada: {error}",
         "price_not_set": "Carretel adicionado, mas o Spoolman não aceitou o preço",
         "material_required": "O material é obrigatório",
@@ -1648,6 +1874,10 @@ PT_BR = {
         "price_hint": "Preço na página: {price}.",
     },
     "label": {
+        "own": "Layout próprio: rolo inteiro, todas as linhas",
+        "l_location": "Local:",
+        "l_nozzle": "Bico",
+        "l_added": "Desde",
         "title": "🏷️ Etiqueta do carretel",
         "spool_id": "ID do carretel",
         "template": "Modelo (Bambuddy)",
@@ -1689,6 +1919,7 @@ PT_BR = {
         "f_spool_id": "ID do carretel",
     },
     "why": {
+        "by_spoolman": "seu filamento do Spoolman",
         "title": "🔍 Como o texto foi lido",
         "text_label": "Texto reconhecido: corrija e leia de novo",
         "reparse": "Ler de novo",
@@ -1714,6 +1945,23 @@ PT_BR = {
         "nothing": "Nada foi reconhecido no texto.",
         "diameter": "Diâmetro",
         "delete": "Excluir",
+    },
+    "settings": {
+        "sm_via_bb": "Spoolman pelo Bambuddy: {n} filamentos, sem temperaturas (defina SPOOLMAN_URL)",
+        "sm_direct": "Spoolman lido diretamente: {n} filamentos",
+        "inventory": "Inventário do Bambuddy",
+        "auto": "Automático",
+        "spoolman": "Spoolman (pelo Bambuddy)",
+        "local": "Inventário próprio do Bambuddy",
+        "detected": "Detectado: {mode}",
+        "probe_denied": "O Bambuddy recusou a consulta (HTTP {code}): falta “Read Status” na chave de API. Escolha o inventário manualmente.",
+        "saved": "Salvo",
+        "save_failed": "Falha ao salvar",
+    },
+    "theme": {
+        "auto": "Aparência: como o sistema",
+        "light": "Aparência: clara",
+        "dark": "Aparência: escura",
     },
 }
 
@@ -1760,6 +2008,13 @@ ZH_CN = {
         "invalid_barcode": "请输入有效的 UPC-A/EAN-8/EAN-13 条码，或制造商 SKU/货号（至少 3 个字符）。",
     },
     "form": {
+        "sm_unlink": "不关联",
+        "sm_linked": "使用你的 Spoolman 耗材：{name}",
+        "core_weight": "空料盘 (g)",
+        "bed_min": "热床最低 °C",
+        "bed_max": "热床最高 °C",
+        "bed_note": "热床：{range}",
+        "price_taken": "已填入。",
         "sec_fetch": "从商店页面获取",
         "sec_filament": "耗材",
         "sec_stock": "数量与存放",
@@ -1819,6 +2074,7 @@ ZH_CN = {
         "parse_request_failed": "解析失败",
     },
     "badge": {
+        "spoolman": "✓ 你的 Spoolman",
         "page": "来自 {host} — 请核对",
         "cache": "已记住",
         "tigertag": "TigerTag",
@@ -1841,6 +2097,7 @@ ZH_CN = {
         "failed": "OCR 失败：{error}",
     },
     "submit": {
+        "filament_filled": "已在 Spoolman 中补全耗材。",
         "tag_not_linked": "已添加料卷，但标签未关联：{error}",
         "price_not_set": "已添加料卷，但 Spoolman 未接受价格",
         "material_required": "材料为必填项",
@@ -1857,6 +2114,10 @@ ZH_CN = {
         "price_hint": "页面上的价格：{price}。",
     },
     "label": {
+        "own": "自定义布局：整卷，所有行",
+        "l_location": "位置：",
+        "l_nozzle": "喷嘴",
+        "l_added": "起始",
         "title": "🏷️ 料盘标签",
         "spool_id": "料盘 ID",
         "template": "模板 (Bambuddy)",
@@ -1898,6 +2159,7 @@ ZH_CN = {
         "f_spool_id": "料盘 ID",
     },
     "why": {
+        "by_spoolman": "你的 Spoolman 耗材",
         "title": "🔍 文本识别结果",
         "text_label": "识别出的文本：可修改后重新识别",
         "reparse": "重新识别",
@@ -1923,6 +2185,23 @@ ZH_CN = {
         "nothing": "文本中没有识别出任何内容。",
         "diameter": "直径",
         "delete": "删除",
+    },
+    "settings": {
+        "sm_via_bb": "通过 Bambuddy 读取 Spoolman：{n} 种耗材，无温度（请设置 SPOOLMAN_URL）",
+        "sm_direct": "已直接读取 Spoolman：{n} 种耗材",
+        "inventory": "Bambuddy 库存",
+        "auto": "自动",
+        "spoolman": "Spoolman（经由 Bambuddy）",
+        "local": "Bambuddy 自有库存",
+        "detected": "已检测：{mode}",
+        "probe_denied": "Bambuddy 拒绝了查询（HTTP {code}）：API 密钥缺少“Read Status”。请手动选择库存。",
+        "saved": "已保存",
+        "save_failed": "保存失败",
+    },
+    "theme": {
+        "auto": "外观：跟随系统",
+        "light": "外观：浅色",
+        "dark": "外观：深色",
     },
 }
 
@@ -1969,6 +2248,13 @@ ZH_TW = {
         "invalid_barcode": "請輸入有效的 UPC-A/EAN-8/EAN-13 條碼，或製造商 SKU/貨號（至少 3 個字元）。",
     },
     "form": {
+        "sm_unlink": "不關聯",
+        "sm_linked": "使用你的 Spoolman 線材：{name}",
+        "core_weight": "空料盤 (g)",
+        "bed_min": "熱床最低 °C",
+        "bed_max": "熱床最高 °C",
+        "bed_note": "熱床：{range}",
+        "price_taken": "已填入。",
         "sec_fetch": "從商店頁面取得",
         "sec_filament": "線材",
         "sec_stock": "數量與存放",
@@ -2028,6 +2314,7 @@ ZH_TW = {
         "parse_request_failed": "解析失敗",
     },
     "badge": {
+        "spoolman": "✓ 你的 Spoolman",
         "page": "來自 {host} — 請核對",
         "cache": "已記住",
         "tigertag": "TigerTag",
@@ -2050,6 +2337,7 @@ ZH_TW = {
         "failed": "OCR 失敗：{error}",
     },
     "submit": {
+        "filament_filled": "已在 Spoolman 中補全線材。",
         "tag_not_linked": "已新增料捲，但標籤未連結：{error}",
         "price_not_set": "已新增料捲，但 Spoolman 未接受價格",
         "material_required": "材質為必填項目",
@@ -2066,6 +2354,10 @@ ZH_TW = {
         "price_hint": "頁面上的價格：{price}。",
     },
     "label": {
+        "own": "自訂版面：整捲，所有行",
+        "l_location": "位置：",
+        "l_nozzle": "噴嘴",
+        "l_added": "起始",
         "title": "🏷️ 料盤標籤",
         "spool_id": "料盤 ID",
         "template": "範本 (Bambuddy)",
@@ -2107,6 +2399,7 @@ ZH_TW = {
         "f_spool_id": "料盤 ID",
     },
     "why": {
+        "by_spoolman": "你的 Spoolman 線材",
         "title": "🔍 文字辨識結果",
         "text_label": "辨識出的文字：可修改後重新辨識",
         "reparse": "重新辨識",
@@ -2132,6 +2425,23 @@ ZH_TW = {
         "nothing": "文字中沒有辨識出任何內容。",
         "diameter": "直徑",
         "delete": "刪除",
+    },
+    "settings": {
+        "sm_via_bb": "透過 Bambuddy 讀取 Spoolman：{n} 種線材，無溫度（請設定 SPOOLMAN_URL）",
+        "sm_direct": "已直接讀取 Spoolman：{n} 種線材",
+        "inventory": "Bambuddy 庫存",
+        "auto": "自動",
+        "spoolman": "Spoolman（經由 Bambuddy）",
+        "local": "Bambuddy 自有庫存",
+        "detected": "已偵測：{mode}",
+        "probe_denied": "Bambuddy 拒絕了查詢（HTTP {code}）：API 金鑰缺少「Read Status」。請手動選擇庫存。",
+        "saved": "已儲存",
+        "save_failed": "儲存失敗",
+    },
+    "theme": {
+        "auto": "外觀：跟隨系統",
+        "light": "外觀：淺色",
+        "dark": "外觀：深色",
     },
 }
 
@@ -2181,6 +2491,13 @@ TR = {
         ),
     },
     "form": {
+        "sm_unlink": "bağlama",
+        "sm_linked": "Spoolman filamentine: {name}",
+        "core_weight": "Boş makara (g)",
+        "bed_min": "Tabla min °C",
+        "bed_max": "Tabla maks °C",
+        "bed_note": "Baskı tablası: {range}",
+        "price_taken": "Girildi.",
         "sec_fetch": "Mağaza sayfasından veri",
         "sec_filament": "Filament",
         "sec_stock": "Miktar ve depo",
@@ -2240,6 +2557,7 @@ TR = {
         "parse_request_failed": "Ayrıştırma başarısız oldu",
     },
     "badge": {
+        "spoolman": "✓ Spoolman'ın",
         "page": "{host} kaynağından — dikkatle kontrol edin",
         "cache": "hatırlandı",
         "tigertag": "TigerTag",
@@ -2263,6 +2581,7 @@ TR = {
         "failed": "OCR başarısız oldu: {error}",
     },
     "submit": {
+        "filament_filled": "Filament Spoolman'da tamamlandı.",
         "tag_not_linked": "Makara eklendi ama etiket bağlanmadı: {error}",
         "price_not_set": "Makara eklendi ama Spoolman fiyatı almadı",
         "material_required": "Malzeme gereklidir",
@@ -2279,6 +2598,10 @@ TR = {
         "price_hint": "Sayfadaki fiyat: {price}.",
     },
     "label": {
+        "own": "Kendi düzen: tüm rulo, tüm satırlar",
+        "l_location": "Yer:",
+        "l_nozzle": "Nozul",
+        "l_added": "Başlangıç",
         "title": "🏷️ Makara etiketi",
         "spool_id": "Makara kimliği",
         "template": "Şablon (Bambuddy)",
@@ -2320,6 +2643,7 @@ TR = {
         "f_spool_id": "Makara kimliği",
     },
     "why": {
+        "by_spoolman": "Spoolman filamentin",
         "title": "🔍 Metin nasıl okundu",
         "text_label": "Tanınan metin: düzeltin ve yeniden okuyun",
         "reparse": "Yeniden oku",
@@ -2345,6 +2669,23 @@ TR = {
         "nothing": "Metinde hiçbir şey tanınmadı.",
         "diameter": "Çap",
         "delete": "Sil",
+    },
+    "settings": {
+        "sm_via_bb": "Bambuddy üzerinden Spoolman: {n} filament, sıcaklıklar olmadan (SPOOLMAN_URL ayarla)",
+        "sm_direct": "Spoolman doğrudan okundu: {n} filament",
+        "inventory": "Bambuddy envanteri",
+        "auto": "Otomatik",
+        "spoolman": "Spoolman (Bambuddy üzerinden)",
+        "local": "Bambuddy'nin kendi envanteri",
+        "detected": "Algılandı: {mode}",
+        "probe_denied": "Bambuddy sorguyu reddetti (HTTP {code}): API anahtarında “Read Status” yok. Envanteri elle seçin.",
+        "saved": "Kaydedildi",
+        "save_failed": "Kaydedilemedi",
+    },
+    "theme": {
+        "auto": "Görünüm: sistem gibi",
+        "light": "Görünüm: açık",
+        "dark": "Görünüm: koyu",
     },
 }
 

@@ -80,3 +80,29 @@ class TestAddSpool:
             resp = client.post("/api/spool", json={"fields": {"material": "PETG"}})
         assert resp.get_json()["spool_ids"] == [7]
         assert post.call_args.args[0] == "http://bb/api/v1/inventory/spools"
+
+
+class TestInventoryModeSwitch:
+    """The mode can be set: the probe needs 'Read Status', which a key may lack."""
+
+    def test_forced_spoolman_asks_nothing(self, client):
+        r = client.post("/api/settings", json={"inventory_mode": "spoolman"})
+        assert r.get_json()["inventory_mode"] == "spoolman"
+        with patch("requests.get") as get:
+            assert app_module._inventory_base() == "/api/v1/spoolman/inventory"
+        get.assert_not_called()
+
+    def test_forced_local(self, client):
+        client.post("/api/settings", json={"inventory_mode": "local"})
+        with patch("requests.get", return_value=_resp(payload={"spoolman_enabled": "true"})):
+            assert app_module._inventory_base() == "/api/v1/inventory"
+
+    def test_auto_reports_the_probe(self, client):
+        with patch("requests.get", return_value=_resp(403)):
+            d = client.get("/api/settings").get_json()
+        assert d == {"inventory_mode": "auto", "active": "local", "probe": 403, "spoolman": None}
+
+    def test_env_default_and_bad_value(self, client, monkeypatch):
+        monkeypatch.setenv("INVENTORY_MODE", "spoolman")
+        assert app_module.load_settings()["inventory_mode"] == "spoolman"
+        assert client.post("/api/settings", json={"inventory_mode": "both"}).status_code == 400

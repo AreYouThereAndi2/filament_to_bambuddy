@@ -94,3 +94,37 @@ def test_without_api_key(client, monkeypatch):
     monkeypatch.setattr(app_module, "BAMBUDDY_API_KEY", "")
     r = client.post("/api/label", json={"spool_id": 5})
     assert r.status_code == 400
+
+
+class TestSpoolData:
+    """The page's own layout: the spool from Bambuddy, the QR's address."""
+
+    def _get(self, status=200, payload=None):
+        r = MagicMock()
+        r.status_code = status
+        r.ok = 200 <= status < 300
+        r.json.return_value = payload or {}
+        return r
+
+    def test_spool_and_qr(self, client, monkeypatch):
+        monkeypatch.setattr(app_module, "_public_url_cache", {"at": 0.0, "url": None})
+        spool = {"brand": "Geeetech", "material": "PLA", "subtype": "Marble", "storage_location": "Regal A3",
+                 "nozzle_temp_min": 190, "nozzle_temp_max": 240, "created_at": "2026-10-17T21:00:00", "extra": "x"}
+        settings = {"external_url": "https://bambuddy.example/"}
+        with patch("requests.get", side_effect=[self._get(200, spool), self._get(200, settings)]) as get:
+            d = client.get("/api/spool/12").get_json()
+        assert get.call_args_list[0].args[0] == "http://bb/api/v1/inventory/spools/12"
+        assert d["qr"] == "https://bambuddy.example/inventory?spool=12"
+        assert d["spool"]["storage_location"] == "Regal A3"
+        assert d["spool"]["added"] == "2026-10-17"
+        assert "extra" not in d["spool"]
+
+    def test_public_url_from_env(self, client, monkeypatch):
+        monkeypatch.setenv("BAMBUDDY_PUBLIC_URL", "https://bb.home/")
+        with patch("requests.get", return_value=self._get(200, {"brand": "X"})):
+            assert client.get("/api/spool/3").get_json()["qr"] == "https://bb.home/inventory?spool=3"
+
+    def test_missing_spool(self, client):
+        with patch("requests.get", return_value=self._get(404)):
+            r = client.get("/api/spool/99")
+        assert r.status_code == 404 and r.get_json()["error"] == "not_found"
