@@ -1325,6 +1325,8 @@ def add_spool():
         if tag_error:
             log.warning("spool %s created, tag %s not linked: %s", spool_ids[0], tag_uid, tag_error)
 
+    if created:
+        _inventory_forget()
     # The filament's own empty fields, filled from the form: the next spool
     # of it carries them, and Bambuddy shows them from there.
     filled: list = []
@@ -1438,6 +1440,76 @@ def spool_data(spool_id: int):
     return jsonify(ok=True, spool=spool, qr=f"{_public_bambuddy_url()}/inventory?spool={spool_id}")
 
 
+# The user's spools, compact, for the page's own search, the duplicate hint,
+# a tag held to the phone, labels by location and the reorder list. Kept
+# half a minute: the page asks again for each of those.
+_INVENTORY_TTL = 30.0
+_inventory_cache: dict = {"at": 0.0, "base": None, "list": None}
+_INVENTORY_KEYS = ("id", "brand", "material", "subtype", "color_name", "rgba", "label_weight", "weight_used",
+                   "storage_location", "tag_uid", "cost_per_kg", "material_number")
+
+
+def _compact_spool(raw: dict) -> dict | None:
+    if not isinstance(raw, dict) or not isinstance(raw.get("id"), int) or raw.get("archived_at"):
+        return None
+    out = {k: raw.get(k) for k in _INVENTORY_KEYS}
+    try:
+        out["remaining"] = max(0, round(float(raw.get("label_weight") or 0) - float(raw.get("weight_used") or 0)))
+    except (TypeError, ValueError):
+        out["remaining"] = None
+    out["added"] = str(raw.get("created_at") or raw.get("registered") or "")[:10] or None
+    return out
+
+
+def _inventory_forget():
+    _inventory_cache.update(at=0.0, list=None)
+
+
+@app.get("/api/inventory")
+def inventory():
+    """The active inventory's spools (archived ones left out), compact."""
+    if not BAMBUDDY_API_KEY:
+        return jsonify(ok=False, error="no_key"), 400
+    base = _inventory_base()
+    now = time.monotonic()
+    c = _inventory_cache
+    if (c["list"] is not None and c["base"] == base and not request.args.get("fresh")
+            and now - c["at"] < _INVENTORY_TTL):
+        return jsonify(ok=True, spools=c["list"])
+    try:
+        r = requests.get(f"{BAMBUDDY_URL}{base}/spools",
+                         headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=30)
+    except Exception as e:
+        log.warning("inventory not read: %s", e)
+        return jsonify(ok=False, error="unreachable"), 502
+    if not r.ok or not isinstance(r.json(), list):
+        return jsonify(ok=False, error="failed", status=r.status_code), 502
+    spools = [s for s in (_compact_spool(x) for x in r.json()) if s]
+    c.update(at=now, base=base, list=spools)
+    return jsonify(ok=True, spools=spools)
+
+
+@app.post("/api/spool/<int:spool_id>/archive")
+def archive_spool(spool_id: int):
+    """An empty spool out of the inventory: archived, not deleted, so its
+    history stays in BamBuddy and Spoolman."""
+    if not BAMBUDDY_API_KEY:
+        return jsonify(ok=False, error="no_key"), 400
+    try:
+        r = requests.post(f"{BAMBUDDY_URL}{_inventory_base()}/spools/{spool_id}/archive",
+                          headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=20)
+    except Exception as e:
+        log.warning("spool %s not archived: %s", spool_id, e)
+        return jsonify(ok=False, error="unreachable"), 502
+    if r.status_code == 404:
+        return jsonify(ok=False, error="not_found"), 404
+    if not r.ok:
+        return jsonify(ok=False, error=f"{r.status_code}: {r.text[:200]}"), 502
+    _inventory_forget()
+    log.info("spool %s archived", spool_id)
+    return jsonify(ok=True)
+
+
 @app.patch("/api/spool/<int:spool_id>")
 def update_spool(spool_id: int):
     """Change an existing spool, opened from its QR code: storage location,
@@ -1487,6 +1559,7 @@ def update_spool(spool_id: int):
     except Exception as e:
         log.warning("spool %s not updated: %s", spool_id, e)
         return jsonify(ok=False, error="unreachable"), 502
+    _inventory_forget()
     changed = sorted(patch) + (["tag_uid"] if tag_uid and not tag_error else [])
     log.info("spool %s updated: %s%s", spool_id, ", ".join(changed) or "nothing",
              f" (tag: {tag_error})" if tag_error else "")

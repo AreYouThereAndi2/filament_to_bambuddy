@@ -76,3 +76,35 @@ class TestUpdate:
         _mode("local")
         with patch("requests.patch", return_value=_resp(404)):
             assert client.patch("/api/spool/70", json={"note": "x"}).status_code == 404
+
+
+_SPOOLS = [
+    {"id": 3, "brand": "SUNLU", "material": "PETG", "color_name": "Black", "rgba": "000000FF",
+     "label_weight": 1000, "weight_used": 880.4, "storage_location": "A1", "tag_uid": "04AA", "created_at": "2026-10-18T09:00:00"},
+    {"id": 4, "brand": "SUNLU", "material": "PLA", "label_weight": 1000, "weight_used": 0,
+     "archived_at": "2026-10-01T00:00:00"},
+]
+
+
+class TestInventory:
+
+    def test_compact_and_without_archived(self, client):
+        _mode("local")
+        app_module._inventory_forget()
+        with patch("requests.get", return_value=_resp(payload=_SPOOLS)) as g:
+            d = client.get("/api/inventory").get_json()
+            client.get("/api/inventory")            # kept half a minute
+        assert g.call_count == 1 and g.call_args.args[0] == "http://bb/api/v1/inventory/spools"
+        assert [s["id"] for s in d["spools"]] == [3]
+        s = d["spools"][0]
+        assert s["remaining"] == 120 and s["added"] == "2026-10-18" and s["tag_uid"] == "04AA"
+
+    def test_archive(self, client):
+        _mode("spoolman")
+        app_module._inventory_cache.update(at=1e12, list=[{"id": 9}], base="/api/v1/spoolman/inventory")
+        with patch("requests.post", return_value=_resp(200)) as p:
+            d = client.post("/api/spool/9/archive").get_json()
+        assert d["ok"] and p.call_args.args[0] == "http://bb/api/v1/spoolman/inventory/spools/9/archive"
+        assert app_module._inventory_cache["list"] is None
+        with patch("requests.post", return_value=_resp(404)):
+            assert client.post("/api/spool/99/archive").status_code == 404

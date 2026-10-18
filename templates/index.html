@@ -263,6 +263,16 @@
   .combo-opt .sw{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:8px;
     box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
   .combo-search>input{padding-left:38px}
+  /* A line per kind running low: colour, what it is, what is left, buy. */
+  .reo{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+  .reo:first-child{border-top:none}
+  .reo .sw{width:16px;height:16px;border-radius:50%;flex:0 0 auto;margin-top:3px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+  .reo-main{flex:1;min-width:0}
+  .reo-title{font:600 15px/1.25 var(--display);overflow-wrap:anywhere}
+  .reo-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .reo a.chip{font-size:12.5px;padding:3px 8px;margin:4px 4px 0 0}
+  .reo-buy{flex:0 0 auto;font:600 13.5px/1.2 var(--display);white-space:nowrap}
+  #dupLine a{margin-right:6px}
   .combo-search>.ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
   @media (prefers-reduced-motion:reduce){
     .vf-scanline{animation:none;top:50%}
@@ -279,6 +289,8 @@
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
   <symbol id="i-open" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></symbol>
+  <symbol id="i-nfc" viewBox="0 0 24 24"><path d="M6 8.5a5 5 0 0 1 0 7M9.5 6a8.5 8.5 0 0 1 0 12M13 3.5a12 12 0 0 1 0 17"/><rect x="15" y="7" width="6" height="10" rx="1.5"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
@@ -337,6 +349,8 @@
         <ul id="catalog-list" class="combo-list" hidden></ul>
       </div>
     </div>
+    <button id="tagOpenBtn" type="button" class="btn-secondary with-ico hidden" style="margin-top:12px"><svg class="ico" aria-hidden="true"><use href="#i-nfc"/></svg><span>{{ t('inv.tag_open') }}</span></button>
+    <div id="tagOpenHint" class="hint"></div>
     <label for="manual" style="margin-top:16px">{{ t('scan.manual_label') }}</label>
     <div class="row">
       <div><input id="manual" placeholder="{{ t('scan.manual_placeholder') }}" autocomplete="off" spellcheck="false"></div>
@@ -380,6 +394,7 @@
       <div id="titleLine"></div>
       <div id="linkedCodesLine" style="font-size:12.5px"></div>
       <!-- The filament in the user's Spoolman this spool will be made on. -->
+      <div id="dupLine" class="hint hidden"></div>
       <div id="smLine" class="hint hidden"><span id="smText"></span>
         <a id="smUnlink" href="#">{{ t('form.sm_unlink') }}</a></div>
     </div>
@@ -535,6 +550,27 @@
       <button id="spOpen" type="button" class="btn-secondary with-ico"><svg class="ico" aria-hidden="true"><use href="#i-open"/></svg><span>{{ t('spool.open_bb') }}</span></button>
     </div>
     <button id="spSave" type="button" class="btn-primary" style="margin-top:10px;min-height:52px">{{ t('spool.save') }}</button>
+    <button id="spEmpty" type="button" class="btn-quiet" style="display:block;margin:10px auto 0;color:var(--danger)">{{ t('spool.empty') }}</button>
+  </section>
+
+  <!-- The spools in stock: found by any word, and what runs low. -->
+  <section class="card" id="invCard">
+    <h2 class="card-title with-ico" style="justify-content:flex-start"><svg class="ico" aria-hidden="true"><use href="#i-box"/></svg><span>{{ t('inv.title') }}</span></h2>
+    <label for="invSearch" style="margin-top:0">{{ t('inv.search_label') }}</label>
+    <div class="combo combo-search">
+      <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
+      <input id="invSearch" type="search" enterkeyhint="search" spellcheck="false" placeholder="{{ t('inv.search_placeholder') }}">
+      <ul id="invSearch-list" class="combo-list" hidden></ul>
+    </div>
+    <div class="hint">{{ t('inv.search_hint') }}</div>
+    <details id="reorderBox" class="bm" style="margin-top:14px">
+      <summary style="font-weight:600;font-size:14px">{{ t('inv.reorder') }} <span id="reorderCount" class="muted"></span></summary>
+      <div class="row" style="align-items:flex-end">
+        <div style="flex:0 0 130px"><label for="reorderMax">{{ t('inv.reorder_below') }}</label><input id="reorderMax" inputmode="numeric" value="200"></div>
+        <div class="hint" style="margin-bottom:12px">{{ t('inv.reorder_hint') }}</div>
+      </div>
+      <div id="reorderList"></div>
+    </details>
   </section>
 
   <!-- A spool's label: Bambuddy's own template, shown here dot for dot as
@@ -542,8 +578,12 @@
   <section class="card" id="labelCard">
     <h2 class="card-title with-ico" style="justify-content:flex-start"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span>{{ t('label.title')|bare }}</span></h2>
     <div class="row">
-      <div style="flex:0 0 38%"><label for="labelSpool" style="margin-top:0">{{ t('label.spool_id') }}</label><input id="labelSpool" inputmode="numeric" autocomplete="off"></div>
+      <div style="flex:0 0 38%"><label for="labelSpool" style="margin-top:0">{{ t('label.spool_id') }}</label><input id="labelSpool" autocomplete="off" placeholder="12, 15, 20-24"></div>
       <div><label for="labelTpl" style="margin-top:0">{{ t('label.template') }}</label><select id="labelTpl"></select></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div><div class="combo"><input id="labelLoc" placeholder="{{ t('label.by_location') }}" aria-label="{{ t('label.by_location') }}"><span class="combo-chev"></span><ul id="labelLoc-list" class="combo-list" hidden></ul></div></div>
+      <div style="flex:0 0 auto"><button id="labelToday" type="button" class="btn-secondary" style="width:auto;padding:11px 14px">{{ t('label.today') }}</button></div>
     </div>
     <div id="labelChips"></div>
     <details class="bm" style="margin-top:12px">
@@ -1328,6 +1368,7 @@ function fillForm(d){
   setSelect('label_weight','1000'); $('quantity').value=1;
   applyFields(f);
   showSpoolman(d.spoolman);
+  dupSoon();
   // A product name a database or the shop gave stands in the title field
   // too, ready to be changed and filled again.
   if(d.title && d.source !== 'none' && d.source !== 'amazon') $('paste_title').value = d.title;
@@ -1630,15 +1671,16 @@ function nfcStop(){
 }
 // The same reader serves the new spool's form and an existing spool's
 // record: the button reads a tag into the field next to it.
-function nfcBind(btnId, inputId, hintId){
+function nfcBind(btnId, target, hintId, opt = {}){
   const btn = $(btnId), hint = $(hintId);
   // iOS has no Web NFC at all, in Safari or an installed app: the button
   // goes, the field stays for a UID typed in or read elsewhere.
   if(!('NDEFReader' in window)){
-    btn.parentElement.classList.add('hidden');
-    hint.textContent = t('form.nfc_unsupported');
+    if(opt.alone) btn.classList.add('hidden');
+    else{ btn.parentElement.classList.add('hidden'); hint.textContent = t('form.nfc_unsupported'); }
     return;
   }
+  if(opt.alone) btn.classList.remove('hidden');
   btn.onclick = async () => {
     if(nfcAbort){                                   // a second tap cancels
       const same = nfcBtnEl === btn;
@@ -1662,8 +1704,8 @@ function nfcBind(btnId, inputId, hintId){
         const uid = (ev.serialNumber || '').replace(/:/g, '').toUpperCase();
         nfcStop();
         if(!uid){ hint.textContent = t('form.nfc_no_uid'); return; }
-        $(inputId).value = uid;
-        hint.textContent = t('form.nfc_read', {uid});
+        if(typeof target === 'function'){ hint.textContent = ''; target(uid); }
+        else{ $(target).value = uid; hint.textContent = t('form.nfc_read', {uid}); }
         if(navigator.vibrate) navigator.vibrate(100);
       };
       ndef.onreadingerror = () => {
@@ -1681,6 +1723,144 @@ function nfcBind(btnId, inputId, hintId){
 }
 nfcBind('nfcBtn', 'tag_uid', 'nfcHint');
 nfcBind('spNfcBtn', 'spTag', 'spNfcHint');
+// A tag held to the phone opens the spool it is linked to.
+nfcBind('tagOpenBtn', uid => openSpoolByTag(uid), 'tagOpenHint', {alone: true});
+
+// ── The user's spools ──
+// One compact list from the active inventory (archived ones left out), kept
+// half a minute: the search, the duplicate hint, a tag, labels by location
+// and the reorder list all read it.
+let INV = null, invAt = 0;
+async function inventoryList(fresh){
+  if(INV && !fresh && Date.now() - invAt < 30000) return INV;
+  try{
+    const d = await (await fetch('/api/inventory' + (fresh ? '?fresh=1' : ''))).json();
+    if(d.ok){ INV = d.spools || []; invAt = Date.now(); }
+  }catch(e){}
+  return INV || [];
+}
+function invForget(){ INV = null; }
+function spoolTitle(s){ return [s.brand, s.material, s.subtype, s.color_name].filter(Boolean).join(' ') || '—'; }
+function spoolHex(s){ return s.rgba ? '#' + String(s.rgba).slice(0, 6) : null; }
+function spoolSub(s){
+  return [s.remaining != null ? s.remaining + ' g' : '', s.storage_location].filter(Boolean).join(', ');
+}
+function rgbDistance(a, b){
+  const p = h => { const m = String(h || '').replace('#', '').match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i);
+    return m ? [1, 2, 3].map(i => parseInt(m[i], 16)) : null; };
+  const x = p(a), y = p(b);
+  return x && y ? Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]) : null;
+}
+function materialKey(m){ return comboNorm(m).replace(/[^a-z0-9]/g, '').replace(/plus$/, ''); }
+function swatchItem(li, it){
+  const sw = document.createElement('span'); sw.className = 'sw';
+  sw.style.background = it.color || 'transparent';
+  if(!it.color) sw.style.boxShadow = 'inset 0 0 0 1px var(--line)';
+  li.appendChild(sw);
+  li.appendChild(document.createTextNode(it.label));
+  if(it.sub){ const s = document.createElement('span'); s.className = 'sub'; s.textContent = it.sub; li.appendChild(s); }
+}
+
+async function openSpoolByTag(uid){
+  $('tagOpenHint').textContent = t('spool.loading', {id: uid});
+  const want = uid.replace(/[\s:\-]/g, '').toUpperCase();
+  const s = (await inventoryList(true)).find(x => String(x.tag_uid || '').replace(/[\s:\-]/g, '').toUpperCase() === want);
+  $('tagOpenHint').textContent = s ? '' : t('inv.tag_unknown', {uid: want});
+  if(s) openSpool(s.id);
+}
+
+// Search: every word must appear (maker, material, colour, location, tag,
+// article number, "#12"); "<200" keeps spools with less than 200 g left.
+makeCombo('invSearch', {
+  source: async q => {
+    if(!q) return [];
+    let below = null;
+    const words = [];
+    for(const w of comboNorm(q).split(/\s+/).filter(Boolean)){
+      const m = w.match(/^<(\d+)g?$/);
+      if(m) below = parseInt(m[1], 10); else words.push(w);
+    }
+    const hits = (await inventoryList()).filter(s => {
+      if(below != null && !(s.remaining != null && s.remaining < below)) return false;
+      const hay = comboNorm([spoolTitle(s), s.storage_location, s.tag_uid, s.material_number, '#' + s.id].join(' '));
+      return words.every(w => hay.includes(w));
+    }).sort((a, b) => (a.remaining ?? 1e9) - (b.remaining ?? 1e9)).slice(0, 40);
+    return hits.length ? hits.map(s => ({id: s.id, label: '#' + s.id + '  ' + spoolTitle(s), sub: spoolSub(s), color: spoolHex(s)}))
+                       : [{empty: true, label: t('inv.none')}];
+  },
+  render: swatchItem,
+  onPick: it => { $('invSearch').value = ''; $('invSearch').blur(); openSpool(it.id); },
+});
+
+// What runs low: one line per kind (maker, material, subtype, colour) with
+// spools under the threshold, what is left of them, the last price paid
+// and a search for buying more.
+function reorderMax(){ return Math.max(1, parseInt($('reorderMax').value, 10) || 200); }
+try{ const v = localStorage.getItem('f2b.reorderMax'); if(v) $('reorderMax').value = v; }catch(e){}
+async function reorderRender(){
+  const max = reorderMax();
+  try{ localStorage.setItem('f2b.reorderMax', String(max)); }catch(e){}
+  const groups = new Map();
+  for(const s of await inventoryList()){
+    if(s.remaining == null || s.remaining >= max) continue;
+    const key = comboNorm([s.brand, s.material, s.subtype, s.color_name].join('|'));
+    const g = groups.get(key) || {spools: [], left: 0, first: s};
+    g.spools.push(s); g.left += s.remaining;
+    groups.set(key, g);
+  }
+  const list = [...groups.values()].sort((a, b) => a.left - b.left);
+  $('reorderCount').textContent = list.length ? '(' + list.length + ')' : '';
+  const box = $('reorderList'); box.innerHTML = '';
+  if(!list.length){ const d = document.createElement('div'); d.className = 'hint'; d.textContent = t('inv.reorder_none', {max}); box.appendChild(d); return; }
+  for(const g of list){
+    const s = g.first, row = document.createElement('div'); row.className = 'reo';
+    const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = spoolHex(s) || 'transparent'; row.appendChild(sw);
+    const main = document.createElement('div'); main.className = 'reo-main';
+    const title = document.createElement('div'); title.className = 'reo-title'; title.textContent = spoolTitle(s); main.appendChild(title);
+    const priced = g.spools.filter(x => x.cost_per_kg && x.label_weight).sort((a, b) => b.id - a.id)[0];
+    const sub = [t('inv.reorder_row', {n: g.spools.length, g: g.left})];
+    if(priced) sub.push(t('inv.last_price', {price: (priced.cost_per_kg * priced.label_weight / 1000).toLocaleString(I18N_LANG, {minimumFractionDigits: 2, maximumFractionDigits: 2})}));
+    const subEl = document.createElement('div'); subEl.className = 'reo-sub'; subEl.textContent = sub.join(', '); main.appendChild(subEl);
+    for(const x of g.spools){
+      const a = document.createElement('a'); a.href = '#'; a.className = 'chip'; a.textContent = '#' + x.id + ' ' + x.remaining + ' g';
+      a.onclick = e => { e.preventDefault(); openSpool(x.id); };
+      main.appendChild(a);
+    }
+    row.appendChild(main);
+    const buy = document.createElement('a'); buy.className = 'reo-buy'; buy.target = '_blank'; buy.rel = 'noopener';
+    buy.href = 'https://www.google.com/search?q=' + encodeURIComponent([s.brand, s.material, s.subtype, s.color_name].filter(Boolean).join(' '));
+    buy.textContent = t('inv.buy');
+    row.appendChild(buy);
+    box.appendChild(row);
+  }
+}
+$('reorderBox').addEventListener('toggle', () => { if($('reorderBox').open) reorderRender(); });
+$('reorderMax').addEventListener('change', reorderRender);
+
+// The spools of the kind on the form already in stock, so a box is not
+// bought or added twice by mistake.
+let dupTimer = null;
+function dupSoon(){ clearTimeout(dupTimer); dupTimer = setTimeout(showDuplicates, 350); }
+async function showDuplicates(){
+  const line = $('dupLine');
+  const brand = comboNorm($('brand').value.trim()), mat = materialKey($('material').value);
+  const color = comboNorm($('color_name').value.trim()), hex = $('color_picker').value;
+  if(!brand || !mat || $('form').classList.contains('hidden')){ line.classList.add('hidden'); return; }
+  const same = (await inventoryList()).filter(s => comboNorm(s.brand) === brand && materialKey(s.material) === mat
+    && (color ? comboNorm(s.color_name) === color : (rgbDistance(spoolHex(s), hex) ?? 999) <= 48));
+  line.innerHTML = '';
+  line.classList.toggle('hidden', !same.length);
+  if(!same.length) return;
+  line.appendChild(document.createTextNode(t('inv.dup', {n: same.length}) + ' '));
+  for(const s of same.slice(0, 6)){
+    const a = document.createElement('a'); a.href = '#';
+    a.textContent = '#' + s.id + (s.storage_location ? ' (' + s.storage_location + ')' : '') + (s.remaining != null ? ' ' + s.remaining + ' g' : '');
+    a.onclick = e => { e.preventDefault(); openSpool(s.id); };
+    line.appendChild(a);
+  }
+}
+['brand', 'material', 'color_name'].forEach(id => $(id).addEventListener('change', dupSoon));
+$('color_picker').addEventListener('change', dupSoon);
 
 // ── An existing spool's record, opened from the QR code on its label ──
 // BamBuddy's labels (and the page's own) carry <bambuddy>/inventory?spool=<id>;
@@ -1758,11 +1938,21 @@ $('spSave').onclick = async () => {
   try{
     const d = await (await fetch('/api/spool/' + spoolRec.id, {method: 'PATCH',
       headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})).json();
-    if(d.ok){ toast(t('spool.saved') + ' ✓'); openSpool(spoolRec.id); }
+    if(d.ok){ toast(t('spool.saved') + ' ✓'); invForget(); openSpool(spoolRec.id); }
     else if(d.tag_error === 'tag_taken') toast(t('spool.tag_taken'), false);
     else toast(t('spool.save_failed') + (d.error ? ': ' + d.error : (d.errors && d.errors.length ? ': ' + d.errors[0] : (d.tag_error ? ': ' + d.tag_error : ''))), false);
   }catch(e){ toast(t('spool.save_failed'), false); }
   finally{ $('spSave').disabled = false; }
+};
+$('spEmpty').onclick = async () => {
+  if(!spoolRec) return;
+  const id = spoolRec.id;
+  if(!confirm(t('spool.empty_confirm', {id}))) return;
+  try{
+    const d = await (await fetch('/api/spool/' + id + '/archive', {method: 'POST'})).json();
+    if(d.ok){ toast(t('spool.emptied', {id}) + ' ✓'); invForget(); closeSpool(); }
+    else toast(t('spool.save_failed') + (d.error ? ': ' + d.error : ''), false);
+  }catch(e){ toast(t('spool.save_failed'), false); }
 };
 // The page opened as /?spool=12 shows that spool.
 (function(){
@@ -1940,64 +2130,94 @@ function labelOffer(ids){
       $('labelChips').appendChild(a);
     }
   }
-  $('labelSpool').value = ids[0];
+  // All of them at once: the preview shows the first, Print prints each.
+  $('labelSpool').value = ids.join(', ');
   labelPreview();
 }
 
+// The spools to label: "12", "12, 15", "20-24" or "#12 #15"; at most 60.
+let labelBatch = [];
+function labelIds(){
+  const out = [];
+  for(const part of String($('labelSpool').value).split(/[\s,;]+/)){
+    const m = part.match(/^#?(\d+)(?:-#?(\d+))?$/);
+    if(!m) continue;
+    const a = parseInt(m[1], 10), b = m[2] ? parseInt(m[2], 10) : a;
+    for(let i = Math.min(a, b); i <= Math.max(a, b) && out.length < 60; i++) if(i > 0 && !out.includes(i)) out.push(i);
+  }
+  return out;
+}
+// One spool's label, drawn and turned into the printer's dots: {raster, png}
+// or {error}. The canvas shows it as it is built.
+async function labelBuild(id){
+  if(labelCfg.template === LABEL_OWN){
+    const d = await (await fetch('/api/spool/' + id)).json().catch(() => ({}));
+    if(!d.ok){
+      let msg = t('label.err_' + (d.error || 'failed'), {id});
+      if(msg.startsWith('label.')) msg = t('label.err_failed');
+      return {error: msg};
+    }
+    const cv = await labelDrawOwn(d.spool, d.qr, labelCfg.fields);
+    const png = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+    return {raster: labelRaster(cv, id), png};
+  }
+  const r = await fetch('/api/label', {method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({spool_id: id, template: labelCfg.template, fields: labelCfg.fields})});
+  if(!r.ok || !(r.headers.get('Content-Type') || '').startsWith('image/png')){
+    let err = 'failed';
+    try{ err = (await r.json()).error || err; }catch(e){}
+    let msg = t('label.err_' + err, {id});
+    if(msg.startsWith('label.')) msg = t('label.err_failed') + ' (' + err + ')';
+    return {error: msg};
+  }
+  const blob = await r.blob();
+  return {raster: labelRaster(await labelImage(blob), id), png: blob};
+}
 async function labelPreview(){
-  const id = parseInt($('labelSpool').value);
-  if(!(id > 0)){ labelHint(t('label.need_id'), true); $('labelSpool').focus(); return; }
+  const ids = labelIds();
+  if(!ids.length){ labelHint(t('label.need_id'), true); $('labelSpool').focus(); return; }
   const seq = ++labelSeq;
   labelHint(t('label.loading'));
   $('labelPreviewBtn').disabled = true;
   try{
-    if(labelCfg.template === LABEL_OWN){
-      const r = await fetch('/api/spool/'+id);
-      const d = await r.json().catch(() => ({}));
-      if(seq !== labelSeq) return;
-      if(!d.ok){
-        labelJob = null; $('labelBox').classList.add('hidden');
-        let msg = t('label.err_'+(d.error||'failed'), {id});
-        if(msg.startsWith('label.')) msg = t('label.err_failed');
-        labelHint(msg, true);
-        return;
-      }
-      const cv = await labelDrawOwn(d.spool, d.qr, labelCfg.fields);
-      if(seq !== labelSeq) return;
-      labelPng = await new Promise(ok => cv.toBlob(ok, 'image/png'));
-      labelJob = labelRaster(cv, id);
-      $('labelBox').classList.remove('hidden');
-      $('labelPrintBtn').disabled = false;
-      labelHint(navigator.bluetooth ? t('label.ready', {id}) : t('label.no_bt'));
-      return;
-    }
-    const r = await fetch('/api/label', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({spool_id:id, template:labelCfg.template, fields:labelCfg.fields})});
+    const b = await labelBuild(ids[0]);
     if(seq !== labelSeq) return;
-    if(!r.ok || !(r.headers.get('Content-Type')||'').startsWith('image/png')){
-      let err = 'failed';
-      try{ err = (await r.json()).error || err; }catch(e){}
-      labelJob = null; $('labelBox').classList.add('hidden');
-      let msg = t('label.err_'+err, {id});
-      if(msg.startsWith('label.')) msg = t('label.err_failed')+' ('+err+')';
-      labelHint(msg, true);
-      return;
-    }
-    const blob = await r.blob();
-    const img = await labelImage(blob);
-    if(seq !== labelSeq) return;
-    labelPng = blob;
-    labelJob = labelRaster(img, id);
+    if(b.error){ labelJob = null; labelBatch = []; $('labelBox').classList.add('hidden'); labelHint(b.error, true); return; }
+    labelPng = b.png; labelJob = b.raster; labelBatch = ids;
     $('labelBox').classList.remove('hidden');
     $('labelPrintBtn').disabled = !labelJob.fits;
     if(!labelJob.fits){
-      const [w,h] = LABEL_SIZES[labelCfg.template];
-      labelHint(t('label.too_big', {tpl:w+' × '+h, w:labelCfg.w, l:labelCfg.l}), true);
-    }else labelHint(navigator.bluetooth ? t('label.ready', {id}) : t('label.no_bt'));
+      const [w, h] = LABEL_SIZES[labelCfg.template];
+      labelHint(t('label.too_big', {tpl: w + ' × ' + h, w: labelCfg.w, l: labelCfg.l}), true);
+    }else if(ids.length > 1) labelHint(t('label.batch_ready', {n: ids.length, id: ids[0]}));
+    else labelHint(navigator.bluetooth ? t('label.ready', {id: ids[0]}) : t('label.no_bt'));
   }catch(e){
     if(seq === labelSeq) labelHint(t('label.err_failed'), true);
   }finally{ if(seq === labelSeq) $('labelPreviewBtn').disabled = false; }
 }
+
+// Labels for a whole storage location, or for every spool added today.
+makeCombo('labelLoc', {
+  source: async q => {
+    const counts = new Map();
+    for(const s of await inventoryList()) if(s.storage_location) counts.set(s.storage_location, (counts.get(s.storage_location) || 0) + 1);
+    const names = comboMatch([...counts.keys()].sort((a, b) => a.localeCompare(b)), q);
+    return names.map(n => ({value: n, label: n + '  (' + counts.get(n) + ')'}));
+  },
+  onPick: async it => {
+    $('labelLoc').value = ''; $('labelLoc').blur();
+    const ids = (await inventoryList()).filter(s => s.storage_location === it.value).map(s => s.id).sort((a, b) => a - b);
+    $('labelSpool').value = ids.join(', ');
+    labelJob = null; labelPreview();
+  },
+});
+$('labelToday').onclick = async () => {
+  const d = new Date(), today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const ids = (await inventoryList(true)).filter(s => s.added === today).map(s => s.id).sort((a, b) => a - b);
+  if(!ids.length){ labelHint(t('label.none_today')); return; }
+  $('labelSpool').value = ids.join(', ');
+  labelJob = null; labelPreview();
+};
 
 // ── The own layout ──
 // The whole roll at 8 dots a millimetre: the maker on top, the material white
@@ -2130,7 +2350,8 @@ function labelRaster(img, id){
 
 async function labelPrint(){
   if(!labelJob || !labelJob.fits) return;
-  const job = labelJob.job;
+  const ids = labelBatch.length ? labelBatch : [labelJob.id];
+  const many = ids.length > 1;
   $('labelPrintBtn').disabled = true;
   let device = labelPrinter;
   try{
@@ -2142,18 +2363,36 @@ async function labelPrint(){
     const ch = await (await server.getPrimaryService(0xff00)).getCharacteristic(0xff02);
     labelPrinter = device;
     const write = ch.writeValueWithoutResponse ? b => ch.writeValueWithoutResponse(b) : b => ch.writeValue(b);
-    let n = 0, shown = -1;
-    for(let pos = 0; pos < job.length; pos += BT_CHUNK, n++){
-      await write(job.subarray(pos, pos + BT_CHUNK));
-      if(n % BT_PAUSE_EVERY === BT_PAUSE_EVERY - 1) await sleep(BT_PAUSE_MS);
-      const pct = Math.floor(100 * pos / job.length / 10) * 10;
-      if(pct !== shown){ shown = pct; labelHint(t('label.sending', {pct})); }
+    let printed = 0;
+    const skipped = [];
+    for(let i = 0; i < ids.length; i++){
+      let r = labelJob;
+      if(i > 0){
+        labelHint(t('label.preparing', {i: i + 1, n: ids.length}));
+        const b = await labelBuild(ids[i]);
+        if(b.error || !b.raster.fits){ skipped.push('#' + ids[i]); continue; }
+        r = b.raster;
+      }
+      const job = r.job;
+      let n = 0, shown = -1;
+      for(let pos = 0; pos < job.length; pos += BT_CHUNK, n++){
+        await write(job.subarray(pos, pos + BT_CHUNK));
+        if(n % BT_PAUSE_EVERY === BT_PAUSE_EVERY - 1) await sleep(BT_PAUSE_MS);
+        const pct = Math.floor(100 * pos / job.length / 10) * 10;
+        if(pct !== shown){
+          shown = pct;
+          labelHint(many ? t('label.sending_n', {i: i + 1, n: ids.length, pct}) : t('label.sending', {pct}));
+        }
+      }
+      // The printer prints from its buffer; the next label waits for it.
+      labelHint(t('label.printing'));
+      await sleep(BT_HOLD_MS);
+      printed++;
     }
-    // The printer prints from its buffer; the link stays until it is through.
-    labelHint(t('label.printing'));
-    await sleep(BT_HOLD_MS);
-    labelHint(t('label.printed', {id:labelJob.id}));
-    toast(t('label.printed', {id:labelJob.id}));
+    const done = many ? t('label.printed_n', {n: printed}) + (skipped.length ? t('label.skipped', {ids: skipped.join(', ')}) : '')
+                      : t('label.printed', {id: labelJob.id});
+    labelHint(done, skipped.length > 0);
+    toast(done, skipped.length ? false : true);
   }catch(e){
     // A closed chooser is no error; anything else forgets the printer, so
     // the next tap offers the choice again.
@@ -2217,6 +2456,7 @@ $('form').onsubmit = async (e) => {
       else toast(tn('submit.added', d.created)+' ✓');
       $('form').classList.add('hidden'); $('manual').value=''; currentBarcode=null;
       $('tag_uid').value=''; nfcStop(); showSpoolman(null);
+      invForget();
       labelOffer(d.spool_ids); }
     else { toast(t('submit.failed')+(d.error?': '+d.error:(d.errors&&d.errors.length?': '+d.errors[0]:'')), false); }
   }catch(e){ toast(t('submit.request_failed'), false); }
