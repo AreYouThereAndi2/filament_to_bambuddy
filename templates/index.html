@@ -202,6 +202,21 @@
   #labelCanvas{width:100%;display:block;background:#fff;border-radius:6px;
     image-rendering:pixelated;image-rendering:crisp-edges;
     box-shadow:0 0 0 1px var(--line),0 6px 18px rgba(0,0,0,.25)}
+  /* The own label's layout: one row a line, in print order. */
+  .lay-demo{position:sticky;top:6px;z-index:2;background:var(--surface);padding:6px 0 8px}
+  .lay-demo canvas{width:100%;display:block;background:#fff;border-radius:6px;border:1px solid var(--line);image-rendering:pixelated}
+  .lay-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .lay-ctl{display:flex;gap:6px;margin-left:auto;flex:0 0 auto}
+  .lay-row.off .lay-name{color:var(--muted)}
+  .lay-row input[type=checkbox]{width:22px;height:22px;margin:0;flex:0 0 auto;accent-color:var(--brand)}
+  .lay-name{flex:1 1 110px;min-width:0;font-size:14px;line-height:1.2}
+  .lay-row select{padding-right:4px}
+  .lay-row select{width:auto;flex:0 0 auto;padding:6px 8px;min-height:36px;font-size:13px}
+  .lay-tog{flex:0 0 auto;width:34px;height:36px;padding:0;border-radius:9px;border:1px solid var(--line);
+    background:var(--field);color:var(--text);font:700 13px var(--display)}
+  .lay-tog[aria-pressed=true]{background:var(--text);color:var(--surface);border-color:var(--text)}
+  .lay-row .icon-btn{width:34px;height:36px;border-radius:9px}
+  .lay-row .icon-btn:disabled{opacity:.3}
   .fieldgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}
   .fieldgrid label{display:flex;gap:8px;align-items:center;margin:5px 0;color:var(--text);
     font:500 14px/1.2 var(--body)}
@@ -287,6 +302,8 @@
   <symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
   <symbol id="i-open" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></symbol>
   <symbol id="i-nfc" viewBox="0 0 24 24"><path d="M6 8.5a5 5 0 0 1 0 7M9.5 6a8.5 8.5 0 0 1 0 12M13 3.5a12 12 0 0 1 0 17"/><rect x="15" y="7" width="6" height="10" rx="1.5"/></symbol>
@@ -610,8 +627,22 @@
         <div><label for="labelW">{{ t('label.media_w') }}</label><input id="labelW" inputmode="numeric"></div>
         <div><label for="labelL">{{ t('label.media_l') }}</label><input id="labelL" inputmode="numeric"></div>
       </div>
-      <label>{{ t('label.lines') }}</label>
-      <div id="labelFields" class="fieldgrid"></div>
+      <div id="labelOwnBox">
+        <label>{{ t('label.layout') }}</label>
+        <div class="hint" style="margin-top:0">{{ t('label.layout_hint') }}</div>
+        <div class="lay-demo"><canvas id="labelDemo" width="400" height="240"></canvas></div>
+        <div id="labelLayout"></div>
+        <div class="row">
+          <div><label for="labelQrPos">{{ t('label.qr_pos') }}</label><select id="labelQrPos"></select></div>
+          <div><label for="labelQrSize">{{ t('label.qr_size') }}</label><select id="labelQrSize"></select></div>
+        </div>
+        <label for="labelFlow">{{ t('label.flow') }}</label><select id="labelFlow"></select>
+        <button id="labelReset" type="button" class="btn-quiet" style="margin-top:8px">{{ t('label.reset') }}</button>
+      </div>
+      <div id="labelFieldsBox">
+        <label>{{ t('label.lines') }}</label>
+        <div id="labelFields" class="fieldgrid"></div>
+      </div>
     </details>
     <button id="labelPreviewBtn" type="button" class="btn-secondary" style="margin-top:14px">{{ t('label.preview') }}</button>
     <div id="labelBox" class="hidden" style="margin-top:14px">
@@ -2263,6 +2294,40 @@ const labelCfg = Object.assign({template:LABEL_OWN, w:50, l:30, fields:LABEL_DEF
 // on that size: a choice from back then moves to the own layout once.
 if(!labelCfg.v2){ if(labelCfg.template === 'box_40x30') labelCfg.template = LABEL_OWN; labelCfg.v2 = 1; }
 if(labelCfg.template !== LABEL_OWN && !LABEL_SIZES[labelCfg.template]) labelCfg.template = LABEL_OWN;
+// The own layout as the user arranged it: the lines in print order, each
+// shown or not, in a size, bold, or white on a black band; the QR code's
+// side and size; and how the lines share the height.
+const LABEL_SIZE_DOTS = {xs: 14, s: 18, m: 22, l: 28, xl: 34};
+const LABEL_LAYOUT_DEFAULT = [
+  {f: 'brand', on: true, size: 'l', bold: true, inv: false},
+  {f: 'material', on: true, size: 'm', bold: true, inv: true},
+  {f: 'name', on: true, size: 'm', bold: false, inv: false},
+  {f: 'hex', on: true, size: 's', bold: false, inv: false},
+  {f: 'location', on: true, size: 's', bold: false, inv: false},
+  {f: 'temps', on: false, size: 's', bold: false, inv: false},
+  {f: 'weight', on: false, size: 's', bold: false, inv: false},
+  {f: 'material_number', on: false, size: 's', bold: false, inv: false},
+  {f: 'profile', on: false, size: 's', bold: false, inv: false},
+  {f: 'note', on: false, size: 's', bold: false, inv: false},
+  {f: 'added', on: false, size: 's', bold: false, inv: false},
+  {f: 'spool_id', on: true, size: 'xl', bold: true, inv: false},
+];
+function labelLayoutDefault(fields){
+  return LABEL_LAYOUT_DEFAULT.map(it => Object.assign({}, it, fields ? {on: it.f === 'profile' ? false : fields.includes(it.f)} : {}));
+}
+if(!Array.isArray(labelCfg.layout)){
+  // Set up before the layout could be arranged: the lines ticked then.
+  labelCfg.layout = labelLayoutDefault(labelCfg.fields);
+  labelCfg.qr = {pos: labelCfg.fields.includes('qr') ? 'right' : 'off', size: 'm'};
+  labelCfg.flow = 'last_bottom';
+}
+// A line added in a later version shows up, switched off, before the number.
+for(const it of LABEL_LAYOUT_DEFAULT) if(!labelCfg.layout.some(x => x.f === it.f))
+  labelCfg.layout.splice(Math.max(0, labelCfg.layout.length - 1), 0, Object.assign({}, it, {on: false}));
+labelCfg.layout = labelCfg.layout.filter(x => LABEL_SIZE_DOTS[x.size] && LABEL_LAYOUT_DEFAULT.some(d => d.f === x.f));
+labelCfg.qr = Object.assign({pos: 'right', size: 'm'}, labelCfg.qr || {});
+if(!['top', 'spread', 'last_bottom'].includes(labelCfg.flow)) labelCfg.flow = 'last_bottom';
+let labelLast = null, labelDemoSeq = 0;   // the spool previewed last, for the layout editor
 let labelJob = null;      // the previewed label as the printer takes it
 let labelPng = null;      // Bambuddy's image, for sharing
 let labelPrinter = null;  // the printer picked in this session
@@ -2290,13 +2355,15 @@ function labelSave(){ lsSet('f2b.label', labelCfg); }
     l.appendChild(c); l.appendChild(document.createTextNode(t('label.f_'+f)));
     $('labelFields').appendChild(l);
   }
-  $('labelTpl').onchange = () => { labelCfg.template = $('labelTpl').value; labelSave(); labelRefresh(); };
+  $('labelTpl').onchange = () => { labelCfg.template = $('labelTpl').value; labelSave(); labelTplShow(); labelRefresh(); };
+  labelLayoutInit();
+  labelTplShow();
   for(const id of ['labelW','labelL']) $(id).onchange = () => {
     const w = parseInt($('labelW').value), l = parseInt($('labelL').value);
     if(w >= 10 && w <= 120) labelCfg.w = w;
     if(l >= 10 && l <= 200) labelCfg.l = l;
     $('labelW').value = labelCfg.w; $('labelL').value = labelCfg.l;
-    labelSave(); labelRefresh();
+    labelSave(); labelDemoDraw(); labelRefresh();
   };
   $('labelSpool').oninput = () => { labelJob = null; $('labelBox').classList.add('hidden'); labelHint(''); };
   $('labelSpool').onkeydown = (e) => { if(e.key === 'Enter'){ e.preventDefault(); labelPreview(); } };
@@ -2350,7 +2417,9 @@ async function labelBuild(id){
       if(msg.startsWith('label.')) msg = t('label.err_failed');
       return {error: msg};
     }
-    const cv = await labelDrawOwn(d.spool, d.qr, labelCfg.fields);
+    labelLast = {sp: d.spool, qr: d.qr};
+    labelDemoDraw();
+    const cv = await labelDrawOwn(d.spool, d.qr);
     const png = await new Promise(ok => cv.toBlob(ok, 'image/png'));
     return {raster: labelRaster(cv, id), png};
   }
@@ -2428,27 +2497,30 @@ function labelFit(g, text, maxW){
   while(lo < hi){ const mid = (lo + hi + 1) >> 1; if(g.measureText(text.slice(0, mid)+'…').width <= maxW) lo = mid; else hi = mid - 1; }
   return text.slice(0, lo)+'…';
 }
-function labelLines(sp, fields){
-  const has = f => fields.includes(f);
-  const out = [];
-  const nameBits = [];
-  if(has('name') && sp.color_name) nameBits.push(sp.color_name);
-  if(has('hex') && sp.rgba) nameBits.push('#'+String(sp.rgba).slice(0, 6).toUpperCase());
-  if(nameBits.length) out.push(nameBits.join('  '));
-  if(has('location') && sp.storage_location) out.push(t('label.l_location')+' '+sp.storage_location);
-  if(has('temps') && (sp.nozzle_temp_min || sp.nozzle_temp_max)){
-    const lo = sp.nozzle_temp_min, hi = sp.nozzle_temp_max;
-    out.push(t('label.l_nozzle')+' '+(lo && hi && lo !== hi ? lo+'–'+hi : (lo || hi))+' °C');
+// One line's text on the label, '' when the spool has none.
+function labelText(sp, f){
+  switch(f){
+    case 'brand': return sp.brand || '';
+    case 'material': return [sp.material, sp.subtype].filter(Boolean).join(' ');
+    case 'name': return sp.color_name || '';
+    case 'hex': return sp.rgba ? '#' + String(sp.rgba).slice(0, 6).toUpperCase() : '';
+    case 'location': return sp.storage_location ? t('label.l_location') + ' ' + sp.storage_location : '';
+    case 'temps': {
+      const lo = sp.nozzle_temp_min, hi = sp.nozzle_temp_max;
+      return lo || hi ? t('label.l_nozzle') + ' ' + (lo && hi && lo !== hi ? lo + '–' + hi : (lo || hi)) + ' °C' : '';
+    }
+    case 'weight': return sp.label_weight ? sp.label_weight + ' g' : '';
+    case 'material_number': return sp.material_number || '';
+    case 'profile': return String(sp.slicer_filament_name || '').split('@')[0].trim();
+    case 'note': return String(sp.note || '').split('\n').map(x => x.trim()).filter(Boolean).slice(0, 2).join(' · ');
+    case 'added': return sp.added ? t('label.l_added') + ' ' + sp.added : '';
+    case 'spool_id': return sp.id ? '#' + sp.id : '';
   }
-  if(has('weight') && sp.label_weight) out.push(sp.label_weight+' g');
-  if(has('material_number') && sp.material_number) out.push(sp.material_number);
-  if(has('note') && sp.note) for(const line of String(sp.note).split('\n').slice(0, 2)) if(line.trim()) out.push(line.trim());
-  if(has('added') && sp.added) out.push(t('label.l_added')+' '+sp.added);
-  return out;
+  return '';
 }
-async function labelDrawOwn(sp, qrUrl, fields){
+async function labelDrawOwn(sp, qrUrl, cfg = labelCfg){
   await labelFonts();
-  const W = labelCfg.w * DOTS_PER_MM, H = labelCfg.l * DOTS_PER_MM, M = 8, GAP = 6;
+  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM, M = 8, GAP = 6;
   // A roll wider than the head loses its edges: the sides keep their margin
   // inside what is printed.
   const MX = M + Math.max(0, Math.ceil((W - TSPL_HEAD_DOTS) / 2));
@@ -2457,44 +2529,131 @@ async function labelDrawOwn(sp, qrUrl, fields){
   g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = '#000'; g.textBaseline = 'top';
   // The QR code: whole dots per module, 3 at least, a 2 module quiet zone.
   let qrW = 0;
-  if(fields.includes('qr') && qrUrl){
+  const qrLeft = cfg.qr.pos === 'left';
+  if(cfg.qr.pos !== 'off' && qrUrl){
     try{
       if(!window.qrcode) await loadScript(QR_LIB);
       const q = qrcode(0, 'M'); q.addData(qrUrl); q.make();
-      const n = q.getModuleCount(), box = Math.min(H - 2*M, Math.floor((W - 2*MX) * 0.42));
+      const share = {s: 0.3, m: 0.42, l: 0.55}[cfg.qr.size] || 0.42;
+      const n = q.getModuleCount(), box = Math.min(H - 2*M, Math.floor((W - 2*MX) * share));
       const px = Math.max(3, Math.floor(box / (n + 4)));
       qrW = (n + 4) * px;
-      const x0 = W - MX - qrW, y0 = Math.floor((H - qrW) / 2);
+      const x0 = qrLeft ? MX : W - MX - qrW, y0 = Math.floor((H - qrW) / 2);
       g.fillStyle = '#fff'; g.fillRect(x0, y0, qrW, qrW); g.fillStyle = '#000';
       for(let r = 0; r < n; r++) for(let c = 0; c < n; c++)
         if(q.isDark(r, c)) g.fillRect(x0 + (c + 2)*px, y0 + (r + 2)*px, px, px);
     }catch(e){ qrW = 0; }
   }
+  const TX = qrLeft && qrW ? MX + qrW + GAP : MX;
   const TW = W - 2*MX - (qrW ? qrW + GAP : 0);
+  const rows = cfg.layout.filter(it => it.on).map(it => Object.assign({text: labelText(sp, it.f)}, it)).filter(r => r.text);
+  // Each line in its size; when they do not fit the height, all smaller
+  // alike, down to 12 dots.
+  const pad = r => r.inv ? 8 : 3;
+  let sizes = rows.map(r => LABEL_SIZE_DOTS[r.size]);
+  const room = H - 2*M, need = () => sizes.reduce((a, z, i) => a + z + pad(rows[i]), 0);
+  if(need() > room){
+    const k = room / need();
+    sizes = sizes.map(z => Math.max(12, Math.floor(z * k)));
+  }
+  const heights = sizes.map((z, i) => z + pad(rows[i]));
+  const total = heights.reduce((a, h) => a + h, 0), spare = Math.max(0, room - total);
   let y = M;
-  if(fields.includes('brand') && sp.brand){
-    g.font = '700 30px '+LABEL_FONT; g.fillText(labelFit(g, sp.brand, TW), MX, y); y += 32;
-  }
-  if(fields.includes('material') && sp.material){
-    const band = 30;
-    g.fillRect(MX, y, TW, band); g.fillStyle = '#fff';
-    g.font = '700 24px '+LABEL_FONT;
-    g.fillText(labelFit(g, [sp.material, sp.subtype].filter(Boolean).join(' '), TW - 12), MX + 6, y + 3);
-    g.fillStyle = '#000'; y += band + 4;
-  }
-  const idH = fields.includes('spool_id') ? 34 : 0;
-  const lines = labelLines(sp, fields);
-  const room = H - M - idH - y;
-  // The largest size from 22 down to 14 dots in which every line fits.
-  let size = 22;
-  while(size > 14 && lines.length * (size + 3) > room) size--;
-  g.font = '600 '+size+'px '+LABEL_FONT;
-  for(const line of lines){
-    if(y + size > H - M - idH) break;
-    g.fillText(labelFit(g, line, TW), MX, y); y += size + 3;
-  }
-  if(idH){ g.font = '700 32px '+LABEL_FONT; g.fillText('#'+sp.id, MX, H - M - 32); }
+  rows.forEach((r, i) => {
+    if(cfg.flow === 'last_bottom' && i === rows.length - 1 && rows.length > 1) y = Math.max(y, H - M - heights[i]);
+    if(y + sizes[i] > H - M + 1) return;
+    g.font = (r.bold ? '700 ' : '600 ') + sizes[i] + 'px ' + LABEL_FONT;
+    if(r.inv){
+      g.fillRect(TX, y, TW, heights[i] - 2); g.fillStyle = '#fff';
+      g.fillText(labelFit(g, r.text, TW - 12), TX + 6, y + 3);
+      g.fillStyle = '#000';
+    }else g.fillText(labelFit(g, r.text, TW), TX, y + 1);
+    y += heights[i] + (cfg.flow === 'spread' && rows.length > 1 ? spare / (rows.length - 1) : 0);
+  });
   return cv;
+}
+
+// ── The layout editor ──
+// Every change shows at once on a label above the rows: the spool previewed
+// last, or a made-up one.
+function labelSample(){
+  const d = new Date();
+  return {sp: {id: 123, brand: 'eSUN', material: 'PLA+', subtype: 'Matte', color_name: 'Fire Engine Red', rgba: 'D02020FF',
+               storage_location: 'A2', nozzle_temp_min: 205, nozzle_temp_max: 225, label_weight: 1000,
+               material_number: 'PLA+1KG175RD', slicer_filament_name: 'eSUN PLA+ @BBL X1C', note: '',
+               added: d.toISOString().slice(0, 10)},
+          qr: location.origin + '/?spool=123'};
+}
+async function labelDemoDraw(){
+  const my = ++labelDemoSeq, src = labelLast || labelSample();
+  const cv = await labelDrawOwn(src.sp, src.qr);
+  if(my !== labelDemoSeq) return;
+  const out = $('labelDemo'); out.width = cv.width; out.height = cv.height;
+  out.getContext('2d').drawImage(cv, 0, 0);
+}
+function labelTplShow(){
+  const own = labelCfg.template === LABEL_OWN;
+  $('labelOwnBox').classList.toggle('hidden', !own);
+  $('labelFieldsBox').classList.toggle('hidden', own);
+  // After the page's script has run: the label's fonts and QR are set up by then.
+  if(own) setTimeout(labelDemoDraw);
+}
+function labelLayoutChanged(){
+  // Bambuddy's templates take the same lines, ticked or not.
+  labelCfg.fields = labelCfg.layout.filter(x => x.on && LABEL_FIELDS.includes(x.f)).map(x => x.f)
+    .concat(labelCfg.qr.pos !== 'off' ? ['qr'] : []);
+  document.querySelectorAll('#labelFields input').forEach(c => { c.checked = labelCfg.fields.includes(c.value); });
+  labelSave(); labelLayoutDraw(); labelDemoDraw(); labelRefresh();
+}
+function labelLayoutDraw(){
+  const box = $('labelLayout'); box.innerHTML = '';
+  labelCfg.layout.forEach((it, i) => {
+    const row = document.createElement('div');
+    row.className = 'lay-row' + (it.on ? '' : ' off');
+    const on = document.createElement('input');
+    on.type = 'checkbox'; on.checked = it.on; on.setAttribute('aria-label', t('label.f_' + it.f));
+    on.onchange = () => { it.on = on.checked; labelLayoutChanged(); };
+    const name = document.createElement('span'); name.className = 'lay-name'; name.textContent = t('label.f_' + it.f);
+    name.onclick = () => on.click();
+    const size = document.createElement('select'); size.setAttribute('aria-label', t('label.size'));
+    for(const k of Object.keys(LABEL_SIZE_DOTS)){ const o = document.createElement('option'); o.value = k; o.textContent = k.toUpperCase(); size.appendChild(o); }
+    size.value = it.size;
+    size.onchange = () => { it.size = size.value; labelLayoutChanged(); };
+    const tog = (key, text, label) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'lay-tog'; b.textContent = text;
+      b.setAttribute('aria-pressed', String(!!it[key])); b.setAttribute('aria-label', label); b.title = label;
+      b.onclick = () => { it[key] = !it[key]; labelLayoutChanged(); };
+      return b;
+    };
+    const move = (d, icon, label) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'icon-btn';
+      b.setAttribute('aria-label', label); b.disabled = i + d < 0 || i + d >= labelCfg.layout.length;
+      b.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#' + icon + '"/></svg>';
+      b.onclick = () => { const L = labelCfg.layout; [L[i], L[i + d]] = [L[i + d], L[i]]; labelLayoutChanged(); };
+      return b;
+    };
+    const ctl = document.createElement('div'); ctl.className = 'lay-ctl';
+    ctl.append(size, tog('bold', 'B', t('label.bold')), tog('inv', '■', t('label.band')),
+               move(-1, 'i-up', t('label.up')), move(1, 'i-down', t('label.down')));
+    row.append(on, name, ctl);
+    box.appendChild(row);
+  });
+}
+function labelLayoutInit(){
+  const opts = (id, keys, value, onPick) => {
+    for(const k of keys){ const o = document.createElement('option'); o.value = k; o.textContent = t('label.' + id + '_' + k); $(id === 'qr' ? 'labelQrPos' : id === 'qrsize' ? 'labelQrSize' : 'labelFlow').appendChild(o); }
+  };
+  opts('qr', ['right', 'left', 'off']); opts('qrsize', ['s', 'm', 'l']); opts('flow', ['last_bottom', 'top', 'spread']);
+  $('labelQrPos').value = labelCfg.qr.pos; $('labelQrSize').value = labelCfg.qr.size; $('labelFlow').value = labelCfg.flow;
+  $('labelQrPos').onchange = () => { labelCfg.qr.pos = $('labelQrPos').value; labelLayoutChanged(); };
+  $('labelQrSize').onchange = () => { labelCfg.qr.size = $('labelQrSize').value; labelLayoutChanged(); };
+  $('labelFlow').onchange = () => { labelCfg.flow = $('labelFlow').value; labelLayoutChanged(); };
+  $('labelReset').onclick = () => {
+    labelCfg.layout = labelLayoutDefault(); labelCfg.qr = {pos: 'right', size: 'm'}; labelCfg.flow = 'last_bottom';
+    $('labelQrPos').value = 'right'; $('labelQrSize').value = 'm'; $('labelFlow').value = 'last_bottom';
+    labelLayoutChanged();
+  };
+  labelLayoutDraw();
 }
 
 function labelImage(blob){
