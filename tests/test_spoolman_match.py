@@ -117,6 +117,7 @@ class TestRoutes:
         assert d["source"] == "spoolman"
         assert d["spoolman"]["id"] == 12 and d["fields"]["spoolman_filament_id"] == 12
         assert d["fields"]["bed_temp_min"] == 55
+        assert d["fields"]["core_weight"] == 140 and d["fields"]["core_weight_from_filament"]
 
     def test_database_hit_linked_by_name(self, client):
         ext = ({"brand": "Polymaker", "material": "PLA", "color_name": "Charcoal Black",

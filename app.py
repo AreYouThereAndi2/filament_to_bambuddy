@@ -640,6 +640,10 @@ def _link_spoolman(fields: dict, title: str | None = None, code: str | None = No
         return fields, None
     out = spoolman_match.overlay(fields, f)
     out["spoolman_filament_id"] = f["id"]
+    # The empty spool's weight is the filament's own (or its maker's): a spool
+    # made on it inherits it, so the scale does not copy it onto the spool.
+    if out.get("core_weight") and out.get("core_weight") == spoolman_match.form_fields(f).get("core_weight"):
+        out["core_weight_from_filament"] = True
     return out, {"id": f["id"], "name": spoolman_match.title_of(f), "by": by}
 
 
