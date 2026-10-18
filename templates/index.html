@@ -469,6 +469,12 @@
 
     <div class="sec">
       <h3>{{ t('form.sec_print') }}</h3>
+      <!-- The slicer profile imported into Bambuddy, one per printer model. -->
+      <div id="profileBox" class="hidden">
+        <label for="profile">{{ t('profile.label') }}</label>
+        <div class="combo"><input id="profile" placeholder="{{ t('profile.placeholder') }}" spellcheck="false"><span class="combo-chev"></span><ul id="profile-list" class="combo-list" hidden></ul></div>
+        <div id="profileHint" class="hint"></div>
+      </div>
       <div class="row">
         <div><label for="nozzle_temp_min">{{ t('form.nozzle_min') }}</label><input id="nozzle_temp_min" inputmode="numeric"></div>
         <div><label for="nozzle_temp_max">{{ t('form.nozzle_max') }}</label><input id="nozzle_temp_max" inputmode="numeric"></div>
@@ -544,6 +550,11 @@
       <div id="spNfcHint" class="hint"></div>
       <label for="spNote">{{ t('form.note') }}</label>
       <textarea id="spNote" rows="2" placeholder="{{ t('form.optional_placeholder') }}"></textarea>
+      <div id="spProfileBox" class="hidden">
+        <label for="spProfile">{{ t('profile.label') }}</label>
+        <div class="combo"><input id="spProfile" placeholder="{{ t('profile.placeholder') }}" spellcheck="false"><span class="combo-chev"></span><ul id="spProfile-list" class="combo-list" hidden></ul></div>
+        <div id="spProfileHint" class="hint"></div>
+      </div>
     </div>
     <div class="two" style="margin-top:16px">
       <button id="spLabel" type="button" class="btn-secondary with-ico"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span>{{ t('spool.label') }}</span></button>
@@ -570,6 +581,13 @@
         <div class="hint" style="margin-bottom:12px">{{ t('inv.reorder_hint') }}</div>
       </div>
       <div id="reorderList"></div>
+    </details>
+    <details id="linkBox" class="bm hidden" style="margin-top:10px">
+      <summary style="font-weight:600;font-size:14px">{{ t('profile.link_title') }}</summary>
+      <div class="hint">{{ t('profile.link_hint') }}</div>
+      <button id="linkCheck" type="button" class="btn-secondary" style="margin-top:10px">{{ t('profile.link_check') }}</button>
+      <div id="linkList" class="hint"></div>
+      <button id="linkApply" type="button" class="btn-primary hidden" style="margin-top:10px"></button>
     </details>
   </section>
 
@@ -1250,6 +1268,9 @@ function applyFields(f){
   if(f.cost_per_kg!=null){ $('cost_per_kg').value = f.cost_per_kg; priceFromKg(); }
   if(f.note!=null) $('note').value = f.note;
   updateSpool();
+  // The profile the lookup found, else one picked from what the form says.
+  if(f.slicer_filament) formProfile.set(f.slicer_filament, false);
+  else profileSuggest();
 }
 
 // The filament in the user's Spoolman the spool will be made on, carrying
@@ -1341,6 +1362,7 @@ function fillForm(d){
   const f = d.fields || {};
   closeSpool();
   extraCodes = [];
+  formProfile.manual = false;
   $('form').classList.remove('hidden');
   const [text, cls] = badgeFor(d.source);
   $('srcBadge').className = 'badge '+cls;
@@ -1905,6 +1927,14 @@ async function openSpool(id){
   $('spTag').value = sp.tag_uid || '';
   $('spNote').value = sp.note || '';
   $('spNfcHint').textContent = '';
+  // A spool without a profile gets the one that fits as a suggestion,
+  // taken over with Save.
+  if(sp.slicer_filament) spProfile.set(sp.slicer_filament, false);
+  else{
+    spProfile.manual = false;
+    spProfile.suggest({brand: sp.brand || '', material: sp.material || '', subtype: sp.subtype || ''})
+      .then(() => { if(spProfile.pick) $('spProfileHint').textContent += '\n' + t('profile.suggested'); });
+  }
   $('spoolCard').classList.remove('hidden');
   $('spoolCard').scrollIntoView({behavior: 'smooth', block: 'start'});
 }
@@ -1933,6 +1963,7 @@ $('spSave').onclick = async () => {
   const left = spoolRemaining(spoolRec), typed = parseFloat(String($('spRemain').value).replace(',', '.'));
   if(left != null && isFinite(typed) && typed >= 0 && Math.round(typed) !== left)
     body.weight_used = Math.max(0, spoolRec.label_weight - typed);
+  if(spProfile.pick !== null && spProfile.pick !== String(spoolRec.slicer_filament || '')) body.slicer_filament = spProfile.pick;
   if(!Object.keys(body).length){ toast(t('spool.nothing'), 'info'); return; }
   $('spSave').disabled = true;
   try{
@@ -1988,6 +2019,168 @@ makeCombo('catalog', {
     fillForm({source: 'spoolman', barcode: currentBarcode || '', title: d.title, fields: d.fields, spoolman: d.spoolman});
   },
 });
+
+// ── Slicer profiles ──
+// The filament profiles imported into Bambuddy, offered as lines ("eSUN
+// PLA+"): a line has one profile per printer model (and nozzle), and the
+// server gives the spool the one of each model the user has. Picked by
+// itself from maker, material and line until the user picks one.
+let PRESETS = null;
+const PRESET_LINE = new Map();   // profile id -> its line
+let presetLines = [];
+async function presetsLoad(){
+  if(PRESETS) return PRESETS;
+  try{ PRESETS = await (await fetch('/api/presets')).json(); }
+  catch(e){ PRESETS = {items: [], models: [], error: 'unreachable'}; }
+  const byBase = new Map();
+  for(const p of PRESETS.items || []){
+    const k = (p.base || p.name).toLowerCase();
+    let line = byBase.get(k);
+    if(!line){ line = {id: p.id, base: p.base || p.name, vendor: p.vendor, type: p.type, models: new Set(), nozzles: new Set()}; byBase.set(k, line); }
+    p.models.forEach(m => line.models.add(m));
+    if(p.nozzle && p.nozzle !== '0.4') line.nozzles.add(p.nozzle);
+    PRESET_LINE.set(String(p.id), line);
+  }
+  presetLines = [...byBase.values()];
+  return PRESETS;
+}
+function presetById(id){ return (PRESETS && PRESETS.items || []).find(p => String(p.id) === String(id)); }
+function presetLineSub(line){
+  return [line.models.size ? [...line.models].join(' · ') : t('profile.all_printers'),
+          ...[...line.nozzles].map(n => n + ' mm')].join(' · ');
+}
+// What each of the user's printer models loads: its own row, else the
+// spool's profile, marked when that one is another printer's.
+function presetPlanText(plan){
+  if(!plan || !plan.spool) return '';
+  const models = (PRESETS && PRESETS.models) || [];
+  const own = plan.spool.slicer_filament_name;
+  if(!models.length) return own + (PRESETS && PRESETS.error ? ' — ' + t('profile.printers_unknown') : '');
+  const ownModels = (presetById(plan.spool.slicer_filament) || {}).models || [];
+  const out = [];
+  models.forEach((m, i) => {
+    const row = (plan.per_model || []).find(r => r.printer_model === m && !r.nozzle_diameter);
+    if(row) out.push(m + ': ' + row.slicer_filament_name);
+    else if(i === 0 || !ownModels.length) out.push(m + ': ' + own);
+    else out.push(m + ': ' + own + ' ' + t('profile.other_printer'));
+  });
+  (plan.per_model || []).filter(r => r.nozzle_diameter).forEach(r =>
+    out.push(r.printer_model + ' ' + r.nozzle_diameter + ' mm: ' + r.slicer_filament_name));
+  return out.join('\n');
+}
+function presetWhy(){
+  const e = PRESETS && PRESETS.error;
+  if(e === 'forbidden') return t('profile.forbidden');
+  if(e && /^printers/.test(e)) return t('profile.printers_unknown');
+  return '';
+}
+// One picker: the form's or the spool record's. `pick` is the profile id
+// picked ('' for none), null while nothing was decided.
+function presetPicker(id, hintId, boxId){
+  const w = {pick: null, manual: false, seq: 0};
+  async function show(planUrl){
+    const my = ++w.seq;
+    let plan = null;
+    try{ plan = await (await fetch(planUrl)).json(); }catch(e){ plan = null; }
+    if(my !== w.seq) return null;
+    $(hintId).textContent = plan && plan.spool ? presetPlanText(plan) : '';
+    $(hintId).style.whiteSpace = 'pre-line';
+    return plan;
+  }
+  w.set = async (pid, manual) => {
+    w.manual = !!manual;
+    w.pick = pid ? String(pid) : '';
+    const line = pid ? PRESET_LINE.get(String(pid)) : null;
+    COMBOS[id].setValue(line ? line.base : '');
+    if(!pid){ $(hintId).textContent = manual ? t('profile.none_picked') : (presetWhy() || t('profile.none_found')); return; }
+    if(!line){
+      // A cloud or built-in profile set in Bambuddy: shown, kept unless changed.
+      const name = (spoolRec && spoolRec.slicer_filament_name) || pid;
+      COMBOS[id].setValue(name);
+      $(hintId).textContent = t('profile.from_bambuddy');
+      return;
+    }
+    await show('/api/presets/plan?id=' + encodeURIComponent(pid));
+  };
+  w.suggest = async fields => {
+    if(w.manual) return;
+    const q = new URLSearchParams(fields).toString();
+    const plan = await show('/api/presets/plan?' + q);
+    if(!plan || w.manual) return;
+    w.pick = plan.spool ? plan.spool.slicer_filament : '';
+    const line = w.pick ? PRESET_LINE.get(w.pick) : null;
+    COMBOS[id].setValue(line ? line.base : '');
+    if(!w.pick) $(hintId).textContent = presetWhy() || t('profile.none_found');
+  };
+  makeCombo(id, {
+    source: async q => {
+      await presetsLoad();
+      const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+      const hits = presetLines.filter(l => {
+        const hay = (l.vendor + ' ' + l.base + ' ' + l.type).toLowerCase();
+        return words.every(x => hay.includes(x));
+      }).slice(0, 60).map(l => ({id: l.id, label: l.base, sub: presetLineSub(l)}));
+      return [{id: '', label: t('profile.none'), sub: ''}, ...hits];
+    },
+    render: (li, it) => {
+      li.appendChild(document.createTextNode(it.label));
+      if(it.sub){ const s = document.createElement('span'); s.className = 'sub'; s.textContent = it.sub; li.appendChild(s); }
+    },
+    onPick: it => { $(id).blur(); w.set(it.id, true); },
+  });
+  // Typed away and left: back to what is picked.
+  $(id).addEventListener('blur', () => setTimeout(() => {
+    const line = w.pick ? PRESET_LINE.get(w.pick) : null;
+    if(line && $(id).value !== line.base) COMBOS[id].setValue(line.base);
+  }, 150));
+  presetsLoad().then(d => {
+    $(boxId).classList.toggle('hidden', !((d.items || []).length || d.error === 'forbidden'));
+    $('linkBox').classList.toggle('hidden', !(d.items || []).length);
+  });
+  return w;
+}
+const formProfile = presetPicker('profile', 'profileHint', 'profileBox');
+const spProfile = presetPicker('spProfile', 'spProfileHint', 'spProfileBox');
+let profileTimer = null;
+function profileSuggest(){
+  clearTimeout(profileTimer);
+  profileTimer = setTimeout(() => formProfile.suggest({
+    brand: $('brand').value.trim(), material: $('material').value.trim(), subtype: $('subtype').value.trim()}), 300);
+}
+['brand', 'material', 'subtype'].forEach(id => $(id).addEventListener('change', profileSuggest));
+
+// Every spool without a profile, linked at once: listed first, then done.
+let linkPlan = null;
+$('linkCheck').onclick = async () => {
+  $('linkCheck').disabled = true;
+  $('linkApply').classList.add('hidden');
+  $('linkList').textContent = t('profile.link_checking');
+  try{
+    const d = await (await fetch('/api/presets/link-all', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'})).json();
+    linkPlan = d.plan || [];
+    if(!d.ok && !linkPlan.length){ $('linkList').textContent = d.error === 'forbidden' ? t('profile.forbidden') : t('profile.link_failed', {n: '?'}); return; }
+    if(!linkPlan.length){ $('linkList').textContent = t('profile.link_none'); return; }
+    $('linkList').style.whiteSpace = 'pre-line';
+    $('linkList').textContent = linkPlan.slice(0, 40).map(e => '#' + e.id + ' ' + e.title + ' → ' + e.profile
+      + (e.models.length ? ' (+' + e.models.join(', ') + ')' : '')).join('\n') + (linkPlan.length > 40 ? '\n…' : '');
+    $('linkApply').textContent = t('profile.link_apply', {n: linkPlan.length});
+    $('linkApply').classList.remove('hidden');
+  }catch(e){ $('linkList').textContent = t('profile.link_failed', {n: '?'}); }
+  finally{ $('linkCheck').disabled = false; }
+};
+$('linkApply').onclick = async () => {
+  $('linkApply').disabled = true;
+  try{
+    const d = await (await fetch('/api/presets/link-all', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({apply: true})})).json();
+    if((d.linked || []).length) toast(t('profile.link_done', {n: d.linked.length}) + ' ✓');
+    if((d.errors || []).length) toast(t('profile.link_failed', {n: d.errors.length}), false);
+    $('linkApply').classList.add('hidden');
+    $('linkList').textContent = '';
+    invForget();
+  }catch(e){ toast(t('profile.link_failed', {n: '?'}), false); }
+  finally{ $('linkApply').disabled = false; }
+};
 
 // ── Inventory mode ──
 // Bambuddy is asked whether Spoolman stands behind it; a key without
@@ -2439,6 +2632,9 @@ $('form').onsubmit = async (e) => {
     note: $('note').value.trim(),
     tag_uid: $('tag_uid').value.trim(),
   };
+  // The profile as picked or suggested ('' for none); the server takes its
+  // line's profile for each printer model.
+  if(formProfile.pick !== null) fields.slicer_filament = formProfile.pick;
   if(smFilament) fields.spoolman_filament_id = smFilament.id;
   if(!fields.material){ toast(t('submit.material_required'), false); return; }
   const quantity = parseInt($('quantity').value)||1;
@@ -2451,6 +2647,7 @@ $('form').onsubmit = async (e) => {
       // Created either way; a tag or price that did not stick is said, not
       // hidden behind the success.
       if(d.tag_error) toast(t('submit.tag_not_linked',{error:d.tag_error}), false);
+      else if(d.profile_error) toast(t('profile.save_failed', {error: d.profile_error}), false);
       else if(d.warnings&&d.warnings.length) toast(t('submit.price_not_set'), false);
       else if(d.filament_filled && d.filament_filled.length) toast(tn('submit.added', d.created)+' ✓ '+t('submit.filament_filled'));
       else toast(tn('submit.added', d.created)+' ✓');
