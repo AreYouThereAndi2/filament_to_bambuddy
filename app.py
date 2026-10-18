@@ -505,11 +505,30 @@ def _spoolman_mode() -> bool:
 # reaches it ("http://spoolman:7912"); without it, Bambuddy's own Spoolman
 # address is tried (that needs the key's "Read Status", and the address must
 # be reachable from here too). Bambuddy's picker is the fallback for reading.
-SPOOLMAN_URL = os.getenv("SPOOLMAN_URL", "").strip().rstrip("/")
+def _normalize_spoolman_url(raw) -> str:
+    """'192.168.1.5:7912', 'http://host:7912/' and 'http://host:7912/api/v1'
+    all mean the server at http://host:7912: the scheme added, the API path
+    and trailing slashes taken off."""
+    url = str(raw or "").strip().rstrip("/")
+    if url and not re.match(r"^https?://", url, re.IGNORECASE):
+        url = "http://" + url
+    return re.sub(r"/api/v1$", "", url, flags=re.IGNORECASE).rstrip("/")
+
+
+SPOOLMAN_URL = _normalize_spoolman_url(os.getenv("SPOOLMAN_URL", ""))
 _SPOOLMAN_URL_TTL = 600.0
 _spoolman_url_cache: dict = {"at": 0.0, "url": None}
 _SPOOLMAN_FILAMENTS_TTL = 120.0
-_spoolman_filaments_cache: dict = {"at": 0.0, "list": None, "direct": None}
+# What the last read found, for the page's status line: the address and where
+# it came from ("env", "bambuddy" or None), and why reading it failed.
+_spoolman_filaments_cache: dict = {"at": 0.0, "list": None, "direct": None,
+                                   "url": None, "source": None, "error": None, "detail": None}
+
+
+def _spoolman_url_source() -> str | None:
+    if SPOOLMAN_URL:
+        return "env"
+    return "bambuddy" if _spoolman_url() else None
 
 
 def _spoolman_url() -> str | None:
@@ -524,7 +543,7 @@ def _spoolman_url() -> str | None:
             r = requests.get(f"{BAMBUDDY_URL}/api/v1/settings/spoolman",
                              headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=10)
             if r.ok:
-                url = str((r.json() or {}).get("spoolman_url") or "").strip().rstrip("/") or None
+                url = _normalize_spoolman_url((r.json() or {}).get("spoolman_url")) or None
         except Exception:
             log.debug("Spoolman address not read from Bambuddy", exc_info=True)
     _spoolman_url_cache.update(at=now, url=url)
@@ -541,15 +560,30 @@ def _spoolman_filaments(force: bool = False) -> list:
     cached = _spoolman_filaments_cache["list"]
     if cached is not None and not force and now - _spoolman_filaments_cache["at"] < _SPOOLMAN_FILAMENTS_TTL:
         return cached
-    filaments, direct = None, False
+    filaments, direct, error, detail = None, False, None, None
     url = _spoolman_url()
     if url:
         try:
             r = requests.get(f"{url}/api/v1/filament", headers={"Accept": "application/json"}, timeout=10)
-            if r.ok and isinstance(r.json(), list):
-                filaments, direct = r.json(), True
+            body = r.json() if r.ok else None
+            if isinstance(body, list):
+                filaments, direct = body, True
+            elif r.ok:
+                error = "not_spoolman"
+            else:
+                error, detail = "http", str(r.status_code)
+        except requests.exceptions.Timeout:
+            error = "timeout"
+        except requests.exceptions.ConnectionError as e:
+            error, detail = "unreachable", type(getattr(e, "__context__", None) or e).__name__
+        except ValueError:
+            error = "not_spoolman"
         except Exception as e:
-            log.info("Spoolman at %s not reachable (%s), asking Bambuddy", url, type(e).__name__)
+            error, detail = "unreachable", type(e).__name__
+        if error:
+            log.warning("Spoolman at %s not read (%s %s), asking Bambuddy", url, error, detail or "")
+    else:
+        error = "no_url"
     if filaments is None and BAMBUDDY_API_KEY:
         try:
             r = requests.get(f"{BAMBUDDY_URL}{_INVENTORY_BASES['spoolman']}/filaments",
@@ -559,7 +593,8 @@ def _spoolman_filaments(force: bool = False) -> list:
         except Exception:
             log.debug("Spoolman filaments not read through Bambuddy", exc_info=True)
     filaments = [f for f in (filaments or []) if isinstance(f, dict) and isinstance(f.get("id"), int)]
-    _spoolman_filaments_cache.update(at=now, list=filaments, direct=direct)
+    _spoolman_filaments_cache.update(at=now, list=filaments, direct=direct, url=url,
+                                     source=_spoolman_url_source() if url else None, error=error, detail=detail)
     return filaments
 
 
@@ -631,8 +666,11 @@ def get_settings():
     base = _inventory_base()
     spoolman = None
     if base == _INVENTORY_BASES["spoolman"]:
-        count = len(_spoolman_filaments())
-        spoolman = {"filaments": count, "direct": bool(_spoolman_filaments_cache["direct"])}
+        # ?check=1 reads Spoolman again now, for the page's "check again".
+        count = len(_spoolman_filaments(force=bool(request.args.get("check"))))
+        c = _spoolman_filaments_cache
+        spoolman = {"filaments": count, "direct": bool(c["direct"]), "url": c["url"], "source": c["source"],
+                    "error": None if c["direct"] else c["error"], "detail": c["detail"]}
     return jsonify(**settings, active="spoolman" if base == _INVENTORY_BASES["spoolman"] else "local",
                    probe=_inventory_mode_cache.get("probe") if settings["inventory_mode"] == "auto" else None,
                    spoolman=spoolman)
