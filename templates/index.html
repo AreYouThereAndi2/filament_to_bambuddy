@@ -555,8 +555,14 @@
     <div id="spInfo" class="codes"></div>
     <div class="sec">
       <h3>{{ t('spool.sec_edit') }}</h3>
+      <!-- What is left is net, without the empty spool; weighed on a
+           kitchen scale it is gross, and the empty spool comes off. -->
       <div class="row">
         <div><label for="spRemain">{{ t('spool.remaining') }}</label><input id="spRemain" inputmode="decimal"></div>
+        <div><label for="spGross">{{ t('spool.gross') }}</label><input id="spGross" inputmode="decimal" placeholder="{{ t('form.optional_placeholder') }}"></div>
+      </div>
+      <div id="spRemainHint" class="hint"></div>
+      <div class="row">
         <div><label for="spLocation">{{ t('form.storage_location') }}</label><div class="combo"><input id="spLocation" placeholder="{{ t('combo.placeholder') }}"><span class="combo-chev"></span><ul id="spLocation-list" class="combo-list" hidden></ul></div></div>
       </div>
       <label for="spTag">{{ t('form.tag_uid') }}</label>
@@ -1951,9 +1957,13 @@ async function openSpool(id){
     .filter(Boolean).join(', ');
   $('spReel').style.setProperty('--spool', sp.rgba ? '#' + String(sp.rgba).slice(0, 6) : '#7a4b2b');
   $('spInfo').textContent = [sp.material_number ? t('spool.article', {code: sp.material_number}) : '',
-                             sp.added ? t('spool.added', {date: sp.added}) : ''].filter(Boolean).join(', ');
+                             sp.added ? t('spool.added', {date: sp.added}) : '',
+                             sp.tray_uuid ? t('spool.bambu_rfid') : ''].filter(Boolean).join(', ');
   $('spRemain').value = left != null ? left : '';
   $('spRemain').disabled = left == null;
+  $('spGross').value = '';
+  $('spGross').disabled = left == null || !sp.core_weight;
+  $('spRemainHint').textContent = sp.core_weight ? t('spool.net_hint', {core: sp.core_weight}) : '';
   setSelect('spLocation', sp.storage_location || '');
   $('spTag').value = sp.tag_uid || '';
   $('spNote').value = sp.note || '';
@@ -1975,6 +1985,10 @@ function closeSpool(){
   $('spoolCard').classList.add('hidden');
 }
 $('spClose').onclick = closeSpool;
+$('spGross').addEventListener('input', () => {
+  const g = parseFloat(String($('spGross').value).replace(',', '.'));
+  if(spoolRec && spoolRec.core_weight && isFinite(g)) $('spRemain').value = Math.max(0, Math.round(g - spoolRec.core_weight));
+});
 $('spOpen').onclick = () => { if(spoolRec && spoolRec.qr) window.open(spoolRec.qr, '_blank', 'noopener'); };
 $('spLabel').onclick = () => {
   if(!spoolRec) return;
@@ -1990,7 +2004,12 @@ $('spSave').onclick = async () => {
   const note = $('spNote').value.trim();
   if(note !== (spoolRec.note || '')) body.note = note;
   const tag = $('spTag').value.replace(/[\s:\-]/g, '').toUpperCase();
-  if(tag && tag !== String(spoolRec.tag_uid || '').toUpperCase()) body.tag_uid = tag;
+  if(tag && tag !== String(spoolRec.tag_uid || '').toUpperCase()){
+    // Behind Spoolman a spool has one tag: a Bambu spool's RFID (what the
+    // AMS and the scale know it by) would be replaced.
+    if(spoolRec.tray_uuid && !spoolRec.tag_uid && !confirm(t('spool.replace_rfid'))) return;
+    body.tag_uid = tag;
+  }
   const left = spoolRemaining(spoolRec), typed = parseFloat(String($('spRemain').value).replace(',', '.'));
   if(left != null && isFinite(typed) && typed >= 0 && Math.round(typed) !== left)
     body.weight_used = Math.max(0, spoolRec.label_weight - typed);
@@ -2221,9 +2240,12 @@ function showInv(d){
   const denied = d.inventory_mode === 'auto' && !!d.probe && d.probe !== 200;
   let state = denied ? 'bad' : 'ok';
   let title = denied ? t('settings.probe_short') : t('settings.'+d.active);
-  $('invHint').textContent = d.inventory_mode !== 'auto' ? ''
+  // Set here to the other inventory than Bambuddy uses: Bambuddy's is the
+  // one written to, and the hint says so.
+  $('invHint').textContent = d.overridden ? t('settings.overridden', {mode: t('settings.'+d.active)})
+    : d.inventory_mode !== 'auto' ? ''
     : denied ? t('settings.probe_denied', {code: d.probe}) : t('settings.detected', {mode: t('settings.'+d.active)});
-  $('invHint').classList.toggle('err', denied);
+  $('invHint').classList.toggle('err', denied || !!d.overridden);
   // In Spoolman mode the light is whether the app reads the user's Spoolman
   // itself; the folded part says from where, or why not and what is missing.
   const sm = d.spoolman;
@@ -2814,6 +2836,7 @@ $('form').onsubmit = async (e) => {
       $('tag_uid').value=''; nfcStop(); showSpoolman(null);
       invForget();
       labelOffer(d.spool_ids); }
+    else if((d.errors || [])[0] === 'mode_changed'){ toast(t('submit.mode_changed'), false); fetch('/api/settings').then(r => r.json()).then(showInv).catch(() => {}); }
     else { toast(t('submit.failed')+(d.error?': '+d.error:(d.errors&&d.errors.length?': '+d.errors[0]:'')), false); }
   }catch(e){ toast(t('submit.request_failed'), false); }
   finally{ $('submitBtn').disabled = false; }

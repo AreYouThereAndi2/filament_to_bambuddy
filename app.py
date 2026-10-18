@@ -439,7 +439,7 @@ DEFAULT_BRANDS = ["Bambu Lab", "Polymaker", "eSUN", "Overture", "SUNLU", "Inland
 # is read from Bambuddy itself and kept for a minute, so switching it there
 # takes effect here without a restart.
 _INVENTORY_MODE_TTL = 60.0
-_inventory_mode_cache: dict = {"at": 0.0, "base": None, "probe": None}
+_inventory_mode_cache: dict = {"at": 0.0, "answer": None, "probe": None}
 _INVENTORY_BASES = {"local": "/api/v1/inventory", "spoolman": "/api/v1/spoolman/inventory"}
 # The probe needs the API key's "Read Status"; without it Bambuddy answers
 # 403 and the guess is the local inventory, which is wrong behind Spoolman.
@@ -470,31 +470,44 @@ def _truthy(value) -> bool:
     return str(value).strip().lower() in ("1", "true", "yes", "on")
 
 
-def _inventory_base() -> str:
-    """Path prefix of Bambuddy's active inventory, without a trailing slash."""
-    mode = load_settings()["inventory_mode"]
-    if mode in _INVENTORY_BASES:
-        return _INVENTORY_BASES[mode]
+def _probe_mode() -> str | None:
+    """What Bambuddy says is active ("local" or "spoolman"), kept a minute;
+    None when it does not answer (the key lacks "Read Status", or it is down)."""
     now = time.monotonic()
-    cached = _inventory_mode_cache["base"]
-    if cached and now - _inventory_mode_cache["at"] < _INVENTORY_MODE_TTL:
-        return cached
-    base = "/api/v1/inventory"
-    probe = None
+    c = _inventory_mode_cache
+    if c["at"] and now - c["at"] < _INVENTORY_MODE_TTL:
+        return c["answer"]
+    answer, probe = None, None
     if BAMBUDDY_API_KEY:
         try:
             r = requests.get(f"{BAMBUDDY_URL}/api/v1/settings/spoolman",
                              headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"},
                              timeout=10)
             probe = r.status_code
-            if r.ok and _truthy((r.json() or {}).get("spoolman_enabled")):
-                base = "/api/v1/spoolman/inventory"
+            body = r.json() if r.ok else None
+            if isinstance(body, dict) and "spoolman_enabled" in body:
+                answer = "spoolman" if _truthy(body["spoolman_enabled"]) else "local"
         except Exception:
-            log.debug("Bambuddy Spoolman mode probe failed, using the local inventory", exc_info=True)
-    if base != cached:
-        log.info("Bambuddy inventory: %s (mode probe HTTP %s)", base, probe)
-    _inventory_mode_cache.update(at=now, base=base, probe=probe)
-    return base
+            log.debug("Bambuddy Spoolman mode probe failed", exc_info=True)
+    if answer != c.get("answer"):
+        log.info("Bambuddy inventory mode: %s (probe HTTP %s)", answer or "unknown", probe)
+    c.update(at=now, answer=answer, probe=probe)
+    return answer
+
+
+def _inventory_base() -> str:
+    """Path prefix of Bambuddy's active inventory, without a trailing slash.
+    What Bambuddy answers wins: a spool posted to the other inventory lands
+    where Bambuddy does not show it, and the scale's device calls follow
+    Bambuddy's own setting. The mode set here counts only when Bambuddy
+    refuses the answer; else the local inventory is the guess."""
+    answer = _probe_mode()
+    mode = load_settings()["inventory_mode"]
+    if answer:
+        if mode in _INVENTORY_BASES and mode != answer:
+            log.warning("inventory mode set to %s here, but Bambuddy uses %s: following Bambuddy", mode, answer)
+        return _INVENTORY_BASES[answer]
+    return _INVENTORY_BASES.get(mode, _INVENTORY_BASES["local"])
 
 
 def _spoolman_mode() -> bool:
@@ -901,9 +914,13 @@ def get_settings():
         c = _spoolman_filaments_cache
         spoolman = {"filaments": count, "direct": bool(c["direct"]), "url": c["url"], "source": c["source"],
                     "error": None if c["direct"] else c["error"], "detail": c["detail"]}
-    return jsonify(**settings, active="spoolman" if base == _INVENTORY_BASES["spoolman"] else "local",
+    active = "spoolman" if base == _INVENTORY_BASES["spoolman"] else "local"
+    # Set here to the other one than Bambuddy uses: Bambuddy's is followed,
+    # and the page says so.
+    overridden = settings["inventory_mode"] in _INVENTORY_BASES and settings["inventory_mode"] != active
+    return jsonify(**settings, active=active,
                    probe=_inventory_mode_cache.get("probe") if settings["inventory_mode"] == "auto" else None,
-                   spoolman=spoolman)
+                   overridden=overridden, spoolman=spoolman)
 
 
 @app.post("/api/settings")
@@ -913,7 +930,7 @@ def set_settings():
     if mode not in INVENTORY_MODES:
         return jsonify(ok=False, error="inventory_mode"), 400
     save_settings({**load_settings(), "inventory_mode": mode})
-    _inventory_mode_cache.update(at=0.0, base=None, probe=None)
+    _inventory_mode_cache.update(at=0.0, answer=None, probe=None)
     _spoolman_filaments_cache.update(at=0.0, list=None)
     log.info("inventory mode set to %s", mode)
     return get_settings()
@@ -1097,6 +1114,8 @@ def lookup():
     barcode = (request.args.get("barcode") or "").strip()
     if not barcode:
         return jsonify(error="barcode required"), 400
+    # ?quick=1 (the scale, which waits only so long): no shop price.
+    quick = _truthy(request.args.get("quick") or "")
 
     code, kind = _classify_code(barcode)
 
@@ -1128,7 +1147,7 @@ def lookup():
         log.info("lookup %s: %s hit — %s", barcode, source, title or "")
         # The filament databases know the product, not what it costs. With
         # an EAN among its codes, UPCitemdb's offers still give the price.
-        price = _offer_price(code if kind == "gtin" else None, all_codes)
+        price = None if quick else _offer_price(code if kind == "gtin" else None, all_codes)
         return jsonify(barcode=code, source=source, title=title, fields=clean_fields,
                        linked_codes=linked_codes, price=price, enriched=enriched, spoolman=spoolman)
 
@@ -1139,7 +1158,7 @@ def lookup():
         fields, enriched = _filament_form(fields, spoolman["name"])
         fields = _with_preset(fields)
         log.info("lookup %s: Spoolman filament %s", barcode, spoolman["id"])
-        price = _offer_price(code, []) if kind == "gtin" else None
+        price = _offer_price(code, []) if kind == "gtin" and not quick else None
         return jsonify(barcode=code, source="spoolman", title=spoolman["name"], fields=fields,
                        linked_codes=[], price=price, enriched=enriched, spoolman=spoolman)
 
@@ -1466,6 +1485,17 @@ def add_spool():
     filament_id = fields.get("spoolman_filament_id")
     if spoolman_mode and isinstance(filament_id, int) and not isinstance(filament_id, bool) and filament_id > 0:
         payload["spoolman_filament_id"] = filament_id
+        # The empty spool's weight the filament (or its maker) has already:
+        # not copied onto the spool, where it would stay when the filament's
+        # is corrected. Nor one the filament is about to be given (below).
+        if payload.get("core_weight"):
+            import spoolman_match
+            f = next((x for x in _spoolman_filaments() if x.get("id") == filament_id), None)
+            if f is not None:
+                own = spoolman_match._num(f.get("spool_weight"))
+                inherited = own or spoolman_match._num((f.get("vendor") or {}).get("empty_spool_weight"))
+                if (inherited and abs(inherited - payload["core_weight"]) < 1) or (not own and _spoolman_direct()):
+                    payload.pop("core_weight")
     # Bambuddy keeps no bed temperature on a spool, so it goes into the note,
     # unless it can go onto the Spoolman filament (see below).
     bed = _bed_text(fields.get("bed_temp_min"), fields.get("bed_temp_max"))
@@ -1506,7 +1536,13 @@ def add_spool():
                 if isinstance(new_id, int):
                     spool_ids.append(new_id)
             else:
-                errors.append(f"{r.status_code}: {r.text[:200]}")
+                if r.status_code == 400 and "not enabled" in r.text.lower():
+                    # Bambuddy's inventory mode changed since it was last
+                    # asked: asked again on the next try.
+                    _inventory_mode_cache.update(at=0.0)
+                    errors.append("mode_changed")
+                else:
+                    errors.append(f"{r.status_code}: {r.text[:200]}")
                 break
         except Exception as e:
             log.exception("error posting spool to Bambuddy")
@@ -1640,8 +1676,10 @@ def spool_data(spool_id: int):
         return jsonify(ok=False, error="failed", status=r.status_code), 502
     raw = r.json() or {}
     # The label's fields, and what the spool's own record shows and edits.
-    spool = {k: raw.get(k) for k in (*_LABEL_SPOOL_KEYS, "tag_uid", "weight_used", "core_weight",
+    spool = {k: raw.get(k) for k in (*_LABEL_SPOOL_KEYS, "tag_uid", "tray_uuid", "weight_used", "core_weight",
                                      "slicer_filament", "slicer_filament_name")}
+    if raw.get("color_name_is_synthesized"):
+        spool["color_name"] = None
     spool["id"] = spool_id
     spool["added"] = str(raw.get("created_at") or raw.get("registered") or "")[:10] or None
     return jsonify(ok=True, spool=spool, qr=f"{_public_bambuddy_url()}/inventory?spool={spool_id}")
@@ -1653,14 +1691,17 @@ def spool_data(spool_id: int):
 _INVENTORY_TTL = 30.0
 _inventory_cache: dict = {"at": 0.0, "base": None, "list": None}
 _INVENTORY_KEYS = ("id", "brand", "material", "subtype", "color_name", "rgba", "label_weight", "weight_used",
-                   "storage_location", "tag_uid", "cost_per_kg", "material_number", "slicer_filament",
-                   "slicer_filament_name")
+                   "storage_location", "tag_uid", "tray_uuid", "cost_per_kg", "material_number",
+                   "slicer_filament", "slicer_filament_name")
 
 
 def _compact_spool(raw: dict) -> dict | None:
     if not isinstance(raw, dict) or not isinstance(raw.get("id"), int) or raw.get("archived_at"):
         return None
     out = {k: raw.get(k) for k in _INVENTORY_KEYS}
+    # Bambuddy fills a missing colour name with the line ("Matte"): no name.
+    if raw.get("color_name_is_synthesized"):
+        out["color_name"] = None
     try:
         out["remaining"] = max(0, round(float(raw.get("label_weight") or 0) - float(raw.get("weight_used") or 0)))
     except (TypeError, ValueError):
@@ -1834,6 +1875,33 @@ def spool_label():
         error = "too_old"
     log.warning("label for spool %s: Bambuddy %s %s", spool_id, r.status_code, r.text[:200] if not r.ok else "")
     return jsonify(ok=False, error=error, status=r.status_code), 502
+
+
+# The filament databases are rebuilt once a day. Built inside a lookup, that
+# makes the day's first scan take a minute, longer than the scale waits; so
+# they are built here, in the background, at start and before they expire.
+_WARM_EVERY = 6 * 3600
+
+
+def _warm_indexes():
+    import ofd
+    import spoolmandb_community
+    import tigertag
+    while True:
+        for name, load in (("OFD", ofd.get_index), ("SpoolmanDB", spoolmandb_community.get_index),
+                           ("TigerTag", tigertag.get_gtin_index if tigertag.TIGERTAG_ENABLED else None)):
+            if load is None:
+                continue
+            try:
+                load()
+            except Exception:
+                log.warning("%s index not built in the background", name, exc_info=True)
+        time.sleep(_WARM_EVERY)
+
+
+if _truthy(os.getenv("WARM_INDEXES", "on")):
+    import threading
+    threading.Thread(target=_warm_indexes, name="warm-indexes", daemon=True).start()
 
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ def clean_state(monkeypatch, tmp_path):
     monkeypatch.setattr(app_module, "BAMBUDDY_URL", "http://bb")
     monkeypatch.setattr(app_module, "CACHE_FILE", tmp_path / "cache.json")
     app_module._pending.update(code=None, at=0.0)
-    app_module._inventory_mode_cache.update(at=0.0, base=None)
+    app_module._inventory_mode_cache.update(at=0.0, answer=None)
 
 
 @pytest.fixture

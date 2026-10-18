@@ -159,6 +159,7 @@ EN = {
         "failed": "OCR failed: {error}",
     },
     "submit": {
+        "mode_changed": "Bambuddy switched its inventory (Spoolman on or off). Nothing was added – tap Add again.",
         "filament_filled": "Filament completed in Spoolman.",
         "tag_not_linked": "Spool added, but the tag was not linked: {error}",
         "price_not_set": "Spool added, but Spoolman did not take the price",
@@ -278,6 +279,7 @@ EN = {
         "delete": "Delete",
     },
     "settings": {
+        "overridden": "Bambuddy uses {mode}: that one is written to. Set it to Auto here, or switch Bambuddy.",
         "probe_short": "BamBuddy refuses the question",
         "sm_no_url_short": "Spoolman address missing",
         "sm_failed_short": "Spoolman not reachable",
@@ -313,6 +315,10 @@ EN = {
         "create": "Add “{value}”",
     },
     "spool": {
+        "replace_rfid": "This spool is linked by its Bambu RFID, which the AMS and the scale know it by. Behind Spoolman a spool has one tag: replace it with this one?",
+        "bambu_rfid": "Bambu RFID linked",
+        "net_hint": "What is left is net, without the empty spool ({core} g). Weighed with the spool? Enter that on the right.",
+        "gross": "Weighed (gross, g)",
         "empty": "Empty: archive",
         "empty_confirm": "Archive spool #{id} as empty? It leaves the stock; its data stays in BamBuddy.",
         "emptied": "Spool #{id} archived",
@@ -517,6 +523,7 @@ DE = {
         "failed": "OCR fehlgeschlagen: {error}",
     },
     "submit": {
+        "mode_changed": "BamBuddy hat das Inventar umgeschaltet (Spoolman an oder aus). Nichts angelegt – bitte nochmal tippen.",
         "filament_filled": "Filament in Spoolman ergänzt.",
         "tag_not_linked": "Spule angelegt, aber Tag nicht verknüpft: {error}",
         "price_not_set": "Spule angelegt, aber Spoolman hat den Preis nicht übernommen",
@@ -636,6 +643,7 @@ DE = {
         "delete": "Löschen",
     },
     "settings": {
+        "overridden": "BamBuddy nutzt {mode}: dorthin wird geschrieben. Stell hier auf Auto oder schalte BamBuddy um.",
         "probe_short": "BamBuddy verweigert die Abfrage",
         "sm_no_url_short": "Spoolman-Adresse fehlt",
         "sm_failed_short": "Spoolman nicht erreichbar",
@@ -671,6 +679,10 @@ DE = {
         "create": "„{value}“ anlegen",
     },
     "spool": {
+        "replace_rfid": "Diese Spule ist über ihren Bambu-RFID verknüpft, daran erkennen AMS und Waage sie. Hinter Spoolman hat eine Spule nur einen Tag: durch diesen ersetzen?",
+        "bambu_rfid": "Bambu-RFID verknüpft",
+        "net_hint": "Rest ist netto, ohne Leerspule ({core} g). Mit Spule gewogen? Das rechts eintragen.",
+        "gross": "Gewogen (brutto, g)",
         "empty": "Leer: archivieren",
         "empty_confirm": "Spule #{id} als leer archivieren? Sie verschwindet aus dem Bestand, ihre Daten bleiben in BamBuddy.",
         "emptied": "Spule #{id} archiviert",
@@ -873,6 +885,7 @@ ES = {
         "failed": "Error de OCR: {error}",
     },
     "submit": {
+        "mode_changed": "Bambuddy cambió su inventario (Spoolman sí o no). No se añadió nada: vuelve a tocar.",
         "filament_filled": "Filamento completado en Spoolman.",
         "tag_not_linked": "Bobina añadida, pero la etiqueta no se vinculó: {error}",
         "price_not_set": "Bobina añadida, pero Spoolman no aceptó el precio",
@@ -992,6 +1005,7 @@ ES = {
         "delete": "Eliminar",
     },
     "settings": {
+        "overridden": "Bambuddy usa {mode}: se escribe allí. Pon Auto aquí o cambia Bambuddy.",
         "probe_short": "BamBuddy rechaza la consulta",
         "sm_no_url_short": "Falta la dirección de Spoolman",
         "sm_failed_short": "Spoolman no responde",
@@ -1027,6 +1041,10 @@ ES = {
         "create": "Añadir «{value}»",
     },
     "spool": {
+        "replace_rfid": "Esta bobina está vinculada por su RFID de Bambu, con el que la reconocen el AMS y la báscula. Con Spoolman una bobina tiene una sola etiqueta: ¿reemplazarla por esta?",
+        "bambu_rfid": "RFID de Bambu vinculado",
+        "net_hint": "Lo que queda es neto, sin la bobina vacía ({core} g). ¿Pesada con la bobina? Escríbelo a la derecha.",
+        "gross": "Pesada (bruto, g)",
         "empty": "Vacía: archivar",
         "empty_confirm": "¿Archivar la bobina #{id} como vacía? Sale del inventario; sus datos siguen en BamBuddy.",
         "emptied": "Bobina #{id} archivada",
@@ -1229,6 +1247,7 @@ FR = {
         "failed": "Échec OCR : {error}",
     },
     "submit": {
+        "mode_changed": "Bambuddy a changé d'inventaire (Spoolman activé ou non). Rien n'a été ajouté – appuie à nouveau.",
         "filament_filled": "Filament complété dans Spoolman.",
         "tag_not_linked": "Bobine ajoutée, mais le tag n'a pas été lié : {error}",
         "price_not_set": "Bobine ajoutée, mais Spoolman n'a pas pris le prix",
@@ -1348,6 +1367,7 @@ FR = {
         "delete": "Supprimer",
     },
     "settings": {
+        "overridden": "Bambuddy utilise {mode} : c'est là qu'on écrit. Mets Auto ici ou change Bambuddy.",
         "probe_short": "BamBuddy refuse la requête",
         "sm_no_url_short": "Adresse de Spoolman manquante",
         "sm_failed_short": "Spoolman injoignable",
@@ -1383,6 +1403,10 @@ FR = {
         "create": "Ajouter « {value} »",
     },
     "spool": {
+        "replace_rfid": "Cette bobine est liée par son RFID Bambu, grâce auquel l'AMS et la balance la reconnaissent. Avec Spoolman une bobine n'a qu'un tag : le remplacer par celui-ci ?",
+        "bambu_rfid": "RFID Bambu lié",
+        "net_hint": "Le reste est net, sans la bobine vide ({core} g). Pesée avec la bobine ? Saisis-le à droite.",
+        "gross": "Pesée (brut, g)",
         "empty": "Vide : archiver",
         "empty_confirm": "Archiver la bobine n° {id} comme vide ? Elle quitte le stock ; ses données restent dans BamBuddy.",
         "emptied": "Bobine n° {id} archivée",
@@ -1581,6 +1605,7 @@ JA = {
         "failed": "OCRに失敗しました: {error}",
     },
     "submit": {
+        "mode_changed": "Bambuddyの在庫が切り替わりました (Spoolmanのオン/オフ)。追加されていません。もう一度タップしてください。",
         "filament_filled": "Spoolmanのフィラメントを補完しました。",
         "tag_not_linked": "スプールは追加されましたが、タグは紐付けられませんでした: {error}",
         "price_not_set": "スプールは追加されましたが、Spoolmanが価格を受け付けませんでした",
@@ -1700,6 +1725,7 @@ JA = {
         "delete": "削除",
     },
     "settings": {
+        "overridden": "Bambuddyは{mode}を使用中: そちらに書き込みます。ここを自動にするか、Bambuddyを切り替えてください。",
         "probe_short": "BamBuddyが問い合わせを拒否しています",
         "sm_no_url_short": "Spoolmanのアドレスがありません",
         "sm_failed_short": "Spoolmanに接続できません",
@@ -1735,6 +1761,10 @@ JA = {
         "create": "「{value}」を追加",
     },
     "spool": {
+        "replace_rfid": "このスプールはBambu RFIDで紐付けられ、AMSとはかりはそれで認識します。Spoolmanではタグは1つだけです。これに置き換えますか?",
+        "bambu_rfid": "Bambu RFID 紐付け済み",
+        "net_hint": "残量は正味で、空スプール ({core} g) を含みません。スプールごと量った場合は右に入力。",
+        "gross": "計量値 (総重量, g)",
         "empty": "空: アーカイブ",
         "empty_confirm": "スプール #{id} を空としてアーカイブしますか? 在庫から外れ、データはBamBuddyに残ります。",
         "emptied": "スプール #{id} をアーカイブしました",
@@ -1937,6 +1967,7 @@ IT = {
         "failed": "OCR non riuscito: {error}",
     },
     "submit": {
+        "mode_changed": "Bambuddy ha cambiato inventario (Spoolman acceso o spento). Nulla aggiunto: tocca di nuovo.",
         "filament_filled": "Filamento completato in Spoolman.",
         "tag_not_linked": "Bobina aggiunta, ma il tag non è stato collegato: {error}",
         "price_not_set": "Bobina aggiunta, ma Spoolman non ha accettato il prezzo",
@@ -2056,6 +2087,7 @@ IT = {
         "delete": "Elimina",
     },
     "settings": {
+        "overridden": "Bambuddy usa {mode}: si scrive lì. Imposta Auto qui o cambia Bambuddy.",
         "probe_short": "BamBuddy rifiuta la richiesta",
         "sm_no_url_short": "Manca l'indirizzo di Spoolman",
         "sm_failed_short": "Spoolman non raggiungibile",
@@ -2091,6 +2123,10 @@ IT = {
         "create": "Aggiungi «{value}»",
     },
     "spool": {
+        "replace_rfid": "Questa bobina è collegata tramite il suo RFID Bambu, con cui AMS e bilancia la riconoscono. Con Spoolman una bobina ha un solo tag: sostituirlo con questo?",
+        "bambu_rfid": "RFID Bambu collegato",
+        "net_hint": "Il residuo è netto, senza bobina vuota ({core} g). Pesata con la bobina? Inseriscilo a destra.",
+        "gross": "Pesata (lordo, g)",
         "empty": "Vuota: archivia",
         "empty_confirm": "Archiviare la bobina #{id} come vuota? Esce dal magazzino; i suoi dati restano in BamBuddy.",
         "emptied": "Bobina #{id} archiviata",
@@ -2289,6 +2325,7 @@ KO = {
         "failed": "OCR 실패: {error}",
     },
     "submit": {
+        "mode_changed": "Bambuddy가 재고를 전환했습니다(Spoolman 켜짐/꺼짐). 추가되지 않았습니다. 다시 눌러 주세요.",
         "filament_filled": "Spoolman 필라멘트를 보완했습니다.",
         "tag_not_linked": "스풀은 추가되었지만 태그가 연결되지 않았습니다: {error}",
         "price_not_set": "스풀은 추가되었지만 Spoolman이 가격을 받지 않았습니다",
@@ -2408,6 +2445,7 @@ KO = {
         "delete": "삭제",
     },
     "settings": {
+        "overridden": "Bambuddy는 {mode}을(를) 사용합니다: 그쪽에 기록합니다. 여기서 자동으로 두거나 Bambuddy를 전환하세요.",
         "probe_short": "BamBuddy가 요청을 거부함",
         "sm_no_url_short": "Spoolman 주소 없음",
         "sm_failed_short": "Spoolman에 연결할 수 없음",
@@ -2443,6 +2481,10 @@ KO = {
         "create": "“{value}” 추가",
     },
     "spool": {
+        "replace_rfid": "이 스풀은 AMS와 저울이 알아보는 Bambu RFID로 연결되어 있습니다. Spoolman에서는 스풀에 태그가 하나뿐입니다. 이것으로 바꿀까요?",
+        "bambu_rfid": "Bambu RFID 연결됨",
+        "net_hint": "남은 양은 빈 스풀({core} g)을 뺀 순중량입니다. 스풀째 쟀다면 오른쪽에 입력하세요.",
+        "gross": "측정값 (총중량, g)",
         "empty": "비어 있음: 보관",
         "empty_confirm": "스풀 #{id}을(를) 빈 것으로 보관할까요? 재고에서 빠지고 데이터는 BamBuddy에 남습니다.",
         "emptied": "스풀 #{id} 보관됨",
@@ -2645,6 +2687,7 @@ PT_BR = {
         "failed": "Falha no OCR: {error}",
     },
     "submit": {
+        "mode_changed": "O Bambuddy trocou o inventário (Spoolman ligado ou não). Nada foi adicionado – toque de novo.",
         "filament_filled": "Filamento completado no Spoolman.",
         "tag_not_linked": "Carretel adicionado, mas a tag não foi vinculada: {error}",
         "price_not_set": "Carretel adicionado, mas o Spoolman não aceitou o preço",
@@ -2764,6 +2807,7 @@ PT_BR = {
         "delete": "Excluir",
     },
     "settings": {
+        "overridden": "O Bambuddy usa {mode}: é lá que se grava. Coloque Auto aqui ou mude o Bambuddy.",
         "probe_short": "O BamBuddy recusa a consulta",
         "sm_no_url_short": "Falta o endereço do Spoolman",
         "sm_failed_short": "Spoolman inacessível",
@@ -2799,6 +2843,10 @@ PT_BR = {
         "create": "Adicionar “{value}”",
     },
     "spool": {
+        "replace_rfid": "Este carretel está vinculado pelo RFID Bambu, pelo qual o AMS e a balança o reconhecem. Com o Spoolman um carretel tem uma só tag: substituir por esta?",
+        "bambu_rfid": "RFID Bambu vinculado",
+        "net_hint": "O restante é líquido, sem o carretel vazio ({core} g). Pesou com o carretel? Coloque à direita.",
+        "gross": "Pesado (bruto, g)",
         "empty": "Vazio: arquivar",
         "empty_confirm": "Arquivar o carretel #{id} como vazio? Ele sai do estoque; os dados ficam no BamBuddy.",
         "emptied": "Carretel #{id} arquivado",
@@ -2997,6 +3045,7 @@ ZH_CN = {
         "failed": "OCR 失败：{error}",
     },
     "submit": {
+        "mode_changed": "Bambuddy 切换了库存（Spoolman 开或关）。未添加——请再点一次。",
         "filament_filled": "已在 Spoolman 中补全耗材。",
         "tag_not_linked": "已添加料卷，但标签未关联：{error}",
         "price_not_set": "已添加料卷，但 Spoolman 未接受价格",
@@ -3116,6 +3165,7 @@ ZH_CN = {
         "delete": "删除",
     },
     "settings": {
+        "overridden": "Bambuddy 使用的是{mode}：将写入那里。请在此设为自动，或在 Bambuddy 中切换。",
         "probe_short": "BamBuddy 拒绝了查询",
         "sm_no_url_short": "缺少 Spoolman 地址",
         "sm_failed_short": "无法连接 Spoolman",
@@ -3151,6 +3201,10 @@ ZH_CN = {
         "create": "添加“{value}”",
     },
     "spool": {
+        "replace_rfid": "此料盘通过 Bambu RFID 关联，AMS 和秤据此识别。Spoolman 中一个料盘只有一个标签：要替换为这个吗？",
+        "bambu_rfid": "已关联 Bambu RFID",
+        "net_hint": "剩余为净重，不含空盘（{core} g）。连盘称重？填在右边。",
+        "gross": "称重（毛重，g）",
         "empty": "已用完：归档",
         "empty_confirm": "将料盘 #{id} 作为用完归档？它会离开库存，数据仍保留在 BamBuddy。",
         "emptied": "料盘 #{id} 已归档",
@@ -3349,6 +3403,7 @@ ZH_TW = {
         "failed": "OCR 失敗：{error}",
     },
     "submit": {
+        "mode_changed": "Bambuddy 切換了庫存（Spoolman 開或關）。未新增——請再點一次。",
         "filament_filled": "已在 Spoolman 中補全線材。",
         "tag_not_linked": "已新增料捲，但標籤未連結：{error}",
         "price_not_set": "已新增料捲，但 Spoolman 未接受價格",
@@ -3468,6 +3523,7 @@ ZH_TW = {
         "delete": "刪除",
     },
     "settings": {
+        "overridden": "Bambuddy 使用的是{mode}：將寫入那裡。請在此設為自動，或在 Bambuddy 中切換。",
         "probe_short": "BamBuddy 拒絕了查詢",
         "sm_no_url_short": "缺少 Spoolman 位址",
         "sm_failed_short": "無法連線 Spoolman",
@@ -3503,6 +3559,10 @@ ZH_TW = {
         "create": "新增「{value}」",
     },
     "spool": {
+        "replace_rfid": "此料盤透過 Bambu RFID 關聯，AMS 和秤據此識別。Spoolman 中一個料盤只有一個標籤：要替換為這個嗎？",
+        "bambu_rfid": "已關聯 Bambu RFID",
+        "net_hint": "剩餘為淨重，不含空盤（{core} g）。連盤秤重？填在右邊。",
+        "gross": "秤重（毛重，g）",
         "empty": "已用完：封存",
         "empty_confirm": "將料盤 #{id} 作為用完封存？它會離開庫存，資料仍保留在 BamBuddy。",
         "emptied": "料盤 #{id} 已封存",
@@ -3705,6 +3765,7 @@ TR = {
         "failed": "OCR başarısız oldu: {error}",
     },
     "submit": {
+        "mode_changed": "Bambuddy envanterini değiştirdi (Spoolman açık ya da kapalı). Hiçbir şey eklenmedi – tekrar dokun.",
         "filament_filled": "Filament Spoolman'da tamamlandı.",
         "tag_not_linked": "Makara eklendi ama etiket bağlanmadı: {error}",
         "price_not_set": "Makara eklendi ama Spoolman fiyatı almadı",
@@ -3824,6 +3885,7 @@ TR = {
         "delete": "Sil",
     },
     "settings": {
+        "overridden": "Bambuddy {mode} kullanıyor: oraya yazılır. Burada Otomatik seç ya da Bambuddy'yi değiştir.",
         "probe_short": "BamBuddy sorguyu reddediyor",
         "sm_no_url_short": "Spoolman adresi eksik",
         "sm_failed_short": "Spoolman'a ulaşılamıyor",
@@ -3859,6 +3921,10 @@ TR = {
         "create": "“{value}” ekle",
     },
     "spool": {
+        "replace_rfid": "Bu makara, AMS'nin ve tartının tanıdığı Bambu RFID'si ile bağlı. Spoolman'da bir makaranın tek etiketi olur: bununla değiştirilsin mi?",
+        "bambu_rfid": "Bambu RFID bağlı",
+        "net_hint": "Kalan nettir, boş makarasız ({core} g). Makarayla mı tarttın? Sağa yaz.",
+        "gross": "Tartılan (brüt, g)",
         "empty": "Boş: arşivle",
         "empty_confirm": "Makara #{id} boş olarak arşivlensin mi? Stoktan çıkar; verileri BamBuddy'de kalır.",
         "emptied": "Makara #{id} arşivlendi",
