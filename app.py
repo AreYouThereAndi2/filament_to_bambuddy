@@ -1431,10 +1431,67 @@ def spool_data(spool_id: int):
     if not r.ok:
         return jsonify(ok=False, error="failed", status=r.status_code), 502
     raw = r.json() or {}
-    spool = {k: raw.get(k) for k in _LABEL_SPOOL_KEYS}
+    # The label's fields, and what the spool's own record shows and edits.
+    spool = {k: raw.get(k) for k in (*_LABEL_SPOOL_KEYS, "tag_uid", "weight_used", "core_weight")}
     spool["id"] = spool_id
     spool["added"] = str(raw.get("created_at") or raw.get("registered") or "")[:10] or None
     return jsonify(ok=True, spool=spool, qr=f"{_public_bambuddy_url()}/inventory?spool={spool_id}")
+
+
+@app.patch("/api/spool/<int:spool_id>")
+def update_spool(spool_id: int):
+    """Change an existing spool, opened from its QR code: storage location,
+    note, what is left on it, and an NFC tag linked afterwards. Only the
+    fields sent are changed."""
+    if not BAMBUDDY_API_KEY:
+        return jsonify(ok=False, error="no_key"), 400
+    body = request.get_json(force=True, silent=True) or {}
+    patch: dict = {}
+    if "storage_location" in body:
+        patch["storage_location"] = str(body.get("storage_location") or "").strip()[:255]
+    if "note" in body:
+        patch["note"] = str(body.get("note") or "").strip()[:1000]
+    if "weight_used" in body:
+        try:
+            used = float(body["weight_used"])
+        except (TypeError, ValueError):
+            return jsonify(ok=False, error="weight_used"), 400
+        patch["weight_used"] = round(max(0.0, used), 1)
+    tag_uid, tag_problem = _normalize_tag_uid(body.get("tag_uid"))
+    if tag_problem:
+        return jsonify(ok=False, error=tag_problem), 400
+    if not patch and not tag_uid:
+        return jsonify(ok=True, changed=[])
+
+    base = _inventory_base()
+    headers = {"X-API-Key": BAMBUDDY_API_KEY, "Content-Type": "application/json", "Accept": "application/json"}
+    errors, tag_error = [], None
+    try:
+        if patch:
+            r = requests.patch(f"{BAMBUDDY_URL}{base}/spools/{spool_id}", json=patch, headers=headers, timeout=20)
+            if r.status_code == 404:
+                return jsonify(ok=False, error="not_found"), 404
+            if not r.ok:
+                errors.append(f"{r.status_code}: {r.text[:200]}")
+        if tag_uid:
+            # The Spoolman route keeps the tag in Spoolman's extra field; the
+            # built-in inventory has its own link route. Both refuse a tag
+            # another spool carries with 409.
+            tag_url = (f"{BAMBUDDY_URL}{base}/spools/{spool_id}/tag" if base == _INVENTORY_BASES["spoolman"]
+                       else f"{BAMBUDDY_URL}{base}/spools/{spool_id}/link-tag")
+            tr = requests.patch(tag_url, json={"tag_uid": tag_uid}, headers=headers, timeout=20)
+            if tr.status_code == 409:
+                tag_error = "tag_taken"
+            elif not tr.ok:
+                tag_error = f"{tr.status_code}: {tr.text[:200]}"
+    except Exception as e:
+        log.warning("spool %s not updated: %s", spool_id, e)
+        return jsonify(ok=False, error="unreachable"), 502
+    changed = sorted(patch) + (["tag_uid"] if tag_uid and not tag_error else [])
+    log.info("spool %s updated: %s%s", spool_id, ", ".join(changed) or "nothing",
+             f" (tag: {tag_error})" if tag_error else "")
+    return jsonify(ok=not errors and not tag_error, changed=changed, errors=errors, tag_error=tag_error), \
+        (200 if not errors else 502)
 
 
 def _labels_path() -> str:

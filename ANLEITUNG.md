@@ -201,6 +201,17 @@ Ganz unten auf der Seite, unter **BamBuddy-Inventar**, steht der Status:
 
 Solange Spoolman nicht direkt erreichbar ist, liest die App die Filamente über BamBuddy. Dann fehlen Düsen- und Betttemperatur, Preis und Artikelnummer, und in Spoolman wird nichts ergänzt. **Erneut prüfen** fragt sofort wieder, statt die zwei Minuten abzuwarten, die die Liste sonst gemerkt wird.
 
+## Eine vorhandene Spule öffnen (QR-Code)
+
+Den QR-Code auf dem Etikett einer Spule mit **Barcode scannen** lesen. Das geht mit BamBuddys Etiketten, den eigenen der App und Spoolmans `web+spoolman:s-…`. Statt einer Suche öffnet sich dann **Spule #12** mit Material, Marke, Farbe, Restgewicht, Artikelnummer und Datum. Dort lässt sich:
+
+- **ein NFC-Tag nachträglich verknüpfen:** *Scannen* tippen und den Tag ans Handy halten (Chrome auf Android) oder die UID eintippen. Hängt der Tag schon an einer anderen Spule, sagt die App das.
+- **Lagerort, Notiz und Restgewicht ändern**, dann **Änderungen speichern**.
+- **das Etikett neu drucken:** springt zur Etikett-Karte mit der Spulennummer.
+- **die Spule in BamBuddy öffnen.**
+
+Ohne Kamera geht es auch: den Link vom Etikett ins Code-Feld einfügen oder `#12` eintippen.
+
 ## Mit der SpoolmanScale verbinden
 
 In der Weboberfläche der Waage → Einstellungen → Barcode-Scanner → **filament_to_bambuddy-Adresse**: `http://<server-ip>:8088`. Scannt die Waage dann einen Code, den keine Spule kennt, fragt sie die App und bietet an, die Spule anzulegen, mit oder ohne den gefundenen Preis.
