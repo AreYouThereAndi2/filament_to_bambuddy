@@ -666,11 +666,7 @@ def spoolman_search():
     search field: every word must appear; [] outside Spoolman mode."""
     import spoolman_match
     q = (request.args.get("q") or "").strip()[:80]
-    try:
-        limit = max(1, min(int(request.args.get("limit") or 25), 50))
-    except ValueError:
-        limit = 25
-    hits = spoolman_match.search(_spoolman_filaments(), q, limit) if q else []
+    hits = spoolman_match.search(_spoolman_filaments(), q, 25) if q else []
     return jsonify(items=[spoolman_match.search_item(f) for f in hits])
 
 
@@ -818,7 +814,7 @@ def _save_model_presets(base: str, spool_id: int, rows: list, replace: bool) -> 
 def preset_list():
     """The filament profiles for the page's picker, the user's printer
     models, and why none, if none."""
-    found = _local_presets(force=bool(request.args.get("fresh")))
+    found = _local_presets()
     c = _presets_cache
     items = [presets.item(p, c["model_map"]) for p in found]
     items.sort(key=lambda i: (i["vendor"].lower(), i["base"].lower(), i["models"], i["nozzle"]))
@@ -1471,7 +1467,7 @@ def add_spool():
     payload["data_origin"] = "barcode-scan"
     # The slicer profile: the one picked (or left as suggested) in the form,
     # as its line's profile for each of the user's printer models; picked
-    # here when the form sent none (an older page). "" is none.
+    # here when the form left it to the suggestion. "" is none.
     profile_rows: list = []
     picked = str(fields.get("slicer_filament") or "").strip()
     if "slicer_filament" not in fields or picked.isdigit():
@@ -2106,7 +2102,7 @@ def _warm_indexes():
     import spoolmandb_community
     import tigertag
     while True:
-        for name, load in (("OFD", ofd.get_index), ("SpoolmanDB", spoolmandb_community.get_index),
+        for name, load in (("OFD", ofd.get_gtin_index), ("SpoolmanDB", spoolmandb_community.get_gtin_index),
                            ("TigerTag", tigertag.get_gtin_index if tigertag.TIGERTAG_ENABLED else None)):
             if load is None:
                 continue

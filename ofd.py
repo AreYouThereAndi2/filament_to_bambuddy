@@ -346,11 +346,6 @@ def get_article_index(force: bool = False) -> dict:
     return _ARTICLE_INDEX or {}
 
 
-def get_index(force: bool = False) -> dict:
-    """Back-compat alias: the GTIN index alone (most callers only care about barcodes)."""
-    return get_gtin_index(force)
-
-
 def get_brands() -> list:
     """Return the OFD brand-name list (for data-driven brand detection)."""
     try:
