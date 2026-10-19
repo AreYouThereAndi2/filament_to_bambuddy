@@ -217,6 +217,7 @@ Each created spool is tagged `data_origin = "barcode-scan"`.
 | `ofd.py` | Open Filament Database client — builds the GTIN + article-number (SKU) indexes, cached/refreshed daily |
 | `tigertag.py` | TigerTag catalogue client — EAN + article-number (SKU) indexes from TigerTag's CC0 catalogue, cached/refreshed daily |
 | `spoolmandb_community.py` | SpoolmanDB-Community client — builds the GTIN + SKU indexes from the community filament repo, cached/refreshed daily |
+| `catalog_util.py` | Helpers the catalogue clients share: GTIN canonicalisation, `#RRGGBB` → RRGGBBAA |
 | `filament_parse.py` | Heuristics turning product/label text into filament fields (paste-title + label OCR), English and German |
 | `upc_lookup.py` | UPCitemdb fallback for retail barcodes the filament databases don't know; title + average offer price |
 | `templates/index.html` | Mobile UI (barcode scan + manual entry + editable form), Bambuddy dark/green theme |

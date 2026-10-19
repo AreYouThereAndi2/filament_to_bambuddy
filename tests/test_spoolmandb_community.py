@@ -1,7 +1,7 @@
 """Unit tests for spoolmandb_community.py — SpoolmanDB-Community filament database client.
 
 Tests:
-- _canon() barcode canonicalization (shared algorithm, duplicated from ofd.py)
+- _canon() barcode canonicalization (catalog_util.canon_gtin, shared with ofd.py)
 - _subtype_from_template() literal {color_name} placeholder removal
 - _parse_manufacturer_file() / _build_index() expand raw source files into
   GTIN + SKU indexes correctly (eans + eans_refill + codes, multi-color

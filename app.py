@@ -119,9 +119,9 @@ def _classify_code(raw: str) -> tuple[str, str]:
     to require) fails the length check and gets classified as a SKU instead
     of a GTIN — sending the external lookup to the wrong index.
     """
-    import ofd
+    from catalog_util import canon_gtin
 
-    canonical = ofd._canon(raw)
+    canonical = canon_gtin(raw)
     if _MIN_GTIN_LENGTH <= len(canonical) <= _MAX_GTIN_LENGTH and _gtin_checksum_valid(
         canonical.zfill(_MAX_GTIN_LENGTH)
     ):
