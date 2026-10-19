@@ -39,9 +39,7 @@ ENV APP_VERSION=$VERSION \
     SETTINGS_FILE=/data/settings.json \
     OFD_CACHE_FILE=/data/ofd_index.json \
     SPOOLMANDB_COMMUNITY_CACHE_FILE=/data/spoolmandb_community_index.json \
-    TIGERTAG_CACHE_FILE=/data/tigertag_index.json \
-    HOST=0.0.0.0 \
-    PORT=8088
+    TIGERTAG_CACHE_FILE=/data/tigertag_index.json
 VOLUME ["/data"]
 EXPOSE 8088
 

@@ -48,9 +48,6 @@
     --display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
     --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     --r-card:18px; --r-ctl:11px;
-    /* Names older code and inline styles still use. */
-    --fg:var(--text); --card:var(--surface); --tertiary:var(--raised);
-    --green:var(--brand); --green-light:var(--brand-strong); --radius:var(--r-card);
     color-scheme:dark;
   }
   /* The light set twice: once chosen on the page, once from the system when
@@ -180,7 +177,7 @@
   .badge.cache{color:var(--brand-strong);border-color:color-mix(in srgb,var(--brand) 45%,transparent)}
   .badge.upc{color:var(--info);border-color:color-mix(in srgb,var(--info) 45%,transparent)}
   .codes{font-size:13px;color:var(--muted);line-height:1.5}
-  .codes code,.mono{font-family:ui-monospace,Menlo,monospace;color:var(--text)}
+  .codes code{font-family:ui-monospace,Menlo,monospace;color:var(--text)}
 
   /* A section of the form: a quiet heading and a hairline above it. */
   .sec{margin-top:18px;padding-top:4px;border-top:1px solid var(--line)}
@@ -811,7 +808,7 @@ $('statusLine').onclick = () => $('statusLine').classList.toggle('open');
 // ── Health ──
 fetch('/api/health').then(r=>r.json()).then(d=>{
   if(d.ok){
-    $('dot').style.background = 'var(--green)';
+    $('dot').style.background = 'var(--brand)';
     $('health').textContent = t('health.connected', {bambuddy: d.bambuddy||'Bambuddy'});
   } else if(d.level === 'warn'){
     $('dot').style.background = 'var(--warn)';  // amber: reachable, permission issue

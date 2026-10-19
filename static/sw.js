@@ -1,8 +1,8 @@
 /* filament_to_bambuddy service worker — app-shell cache for installable PWA */
-const CACHE = "f2b-v6";
+const CACHE = "f2b-v7";
 const SHELL = [
   "/",
-  "/static/manifest.webmanifest",
+  "/manifest.webmanifest",
   "/static/icons/icon-192.png",
   "/static/icons/icon-512.png",
   "/static/icons/apple-touch-icon.png",

@@ -396,11 +396,6 @@ def get_sku_index(force: bool = False) -> dict:
     return _SKU_INDEX or {}
 
 
-def get_index(force: bool = False) -> dict:
-    """Back-compat alias: the GTIN index alone (most callers only care about barcodes)."""
-    return get_gtin_index(force)
-
-
 def get_brands() -> list:
     """Return the SpoolmanDB-Community manufacturer list."""
     try:

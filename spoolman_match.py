@@ -71,16 +71,6 @@ def vendor_name(f: dict) -> str:
     return str((f.get("vendor") or {}).get("name") or "").strip()
 
 
-def subtype_of(f: dict) -> str:
-    """The filament's name without the material in front, as Bambuddy shows
-    it: 'PLA Matte' of PLA is 'Matte'."""
-    name = str(f.get("name") or "").strip()
-    material = str(f.get("material") or "").strip()
-    if material and name.upper().startswith(material.upper()):
-        return name[len(material):].strip()
-    return name
-
-
 def title_of(f: dict) -> str:
     return " ".join(x for x in (vendor_name(f), str(f.get("name") or "").strip()) if x)
 

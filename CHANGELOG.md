@@ -27,6 +27,11 @@ Releases of the fork [AreYouThereAndi2/filament_to_bambuddy](https://github.com/
 - **Fields you can type in.** Material, maker, subtype, colour name, net weight and storage location are type-ahead lists instead of drop-downs: typing narrows the list, a tap or Enter takes an entry, and what the list does not have is offered as "Add “…”". Typed in another case ("pet"), a known entry takes the list's spelling. Keyboard: arrows, Enter, Escape.
 - **The inventory status folds away.** Below the inventory select only a light and one line remain (green connected, amber address missing, red not reachable or refused); a tap shows the details and *Check again*.
 
+### Cleaned up
+- Removed code nothing used any more: an unused helper, the `get_index()` aliases, `?fresh=` on `/api/presets`, `?limit=` on `/api/spoolman/search`, old CSS names and the `HOST`/`PORT` lines in the Dockerfile (gunicorn always listens on 8088).
+- The offline cache now holds the manifest at the address the page links (`/manifest.webmanifest`).
+- CI installs `requirements.txt`, so the label tests get Pillow and segno and `pip-audit` checks them too.
+
 ### Fixed
 - **BamBuddy's inventory mode wins.** Set by hand to the other inventory than BamBuddy uses, the app posted spools where BamBuddy does not show them. It now follows BamBuddy whenever BamBuddy answers, and says so in red. The mode set by hand only counts when BamBuddy refuses the question. A create refused because BamBuddy just switched asks again and says to tap *Add* once more.
 - **Empty spool weight no longer frozen on each spool.** The linked Spoolman filament's (or its maker's) empty-spool weight was copied onto every new spool, so a later correction of the filament never reached them. Now it stays on the filament; a different weight goes onto the filament when it has none.
