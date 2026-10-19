@@ -1,5 +1,5 @@
 /* filament_to_bambuddy service worker — app-shell cache for installable PWA */
-const CACHE = "f2b-v5";
+const CACHE = "f2b-v6";
 const SHELL = [
   "/",
   "/static/manifest.webmanifest",
@@ -7,6 +7,8 @@ const SHELL = [
   "/static/icons/icon-512.png",
   "/static/icons/apple-touch-icon.png",
   "/static/icons/logo.svg",
+  "/static/fonts/BarlowSemiCondensed-SemiBold.ttf",
+  "/static/fonts/BarlowSemiCondensed-Bold.ttf",
 ];
 
 self.addEventListener("install", (e) => {

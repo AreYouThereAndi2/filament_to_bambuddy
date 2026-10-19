@@ -17,7 +17,7 @@
 <meta name="application-name" content="Filament">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500&display=swap">
 <script>
   // Light or dark as chosen on the page, else as the system says. Set before
   // the first paint so the page never flashes the other one.
@@ -27,7 +27,14 @@
     if(m === 'light' || m === 'dark') document.documentElement.dataset.theme = m;
   })();
 </script>
-<style>html{background:#1b1f23}html[data-theme=light]{background:#edf0f2}
+<style>
+  /* The label font from this server: the same letters the scale's labels
+     are drawn in, and there without the internet. */
+  @font-face{font-family:"Barlow Semi Condensed";font-weight:600;font-display:swap;
+    src:url("/static/fonts/BarlowSemiCondensed-SemiBold.ttf") format("truetype")}
+  @font-face{font-family:"Barlow Semi Condensed";font-weight:700;font-display:swap;
+    src:url("/static/fonts/BarlowSemiCondensed-Bold.ttf") format("truetype")}
+  html{background:#1b1f23}html[data-theme=light]{background:#edf0f2}
   @media (prefers-color-scheme:light){html:not([data-theme=dark]){background:#edf0f2}}</style>
 <style>
   /* Graphite, not black; BamBuddy's green only where something is done.
@@ -604,6 +611,13 @@
         <div class="hint" style="margin-bottom:12px">{{ t('inv.reorder_hint') }}</div>
       </div>
       <div id="reorderList"></div>
+      <!-- A message through BamBuddy's channels when a kind runs out. -->
+      <label class="check" style="display:flex;gap:10px;align-items:center;margin-top:14px">
+        <input id="reoAlert" type="checkbox" style="width:22px;height:22px;margin:0;accent-color:var(--brand)">
+        <span>{{ t('inv.alert') }}</span></label>
+      <div class="hint">{{ t('inv.alert_hint') }}</div>
+      <div id="reoAlertInfo" class="hint"></div>
+      <button id="reoAlertCheck" type="button" class="btn-secondary hidden" style="margin-top:8px">{{ t('inv.alert_check') }}</button>
     </details>
     <details id="linkBox" class="bm hidden" style="margin-top:10px">
       <summary style="font-weight:600;font-size:14px">{{ t('profile.link_title') }}</summary>
@@ -1769,7 +1783,7 @@ function nfcBind(btnId, target, hintId, opt = {}){
       };
       ndef.onreadingerror = () => {
         if(nfcAbort !== ctrl) return;
-        nfcStop(); hint.textContent = t('form.nfc_unreadable');
+        nfcStop(); hint.textContent = opt.unreadable ? opt.unreadable() : t('form.nfc_unreadable');
       };
       await ndef.scan({signal: ctrl.signal});
     }catch(err){
@@ -1783,7 +1797,10 @@ function nfcBind(btnId, target, hintId, opt = {}){
 nfcBind('nfcBtn', 'tag_uid', 'nfcHint');
 nfcBind('spNfcBtn', 'spTag', 'spNfcHint');
 // A tag held to the phone opens the spool it is linked to.
-nfcBind('tagOpenBtn', uid => openSpoolByTag(uid), 'tagOpenHint', {alone: true});
+// A Bambu spool's chip (MIFARE Classic) is what a phone cannot read: the
+// hint says where to find the spool instead.
+nfcBind('tagOpenBtn', uid => openSpoolByTag(uid), 'tagOpenHint',
+        {alone: true, unreadable: () => t('inv.tag_unknown_hint')});
 
 // ── The user's spools ──
 // One compact list from the active inventory (archived ones left out), kept
@@ -1895,6 +1912,49 @@ async function reorderRender(){
 }
 $('reorderBox').addEventListener('toggle', () => { if($('reorderBox').open) reorderRender(); });
 $('reorderMax').addEventListener('change', reorderRender);
+
+// The message when a kind runs out: switched on here, sent by the server
+// through Bambuddy's notification channels.
+function reoAlertError(e){
+  if(e === 'forbidden') return t('inv.alert_forbidden');
+  if(e === 'no_channel') return t('inv.alert_no_channel');
+  return e ? t('inv.alert_failed', {error: e}) : '';
+}
+async function reoAlertLoad(){
+  let d = null;
+  try{ d = await (await fetch('/api/reorder-alert')).json(); }catch(e){ return; }
+  if(!d || !d.ok) return;
+  $('reoAlert').checked = !!d.enabled;
+  // The limit the server checks against, unless this phone set its own.
+  let own = null;
+  try{ own = localStorage.getItem('f2b.reorderMax'); }catch(e){}
+  if(d.enabled && !own) $('reorderMax').value = d.below;
+  $('reoAlertCheck').classList.toggle('hidden', !d.enabled);
+  const info = d.error ? reoAlertError(d.error)
+    : d.channels.length ? t('inv.alert_via', {names: d.channels.join(', ')}) : t('inv.alert_no_channel');
+  $('reoAlertInfo').textContent = d.enabled ? info : '';
+  $('reoAlertInfo').classList.toggle('err', d.enabled && (!!d.error || !d.channels.length));
+}
+async function reoAlertSave(check){
+  const body = {enabled: $('reoAlert').checked, below: reorderMax()};
+  if(check) body.check = true;
+  try{
+    const d = await (await fetch('/api/reorder-alert', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)})).json();
+    const r = d && d.result;
+    if(r){
+      if(r.error && r.error !== 'off') toast(reoAlertError(r.error), false);
+      else if(r.sent) toast(t('inv.alert_sent', {n: r.sent}));
+      else toast(r.low.length ? t('inv.alert_low', {list: r.low.map(k => k.title + ' ' + k.left + ' g').join(', ')})
+                              : t('inv.alert_none_low'), 'info');
+    }
+  }catch(e){}
+  reoAlertLoad();
+}
+$('reoAlert').addEventListener('change', () => reoAlertSave(false));
+$('reoAlertCheck').addEventListener('click', () => reoAlertSave(true));
+$('reorderMax').addEventListener('change', () => { if($('reoAlert').checked) reoAlertSave(false); });
+$('reorderBox').addEventListener('toggle', () => { if($('reorderBox').open) reoAlertLoad(); });
 
 // The spools of the kind on the form already in stock, so a box is not
 // bought or added twice by mistake.
@@ -2356,7 +2416,18 @@ let labelPrinter = null;  // the printer picked in this session
 let labelSeq = 0;
 
 function labelHint(msg, err){ $('labelHint').textContent = msg||''; $('labelHint').classList.toggle('err', !!err); }
-function labelSave(){ lsSet('f2b.label', labelCfg); }
+// The layout is also kept on the server: the scale prints the same label.
+let labelSyncTimer = null;
+function labelSyncUp(){
+  fetch('/api/label-layout', {method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({layout: labelCfg.layout, qr: labelCfg.qr, flow: labelCfg.flow, w: labelCfg.w, l: labelCfg.l})})
+    .catch(() => {});
+}
+function labelSave(){
+  lsSet('f2b.label', labelCfg);
+  clearTimeout(labelSyncTimer);
+  labelSyncTimer = setTimeout(labelSyncUp, 800);
+}
 
 (function labelInit(){
   { const o = document.createElement('option'); o.value = LABEL_OWN; o.textContent = t('label.own'); $('labelTpl').appendChild(o); }
@@ -2380,6 +2451,19 @@ function labelSave(){ lsSet('f2b.label', labelCfg); }
   $('labelTpl').onchange = () => { labelCfg.template = $('labelTpl').value; labelSave(); labelTplShow(); labelRefresh(); };
   labelLayoutInit();
   labelTplShow();
+  // A phone that never arranged a label takes the one kept on the server;
+  // one that did hands it there once, for the scale.
+  const hadOwn = lsGet('f2b.label', null) !== null;
+  fetch('/api/label-layout').then(r => r.json()).then(d => {
+    if(!d || !d.ok) return;
+    if(d.saved && !hadOwn){
+      Object.assign(labelCfg, {layout: d.layout.layout, qr: d.layout.qr, flow: d.layout.flow, w: d.layout.w, l: d.layout.l});
+      lsSet('f2b.label', labelCfg);
+      $('labelW').value = labelCfg.w; $('labelL').value = labelCfg.l;
+      $('labelQrPos').value = labelCfg.qr.pos; $('labelQrSize').value = labelCfg.qr.size; $('labelFlow').value = labelCfg.flow;
+      labelLayoutDraw(); labelDemoDraw();
+    }else if(!d.saved && hadOwn) labelSyncUp();
+  }).catch(() => {});
   for(const id of ['labelW','labelL']) $(id).onchange = () => {
     const w = parseInt($('labelW').value), l = parseInt($('labelL').value);
     if(w >= 10 && w <= 120) labelCfg.w = w;

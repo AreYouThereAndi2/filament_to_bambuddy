@@ -1662,21 +1662,21 @@ _LABEL_SPOOL_KEYS = ("brand", "material", "subtype", "color_name", "rgba", "stor
                      "nozzle_temp_min", "nozzle_temp_max", "label_weight", "note", "material_number")
 
 
-@app.get("/api/spool/<int:spool_id>")
-def spool_data(spool_id: int):
-    """One spool as the label needs it, and the address its QR code opens."""
+def _spool_record(spool_id: int) -> tuple[dict | None, str | None, int]:
+    """One spool as the label and the record need it: (spool, None, 200) or
+    (None, why not, HTTP status)."""
     if not BAMBUDDY_API_KEY:
-        return jsonify(ok=False, error="no_key"), 400
+        return None, "no_key", 400
     try:
         r = requests.get(f"{BAMBUDDY_URL}{_inventory_base()}/spools/{spool_id}",
                          headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=15)
     except Exception as e:
         log.warning("spool %s: Bambuddy not reachable: %s", spool_id, e)
-        return jsonify(ok=False, error="unreachable"), 502
+        return None, "unreachable", 502
     if r.status_code == 404:
-        return jsonify(ok=False, error="not_found"), 404
+        return None, "not_found", 404
     if not r.ok:
-        return jsonify(ok=False, error="failed", status=r.status_code), 502
+        return None, "failed", 502
     raw = r.json() or {}
     # The label's fields, and what the spool's own record shows and edits.
     spool = {k: raw.get(k) for k in (*_LABEL_SPOOL_KEYS, "tag_uid", "tray_uuid", "weight_used", "core_weight",
@@ -1685,7 +1685,85 @@ def spool_data(spool_id: int):
         spool["color_name"] = None
     spool["id"] = spool_id
     spool["added"] = str(raw.get("created_at") or raw.get("registered") or "")[:10] or None
-    return jsonify(ok=True, spool=spool, qr=f"{_public_bambuddy_url()}/inventory?spool={spool_id}")
+    return spool, None, 200
+
+
+def _spool_qr(spool_id: int) -> str:
+    return f"{_public_bambuddy_url()}/inventory?spool={spool_id}"
+
+
+@app.get("/api/spool/<int:spool_id>")
+def spool_data(spool_id: int):
+    """One spool as the label needs it, and the address its QR code opens."""
+    spool, error, status = _spool_record(spool_id)
+    if spool is None:
+        return jsonify(ok=False, error=error), status
+    return jsonify(ok=True, spool=spool, qr=_spool_qr(spool_id))
+
+
+# ---- the own label, drawn here for the scale ---------------------------------
+# The page keeps its label layout in the phone; it also hands it here, so the
+# scale prints the same label: it asks for the label as dots and only sends
+# them to its printer.
+def _label_layout_file() -> Path:
+    return SETTINGS_FILE.with_name("label_layout.json")
+
+
+def _label_layout() -> dict:
+    import label_render
+    try:
+        raw = json.loads(_label_layout_file().read_text())
+    except Exception:
+        raw = {}
+    return label_render.clean_config(raw)
+
+
+@app.get("/api/label-layout")
+def get_label_layout():
+    """The layout kept here, and whether one was ever saved."""
+    return jsonify(ok=True, saved=_label_layout_file().exists(), layout=_label_layout())
+
+
+@app.post("/api/label-layout")
+def set_label_layout():
+    """The page's layout, kept for the scale's labels."""
+    import label_render
+    cfg = label_render.clean_config(request.get_json(force=True, silent=True))
+    tmp = _label_layout_file().with_suffix(".tmp")
+    tmp.write_text(json.dumps(cfg, indent=1))
+    tmp.replace(_label_layout_file())
+    return jsonify(ok=True, layout=cfg)
+
+
+@app.get("/api/label/<int:spool_id>.<fmt>")
+def own_label(spool_id: int, fmt: str):
+    """A spool's label in the kept layout: .png to look at, .bits for a
+    printer (rows of bytes, a 1 bit black, X-Width and X-Height saying the
+    size). ?w= and ?l= give the roll in mm, else the layout's own."""
+    import label_render
+    if fmt not in ("png", "bits"):
+        return jsonify(ok=False, error="format"), 404
+    spool, error, status = _spool_record(spool_id)
+    if spool is None:
+        return jsonify(ok=False, error=error), status
+    cfg = _label_layout()
+    for key in ("w", "l"):
+        try:
+            v = int(request.args.get(key, ""))
+            if (10 <= v <= 120) if key == "w" else (10 <= v <= 200):
+                cfg[key] = v
+        except ValueError:
+            pass
+    locale = _resolve_request_locale()
+    words = {k: i18n.get_translation(locale, f"label.l_{k}") for k in ("location", "nozzle", "added")}
+    img = label_render.render(spool, _spool_qr(spool_id), cfg, words)
+    if fmt == "png":
+        import io
+        buf = io.BytesIO()
+        img.save(buf, format="PNG", dpi=(203, 203))
+        return Response(buf.getvalue(), mimetype="image/png", headers={"Cache-Control": "no-store"})
+    return Response(label_render.packed(img), mimetype="application/octet-stream",
+                    headers={"X-Width": str(img.width), "X-Height": str(img.height), "Cache-Control": "no-store"})
 
 
 # The user's spools, compact, for the page's own search, the duplicate hint,
@@ -1722,23 +1800,31 @@ def inventory():
     """The active inventory's spools (archived ones left out), compact."""
     if not BAMBUDDY_API_KEY:
         return jsonify(ok=False, error="no_key"), 400
+    spools, error, status = _read_inventory(fresh=bool(request.args.get("fresh")))
+    if spools is None:
+        return jsonify(ok=False, error=error, status=status), 502
+    return jsonify(ok=True, spools=spools)
+
+
+def _read_inventory(fresh: bool = False) -> tuple[list | None, str | None, int | None]:
+    """The active inventory's spools, compact and kept half a minute:
+    (spools, None, None), or (None, why not, Bambuddy's HTTP status)."""
     base = _inventory_base()
     now = time.monotonic()
     c = _inventory_cache
-    if (c["list"] is not None and c["base"] == base and not request.args.get("fresh")
-            and now - c["at"] < _INVENTORY_TTL):
-        return jsonify(ok=True, spools=c["list"])
+    if c["list"] is not None and c["base"] == base and not fresh and now - c["at"] < _INVENTORY_TTL:
+        return c["list"], None, None
     try:
         r = requests.get(f"{BAMBUDDY_URL}{base}/spools",
                          headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=30)
     except Exception as e:
         log.warning("inventory not read: %s", e)
-        return jsonify(ok=False, error="unreachable"), 502
+        return None, "unreachable", None
     if not r.ok or not isinstance(r.json(), list):
-        return jsonify(ok=False, error="failed", status=r.status_code), 502
+        return None, "failed", r.status_code
     spools = [s for s in (_compact_spool(x) for x in r.json()) if s]
     c.update(at=now, base=base, list=spools)
-    return jsonify(ok=True, spools=spools)
+    return spools, None, None
 
 
 @app.post("/api/spool/<int:spool_id>/archive")
@@ -1878,6 +1964,135 @@ def spool_label():
         error = "too_old"
     log.warning("label for spool %s: Bambuddy %s %s", spool_id, r.status_code, r.text[:200] if not r.ok else "")
     return jsonify(ok=False, error=error, status=r.status_code), 502
+
+
+# ---- running out: a message through Bambuddy ----------------------------------
+# Every few hours the stock is read; a kind of filament whose spools hold less
+# than the limit together is told about once, through the notification
+# channels Bambuddy has (POST /api/v1/notifications/app-message: the key needs
+# "Send notifications", the channel "Messages from connected apps"). The
+# choice and what was told live in reorder.json next to settings.json.
+_REORDER_EVERY = float(os.getenv("REORDER_CHECK_HOURS", "3")) * 3600
+
+
+def _reorder_file() -> Path:
+    return SETTINGS_FILE.with_name("reorder.json")
+
+
+def _reorder_state() -> dict:
+    try:
+        data = json.loads(_reorder_file().read_text())
+    except Exception:
+        data = {}
+    try:
+        below = max(1, min(int(data.get("below") or 200), 100000))
+    except (TypeError, ValueError):
+        below = 200
+    return {"enabled": bool(data.get("enabled")), "below": below, "told": list(data.get("told") or []),
+            "lang": str(data.get("lang") or "en"), "page": str(data.get("page") or ""),
+            "last": data.get("last")}
+
+
+def _reorder_save(state: dict):
+    tmp = _reorder_file().with_suffix(".tmp")
+    tmp.write_text(json.dumps(state, indent=1))
+    tmp.replace(_reorder_file())
+
+
+def _reorder_check(force: bool = False) -> dict:
+    """Reads the stock, tells about what newly runs out, remembers it.
+    {"low": [...], "sent": n, "error": None | why}."""
+    import reorder
+    state = _reorder_state()
+    if not state["enabled"] and not force:
+        return {"low": [], "sent": 0, "error": "off"}
+    spools, error, _ = _read_inventory(fresh=True)
+    if spools is None:
+        return {"low": [], "sent": 0, "error": error}
+    low = reorder.low_kinds(spools, state["below"])
+    due = reorder.due(low, [] if force else state["told"])
+    result = {"low": [dict(low[k], key=k) for k in sorted(low, key=lambda k: low[k]["left"])], "sent": 0,
+              "error": None}
+    if due:
+        lang = state["lang"]
+        lines = [i18n.get_translation(lang, "notify.line", title=low[k]["title"], left=low[k]["left"],
+                                      ids=", ".join(f"#{i}" for i in low[k]["ids"])) for k in due]
+        body = {"title": i18n.get_translation(lang, "notify.title", n=len(due)), "message": "\n".join(lines)[:2000]}
+        if state["page"].startswith(("http://", "https://")):
+            body["url"] = state["page"]
+        try:
+            r = requests.post(f"{BAMBUDDY_URL}/api/v1/notifications/app-message", json=body,
+                              headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=20)
+            if r.ok:
+                result["sent"] = int((r.json() or {}).get("channels") or 0)
+                if not result["sent"]:
+                    result["error"] = "no_channel"
+            else:
+                result["error"] = "forbidden" if r.status_code in (401, 403) else f"http {r.status_code}"
+        except Exception as e:
+            result["error"] = "unreachable"
+            log.warning("running-out message not sent: %s", e)
+    # Told about now, or still low and told before; a kind back above the
+    # limit drops out and is told about again when it runs out next time.
+    if not result["error"] or not due:
+        state["told"] = sorted(low)
+    state["last"] = time.strftime("%Y-%m-%d %H:%M")
+    if state["enabled"]:
+        _reorder_save(state)
+    if due:
+        log.info("running out: %d kinds told about (%s)", len(due), result["error"] or "sent")
+    return result
+
+
+@app.get("/api/reorder-alert")
+def reorder_alert_get():
+    """The message setting, and the channels Bambuddy would use for it."""
+    state = _reorder_state()
+    channels, error = [], None
+    if BAMBUDDY_API_KEY:
+        data, error = _bambuddy_get("/api/v1/notifications/app-message/channels")
+        if isinstance(data, list):
+            channels = [str(c.get("name") or c.get("provider_type") or "?") for c in data if isinstance(c, dict)]
+    else:
+        error = "no_key"
+    return jsonify(ok=True, enabled=state["enabled"], below=state["below"], last=state["last"],
+                   channels=channels, error=error)
+
+
+@app.post("/api/reorder-alert")
+def reorder_alert_set():
+    """{"enabled", "below"}; {"check": true} also reads the stock now."""
+    body = request.get_json(force=True, silent=True) or {}
+    state = _reorder_state()
+    if "enabled" in body:
+        state["enabled"] = bool(body["enabled"])
+    if "below" in body:
+        try:
+            state["below"] = max(1, min(int(body["below"]), 100000))
+        except (TypeError, ValueError):
+            return jsonify(ok=False, error="below"), 400
+    # The messages are in the language of the page that switched them on,
+    # and point back to it.
+    state["lang"] = _resolve_request_locale()
+    state["page"] = request.host_url
+    _reorder_save(state)
+    result = _reorder_check(force=True) if body.get("check") else None
+    return jsonify(ok=True, enabled=state["enabled"], below=state["below"], result=result)
+
+
+def _reorder_watch():
+    while True:
+        time.sleep(_REORDER_EVERY)
+        try:
+            if BAMBUDDY_API_KEY and _reorder_state()["enabled"]:
+                _reorder_check()
+        except Exception:
+            log.warning("running-out check failed", exc_info=True)
+
+
+if _truthy(os.getenv("REORDER_WATCH", "on")):
+    import threading as _threading
+    _threading.Thread(target=_reorder_watch, name="reorder-watch", daemon=True).start()
 
 
 # The filament databases are rebuilt once a day. Built inside a lookup, that
