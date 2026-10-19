@@ -94,7 +94,7 @@ class TestInventory:
         with patch("requests.get", return_value=_resp(payload=_SPOOLS)) as g:
             d = client.get("/api/inventory").get_json()
             client.get("/api/inventory")            # kept half a minute
-        assert g.call_count == 1 and g.call_args.args[0] == "http://bb/api/v1/inventory/spools"
+        assert [c.args[0] for c in g.call_args_list].count("http://bb/api/v1/inventory/spools") == 1
         assert [s["id"] for s in d["spools"]] == [3]
         s = d["spools"][0]
         assert s["remaining"] == 120 and s["added"] == "2026-10-18" and s["tag_uid"] == "04AA"

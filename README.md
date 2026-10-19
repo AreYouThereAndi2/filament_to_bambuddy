@@ -101,7 +101,8 @@ page shows a status line: 🟢 connected, 🟡 connected-but-permission-issue, o
 Create the key in **Bambuddy → Settings → API Keys** with these enabled:
 
 - ✅ **Manage Inventory** — *required* (this is what creates spools)
-- ✅ **Read Status** — so the app's connection check passes
+- ✅ **Read Status** — the connection check, BamBuddy's inventory mode, and the
+  imported slicer profiles and printer models the profile linking needs
 
 Without **Manage Inventory** the add will fail with `403`; without **Read
 Status** the status line shows an amber permission warning.

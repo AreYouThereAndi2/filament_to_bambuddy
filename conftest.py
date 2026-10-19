@@ -1,4 +1,9 @@
+import os
+
 import pytest
+
+# The filament databases are not fetched in the background during tests.
+os.environ.setdefault("WARM_INDEXES", "off")
 
 
 @pytest.fixture(autouse=True)
@@ -24,3 +29,5 @@ def _no_spoolman_cache(monkeypatch):
     monkeypatch.setattr(app, "SPOOLMAN_URL", "")
     app._spoolman_url_cache.update(at=0.0, url=None)
     app._spoolman_filaments_cache.update(at=0.0, list=None, direct=None)
+    app._inventory_mode_cache.update(at=0.0, answer=None, probe=None)
+    app._presets_cache.update(at=0.0, list=None, models=None, model_map=None, error=None)

@@ -35,6 +35,7 @@ import requests
 from flask import Flask, Response, jsonify, make_response, render_template, request
 
 import i18n
+import presets
 
 logging.basicConfig(
     level=logging.INFO,
@@ -63,6 +64,7 @@ ALLOWED_SPOOL_FIELDS = {
     "material", "subtype", "color_name", "rgba", "extra_colors", "effect_type",
     "brand", "label_weight", "core_weight", "nozzle_temp_min", "nozzle_temp_max",
     "note", "cost_per_kg", "category", "storage_location", "data_origin",
+    "slicer_filament", "slicer_filament_name",
 }
 # The NFC tag is deliberately not in the whitelist above: that set is also
 # what the barcode cache remembers, and a tag belongs to one physical spool,
@@ -437,7 +439,7 @@ DEFAULT_BRANDS = ["Bambu Lab", "Polymaker", "eSUN", "Overture", "SUNLU", "Inland
 # is read from Bambuddy itself and kept for a minute, so switching it there
 # takes effect here without a restart.
 _INVENTORY_MODE_TTL = 60.0
-_inventory_mode_cache: dict = {"at": 0.0, "base": None, "probe": None}
+_inventory_mode_cache: dict = {"at": 0.0, "answer": None, "probe": None}
 _INVENTORY_BASES = {"local": "/api/v1/inventory", "spoolman": "/api/v1/spoolman/inventory"}
 # The probe needs the API key's "Read Status"; without it Bambuddy answers
 # 403 and the guess is the local inventory, which is wrong behind Spoolman.
@@ -468,31 +470,44 @@ def _truthy(value) -> bool:
     return str(value).strip().lower() in ("1", "true", "yes", "on")
 
 
-def _inventory_base() -> str:
-    """Path prefix of Bambuddy's active inventory, without a trailing slash."""
-    mode = load_settings()["inventory_mode"]
-    if mode in _INVENTORY_BASES:
-        return _INVENTORY_BASES[mode]
+def _probe_mode() -> str | None:
+    """What Bambuddy says is active ("local" or "spoolman"), kept a minute;
+    None when it does not answer (the key lacks "Read Status", or it is down)."""
     now = time.monotonic()
-    cached = _inventory_mode_cache["base"]
-    if cached and now - _inventory_mode_cache["at"] < _INVENTORY_MODE_TTL:
-        return cached
-    base = "/api/v1/inventory"
-    probe = None
+    c = _inventory_mode_cache
+    if c["at"] and now - c["at"] < _INVENTORY_MODE_TTL:
+        return c["answer"]
+    answer, probe = None, None
     if BAMBUDDY_API_KEY:
         try:
             r = requests.get(f"{BAMBUDDY_URL}/api/v1/settings/spoolman",
                              headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"},
                              timeout=10)
             probe = r.status_code
-            if r.ok and _truthy((r.json() or {}).get("spoolman_enabled")):
-                base = "/api/v1/spoolman/inventory"
+            body = r.json() if r.ok else None
+            if isinstance(body, dict) and "spoolman_enabled" in body:
+                answer = "spoolman" if _truthy(body["spoolman_enabled"]) else "local"
         except Exception:
-            log.debug("Bambuddy Spoolman mode probe failed, using the local inventory", exc_info=True)
-    if base != cached:
-        log.info("Bambuddy inventory: %s (mode probe HTTP %s)", base, probe)
-    _inventory_mode_cache.update(at=now, base=base, probe=probe)
-    return base
+            log.debug("Bambuddy Spoolman mode probe failed", exc_info=True)
+    if answer != c.get("answer"):
+        log.info("Bambuddy inventory mode: %s (probe HTTP %s)", answer or "unknown", probe)
+    c.update(at=now, answer=answer, probe=probe)
+    return answer
+
+
+def _inventory_base() -> str:
+    """Path prefix of Bambuddy's active inventory, without a trailing slash.
+    What Bambuddy answers wins: a spool posted to the other inventory lands
+    where Bambuddy does not show it, and the scale's device calls follow
+    Bambuddy's own setting. The mode set here counts only when Bambuddy
+    refuses the answer; else the local inventory is the guess."""
+    answer = _probe_mode()
+    mode = load_settings()["inventory_mode"]
+    if answer:
+        if mode in _INVENTORY_BASES and mode != answer:
+            log.warning("inventory mode set to %s here, but Bambuddy uses %s: following Bambuddy", mode, answer)
+        return _INVENTORY_BASES[answer]
+    return _INVENTORY_BASES.get(mode, _INVENTORY_BASES["local"])
 
 
 def _spoolman_mode() -> bool:
@@ -625,6 +640,10 @@ def _link_spoolman(fields: dict, title: str | None = None, code: str | None = No
         return fields, None
     out = spoolman_match.overlay(fields, f)
     out["spoolman_filament_id"] = f["id"]
+    # The empty spool's weight is the filament's own (or its maker's): a spool
+    # made on it inherits it, so the scale does not copy it onto the spool.
+    if out.get("core_weight") and out.get("core_weight") == spoolman_match.form_fields(f).get("core_weight"):
+        out["core_weight_from_filament"] = True
     return out, {"id": f["id"], "name": spoolman_match.title_of(f), "by": by}
 
 
@@ -700,6 +719,191 @@ def _fill_spoolman_filament(spool_id: int, fields: dict, code: str | None) -> li
         return []
 
 
+# ---- slicer profiles ---------------------------------------------------------
+# The filament profiles imported into Bambuddy (OrcaSlicer, Bambu Studio),
+# and the printers they are for. A profile belongs to a printer model, so a
+# spool gets one per model the user has (see presets.py); Bambuddy loads the
+# one of the printer the spool goes into. Listing the profiles and the
+# printers needs the key's "Read Status". Read again after five minutes, so a profile imported or a printer added there shows here.
+_PRESETS_TTL = 300.0
+_presets_cache: dict = {"at": 0.0, "list": None, "models": None, "model_map": None, "error": None}
+
+
+def _bambuddy_get(path: str):
+    """GET a Bambuddy path: (json, None) or (None, why not)."""
+    try:
+        r = requests.get(f"{BAMBUDDY_URL}{path}", headers={"X-API-Key": BAMBUDDY_API_KEY,
+                                                            "Accept": "application/json"}, timeout=15)
+    except Exception as e:
+        log.debug("%s not read: %s", path, e)
+        return None, "unreachable"
+    if r.status_code in (401, 403):
+        return None, "forbidden"
+    if not r.ok:
+        return None, f"http {r.status_code}"
+    try:
+        return r.json(), None
+    except ValueError:
+        return None, "failed"
+
+
+def _local_presets(force: bool = False) -> list:
+    """Bambuddy's local filament profiles, [] when it has none or refuses;
+    the printer models and the model registry are read along."""
+    c = _presets_cache
+    now = time.monotonic()
+    if c["list"] is not None and not force and now - c["at"] < _PRESETS_TTL:
+        return c["list"]
+    if not BAMBUDDY_API_KEY:
+        c.update(at=now, list=[], models=[], model_map=presets.MODEL_MAP, error="no_key")
+        return []
+    data, error = _bambuddy_get("/api/v1/local-presets/")
+    found = [p for p in ((data or {}).get("filament") or []) if isinstance(p, dict)] if isinstance(data, dict) else []
+    printers, perror = _bambuddy_get("/api/v1/printers/")
+    counts: dict = {}
+    for pr in printers if isinstance(printers, list) else []:
+        model = str((pr or {}).get("model") or "").strip()
+        if model and pr.get("is_active", True):
+            counts[model] = counts.get(model, 0) + 1
+    model_map, _ = _bambuddy_get("/api/v1/slicer/printer-models")
+    c.update(at=now, list=found, models=sorted(counts, key=lambda m: -counts[m]),
+             model_map=model_map if isinstance(model_map, dict) and model_map else presets.MODEL_MAP,
+             error=error or (f"printers {perror}" if perror else None))
+    return found
+
+
+def _preset_plan(fields: dict, chosen_id: str | None = None) -> dict:
+    """The profiles for a spool of `fields` on the user's printers; of the
+    line of profile `chosen_id` when the user picked one."""
+    found = _local_presets()
+    c = _presets_cache
+    chosen = next((p for p in found if str(p.get("id")) == str(chosen_id)), None) if chosen_id else None
+    return presets.plan(found, fields, c["models"] or [], c["model_map"], chosen=chosen)
+
+
+def _with_preset(fields: dict) -> dict:
+    """`fields` with the profile that fits them, unless one is named already."""
+    if fields.get("slicer_filament"):
+        return fields
+    own = _preset_plan(fields)["spool"]
+    return {**fields, **own} if own else fields
+
+
+def _lookup_link(fields: dict, title: str | None = None, code: str | None = None) -> tuple[dict, dict | None]:
+    """A lookup's fields with the user's Spoolman filament and the profile."""
+    fields, spoolman = _link_spoolman(fields, title, code)
+    return _with_preset(fields), spoolman
+
+
+def _save_model_presets(base: str, spool_id: int, rows: list, replace: bool) -> str | None:
+    """The per-printer-model profiles of a spool in Bambuddy, merged with
+    what it has (see presets.merge_rows). None, or what went wrong."""
+    url = f"{BAMBUDDY_URL}{base}/spools/{spool_id}/filament-presets"
+    headers = {"X-API-Key": BAMBUDDY_API_KEY, "Content-Type": "application/json", "Accept": "application/json"}
+    try:
+        r = requests.get(url, headers=headers, timeout=15)
+        existing = r.json() if r.ok else []
+        merged = presets.merge_rows(existing if isinstance(existing, list) else [], rows, replace)
+        if merged == [{k: e.get(k) for k in ("printer_model", "nozzle_diameter", "slicer_filament",
+                                             "slicer_filament_name")} for e in existing or []]:
+            return None
+        pr = requests.put(url, json=merged, headers=headers, timeout=15)
+        return None if pr.ok else f"{pr.status_code}: {pr.text[:200]}"
+    except Exception as e:
+        log.warning("profiles per printer for spool %s not saved: %s", spool_id, e)
+        return type(e).__name__
+
+
+@app.get("/api/presets")
+def preset_list():
+    """The filament profiles for the page's picker, the user's printer
+    models, and why none, if none."""
+    found = _local_presets(force=bool(request.args.get("fresh")))
+    c = _presets_cache
+    items = [presets.item(p, c["model_map"]) for p in found]
+    items.sort(key=lambda i: (i["vendor"].lower(), i["base"].lower(), i["models"], i["nozzle"]))
+    return jsonify(ok=True, items=items, models=c["models"] or [], error=c["error"])
+
+
+@app.get("/api/presets/plan")
+def preset_plan():
+    """The profiles a spool would get: of the line that fits its brand,
+    material and line, or of the profile `id` the user picked."""
+    fields = {k: request.args.get(k, "") for k in ("brand", "material", "subtype")}
+    return jsonify(ok=True, **_preset_plan(fields, request.args.get("id") or None),
+                   models=_presets_cache["models"] or [])
+
+
+@app.post("/api/presets/link-all")
+def preset_link_all():
+    """Every spool without a profile linked to the line that fits it, on
+    each printer model; spools linked to a local profile get the rows for
+    models they lack. {"apply": false} only lists what would change."""
+    if not BAMBUDDY_API_KEY:
+        return jsonify(ok=False, error="no_key"), 400
+    body = request.get_json(force=True, silent=True) or {}
+    found = _local_presets(force=True)
+    if not found:
+        return jsonify(ok=False, error=_presets_cache["error"] or "no_presets"), 409
+    base = _inventory_base()
+    headers = {"X-API-Key": BAMBUDDY_API_KEY, "Content-Type": "application/json", "Accept": "application/json"}
+    try:
+        r = requests.get(f"{BAMBUDDY_URL}{base}/spools", headers=headers, timeout=30)
+    except Exception:
+        return jsonify(ok=False, error="unreachable"), 502
+    if not r.ok or not isinstance(r.json(), list):
+        return jsonify(ok=False, error="failed", status=r.status_code), 502
+    plan = []
+    for raw in r.json():
+        s = _compact_spool(raw)
+        if not s:
+            continue
+        current = str(s.get("slicer_filament") or "")
+        if current and not current.isdigit():
+            continue  # a cloud or built-in profile the user set in Bambuddy
+        p = _preset_plan(s, current or None)
+        if not p["spool"]:
+            continue
+        if current:
+            # Linked already: only what its printer models still lack.
+            if not p["per_model"]:
+                continue
+            try:
+                er = requests.get(f"{BAMBUDDY_URL}{base}/spools/{s['id']}/filament-presets", headers=headers, timeout=15)
+                existing = er.json() if er.ok and isinstance(er.json(), list) else []
+            except Exception:
+                existing = []
+            have = {(str(e.get("printer_model") or ""), str(e.get("nozzle_diameter") or "")) for e in existing}
+            p = {**p, "per_model": [r for r in p["per_model"] if (r["printer_model"], r["nozzle_diameter"]) not in have]}
+            if not p["per_model"]:
+                continue
+        title = " ".join(str(s.get(k) or "") for k in ("brand", "material", "subtype", "color_name")).split()
+        plan.append({"id": s["id"], "title": " ".join(title), "new": not current,
+                     "profile": p["spool"]["slicer_filament_name"],
+                     "models": sorted({row["printer_model"] for row in p["per_model"]}), "_plan": p})
+    linked, errors = [], []
+    if body.get("apply"):
+        for entry in plan:
+            p = entry["_plan"]
+            try:
+                if entry["new"]:
+                    pr = requests.patch(f"{BAMBUDDY_URL}{base}/spools/{entry['id']}", json=p["spool"],
+                                        headers=headers, timeout=20)
+                    if not pr.ok:
+                        errors.append(entry["id"])
+                        continue
+                if p["per_model"] and _save_model_presets(base, entry["id"], p["per_model"], replace=False):
+                    errors.append(entry["id"])
+                    continue
+                linked.append(entry["id"])
+            except Exception:
+                errors.append(entry["id"])
+        _inventory_forget()
+        log.info("profiles linked to %d spools (%d failed)", len(linked), len(errors))
+    return jsonify(ok=not errors, plan=[{k: v for k, v in e.items() if k != "_plan"} for e in plan],
+                   linked=linked, errors=errors)
+
+
 @app.get("/api/settings")
 def get_settings():
     """The inventory mode as set, what Bambuddy itself says when asked, and
@@ -713,9 +917,13 @@ def get_settings():
         c = _spoolman_filaments_cache
         spoolman = {"filaments": count, "direct": bool(c["direct"]), "url": c["url"], "source": c["source"],
                     "error": None if c["direct"] else c["error"], "detail": c["detail"]}
-    return jsonify(**settings, active="spoolman" if base == _INVENTORY_BASES["spoolman"] else "local",
+    active = "spoolman" if base == _INVENTORY_BASES["spoolman"] else "local"
+    # Set here to the other one than Bambuddy uses: Bambuddy's is followed,
+    # and the page says so.
+    overridden = settings["inventory_mode"] in _INVENTORY_BASES and settings["inventory_mode"] != active
+    return jsonify(**settings, active=active,
                    probe=_inventory_mode_cache.get("probe") if settings["inventory_mode"] == "auto" else None,
-                   spoolman=spoolman)
+                   overridden=overridden, spoolman=spoolman)
 
 
 @app.post("/api/settings")
@@ -725,7 +933,7 @@ def set_settings():
     if mode not in INVENTORY_MODES:
         return jsonify(ok=False, error="inventory_mode"), 400
     save_settings({**load_settings(), "inventory_mode": mode})
-    _inventory_mode_cache.update(at=0.0, base=None, probe=None)
+    _inventory_mode_cache.update(at=0.0, answer=None, probe=None)
     _spoolman_filaments_cache.update(at=0.0, list=None)
     log.info("inventory mode set to %s", mode)
     return get_settings()
@@ -909,6 +1117,8 @@ def lookup():
     barcode = (request.args.get("barcode") or "").strip()
     if not barcode:
         return jsonify(error="barcode required"), 400
+    # ?quick=1 (the scale, which waits only so long): no shop price.
+    quick = _truthy(request.args.get("quick") or "")
 
     code, kind = _classify_code(barcode)
 
@@ -923,7 +1133,7 @@ def lookup():
     if cache_hit is not None:
         log.info("lookup %s: cache hit", barcode)
         fields, enriched = _enrich(cache_hit)
-        fields, spoolman = _link_spoolman(fields, None, code)
+        fields, spoolman = _lookup_link(fields, None, code)
         return jsonify(barcode=code, source="cache", fields=fields, title=None, linked_codes=[],
                        enriched=enriched, spoolman=spoolman)
 
@@ -935,22 +1145,23 @@ def lookup():
         clean_fields = {k: v for k, v in fields.items() if not k.startswith("_")}
         clean_fields.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
         clean_fields, enriched = _enrich(clean_fields, title)
-        clean_fields, spoolman = _link_spoolman(clean_fields, title, code)
+        clean_fields, spoolman = _lookup_link(clean_fields, title, code)
         linked_codes = [c for c in all_codes if c["code"] != code]
         log.info("lookup %s: %s hit — %s", barcode, source, title or "")
         # The filament databases know the product, not what it costs. With
         # an EAN among its codes, UPCitemdb's offers still give the price.
-        price = _offer_price(code if kind == "gtin" else None, all_codes)
+        price = None if quick else _offer_price(code if kind == "gtin" else None, all_codes)
         return jsonify(barcode=code, source=source, title=title, fields=clean_fields,
                        linked_codes=linked_codes, price=price, enriched=enriched, spoolman=spoolman)
 
     # 3. A code no database knows, but a filament in the user's Spoolman
     # carries (its article number, or an EAN in an extra field).
-    fields, spoolman = _link_spoolman({}, None, code)
+    fields, spoolman = _lookup_link({}, None, code)
     if spoolman:
         fields, enriched = _filament_form(fields, spoolman["name"])
+        fields = _with_preset(fields)
         log.info("lookup %s: Spoolman filament %s", barcode, spoolman["id"])
-        price = _offer_price(code, []) if kind == "gtin" else None
+        price = _offer_price(code, []) if kind == "gtin" and not quick else None
         return jsonify(barcode=code, source="spoolman", title=spoolman["name"], fields=fields,
                        linked_codes=[], price=price, enriched=enriched, spoolman=spoolman)
 
@@ -962,7 +1173,7 @@ def lookup():
         if hit:
             fields, title, price = hit
             fields, enriched = _enrich(fields, title)
-            fields, spoolman = _link_spoolman(fields, title)
+            fields, spoolman = _lookup_link(fields, title)
             log.info("lookup %s: UPCitemdb hit — %s", barcode, title)
             return jsonify(barcode=code, source="upcitemdb", title=title, fields=fields,
                            linked_codes=[], price=price, enriched=enriched, spoolman=spoolman)
@@ -1258,6 +1469,18 @@ def add_spool():
         payload[key] = val
     payload.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
     payload["data_origin"] = "barcode-scan"
+    # The slicer profile: the one picked (or left as suggested) in the form,
+    # as its line's profile for each of the user's printer models; picked
+    # here when the form sent none (an older page). "" is none.
+    profile_rows: list = []
+    picked = str(fields.get("slicer_filament") or "").strip()
+    if "slicer_filament" not in fields or picked.isdigit():
+        p = _preset_plan(fields, picked or None)
+        payload.pop("slicer_filament", None)
+        payload.pop("slicer_filament_name", None)
+        if p["spool"]:
+            payload.update(p["spool"])
+            profile_rows = p["per_model"]
     base = _inventory_base()
     spoolman_mode = base == "/api/v1/spoolman/inventory"
     # The filament in the user's Spoolman the form found: the spool is made
@@ -1265,6 +1488,17 @@ def add_spool():
     filament_id = fields.get("spoolman_filament_id")
     if spoolman_mode and isinstance(filament_id, int) and not isinstance(filament_id, bool) and filament_id > 0:
         payload["spoolman_filament_id"] = filament_id
+        # The empty spool's weight the filament (or its maker) has already:
+        # not copied onto the spool, where it would stay when the filament's
+        # is corrected. Nor one the filament is about to be given (below).
+        if payload.get("core_weight"):
+            import spoolman_match
+            f = next((x for x in _spoolman_filaments() if x.get("id") == filament_id), None)
+            if f is not None:
+                own = spoolman_match._num(f.get("spool_weight"))
+                inherited = own or spoolman_match._num((f.get("vendor") or {}).get("empty_spool_weight"))
+                if (inherited and abs(inherited - payload["core_weight"]) < 1) or (not own and _spoolman_direct()):
+                    payload.pop("core_weight")
     # Bambuddy keeps no bed temperature on a spool, so it goes into the note,
     # unless it can go onto the Spoolman filament (see below).
     bed = _bed_text(fields.get("bed_temp_min"), fields.get("bed_temp_max"))
@@ -1305,7 +1539,13 @@ def add_spool():
                 if isinstance(new_id, int):
                     spool_ids.append(new_id)
             else:
-                errors.append(f"{r.status_code}: {r.text[:200]}")
+                if r.status_code == 400 and "not enabled" in r.text.lower():
+                    # Bambuddy's inventory mode changed since it was last
+                    # asked: asked again on the next try.
+                    _inventory_mode_cache.update(at=0.0)
+                    errors.append("mode_changed")
+                else:
+                    errors.append(f"{r.status_code}: {r.text[:200]}")
                 break
         except Exception as e:
             log.exception("error posting spool to Bambuddy")
@@ -1325,6 +1565,9 @@ def add_spool():
         if tag_error:
             log.warning("spool %s created, tag %s not linked: %s", spool_ids[0], tag_uid, tag_error)
 
+    profile_error = None
+    for sid in spool_ids if profile_rows else []:
+        profile_error = _save_model_presets(base, sid, profile_rows, replace=True) or profile_error
     if created:
         _inventory_forget()
     # The filament's own empty fields, filled from the form: the next spool
@@ -1371,6 +1614,8 @@ def add_spool():
                     created, quantity, label, barcode or "none", errors)
     return jsonify(ok=ok, created=created, requested=quantity, spool_ids=spool_ids,
                    errors=errors, warnings=warnings, tag_error=tag_error, filament_filled=filled,
+                   profile=payload.get("slicer_filament_name"), profile_models=sorted({r["printer_model"] for r in profile_rows}),
+                   profile_error=profile_error,
                    bambuddy=BAMBUDDY_URL), (200 if created else 502)
 
 
@@ -1434,7 +1679,10 @@ def spool_data(spool_id: int):
         return jsonify(ok=False, error="failed", status=r.status_code), 502
     raw = r.json() or {}
     # The label's fields, and what the spool's own record shows and edits.
-    spool = {k: raw.get(k) for k in (*_LABEL_SPOOL_KEYS, "tag_uid", "weight_used", "core_weight")}
+    spool = {k: raw.get(k) for k in (*_LABEL_SPOOL_KEYS, "tag_uid", "tray_uuid", "weight_used", "core_weight",
+                                     "slicer_filament", "slicer_filament_name")}
+    if raw.get("color_name_is_synthesized"):
+        spool["color_name"] = None
     spool["id"] = spool_id
     spool["added"] = str(raw.get("created_at") or raw.get("registered") or "")[:10] or None
     return jsonify(ok=True, spool=spool, qr=f"{_public_bambuddy_url()}/inventory?spool={spool_id}")
@@ -1446,13 +1694,17 @@ def spool_data(spool_id: int):
 _INVENTORY_TTL = 30.0
 _inventory_cache: dict = {"at": 0.0, "base": None, "list": None}
 _INVENTORY_KEYS = ("id", "brand", "material", "subtype", "color_name", "rgba", "label_weight", "weight_used",
-                   "storage_location", "tag_uid", "cost_per_kg", "material_number")
+                   "storage_location", "tag_uid", "tray_uuid", "cost_per_kg", "material_number",
+                   "slicer_filament", "slicer_filament_name")
 
 
 def _compact_spool(raw: dict) -> dict | None:
     if not isinstance(raw, dict) or not isinstance(raw.get("id"), int) or raw.get("archived_at"):
         return None
     out = {k: raw.get(k) for k in _INVENTORY_KEYS}
+    # Bambuddy fills a missing colour name with the line ("Matte"): no name.
+    if raw.get("color_name_is_synthesized"):
+        out["color_name"] = None
     try:
         out["remaining"] = max(0, round(float(raw.get("label_weight") or 0) - float(raw.get("weight_used") or 0)))
     except (TypeError, ValueError):
@@ -1513,7 +1765,8 @@ def archive_spool(spool_id: int):
 @app.patch("/api/spool/<int:spool_id>")
 def update_spool(spool_id: int):
     """Change an existing spool, opened from its QR code: storage location,
-    note, what is left on it, and an NFC tag linked afterwards. Only the
+    note, what is left on it, its slicer profile, and an NFC tag linked
+    afterwards. Only the
     fields sent are changed."""
     if not BAMBUDDY_API_KEY:
         return jsonify(ok=False, error="no_key"), 400
@@ -1529,6 +1782,18 @@ def update_spool(spool_id: int):
         except (TypeError, ValueError):
             return jsonify(ok=False, error="weight_used"), 400
         patch["weight_used"] = round(max(0.0, used), 1)
+    profile_rows = None
+    if "slicer_filament" in body:
+        # The profile picked in the record, as its line's profile for each
+        # printer model; "" unlinks it.
+        picked = str(body.get("slicer_filament") or "").strip()[:50]
+        patch["slicer_filament"], patch["slicer_filament_name"] = picked, ""
+        profile_rows = []
+        if picked.isdigit():
+            p = _preset_plan({}, picked)
+            if p["spool"]:
+                patch.update(p["spool"])
+                profile_rows = p["per_model"]
     tag_uid, tag_problem = _normalize_tag_uid(body.get("tag_uid"))
     if tag_problem:
         return jsonify(ok=False, error=tag_problem), 400
@@ -1556,6 +1821,10 @@ def update_spool(spool_id: int):
                 tag_error = "tag_taken"
             elif not tr.ok:
                 tag_error = f"{tr.status_code}: {tr.text[:200]}"
+        if profile_rows is not None and not errors:
+            problem = _save_model_presets(base, spool_id, profile_rows, replace=True)
+            if problem:
+                errors.append(f"profiles: {problem}")
     except Exception as e:
         log.warning("spool %s not updated: %s", spool_id, e)
         return jsonify(ok=False, error="unreachable"), 502
@@ -1609,6 +1878,33 @@ def spool_label():
         error = "too_old"
     log.warning("label for spool %s: Bambuddy %s %s", spool_id, r.status_code, r.text[:200] if not r.ok else "")
     return jsonify(ok=False, error=error, status=r.status_code), 502
+
+
+# The filament databases are rebuilt once a day. Built inside a lookup, that
+# makes the day's first scan take a minute, longer than the scale waits; so
+# they are built here, in the background, at start and before they expire.
+_WARM_EVERY = 6 * 3600
+
+
+def _warm_indexes():
+    import ofd
+    import spoolmandb_community
+    import tigertag
+    while True:
+        for name, load in (("OFD", ofd.get_index), ("SpoolmanDB", spoolmandb_community.get_index),
+                           ("TigerTag", tigertag.get_gtin_index if tigertag.TIGERTAG_ENABLED else None)):
+            if load is None:
+                continue
+            try:
+                load()
+            except Exception:
+                log.warning("%s index not built in the background", name, exc_info=True)
+        time.sleep(_WARM_EVERY)
+
+
+if _truthy(os.getenv("WARM_INDEXES", "on")):
+    import threading
+    threading.Thread(target=_warm_indexes, name="warm-indexes", daemon=True).start()
 
 
 if __name__ == "__main__":

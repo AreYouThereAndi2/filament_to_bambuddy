@@ -117,6 +117,7 @@ class TestRoutes:
         assert d["source"] == "spoolman"
         assert d["spoolman"]["id"] == 12 and d["fields"]["spoolman_filament_id"] == 12
         assert d["fields"]["bed_temp_min"] == 55
+        assert d["fields"]["core_weight"] == 140 and d["fields"]["core_weight_from_filament"]
 
     def test_database_hit_linked_by_name(self, client):
         ext = ({"brand": "Polymaker", "material": "PLA", "color_name": "Charcoal Black",
@@ -233,3 +234,38 @@ class TestCatalogSearch:
         assert d["source"] == "spoolman" and d["spoolman"]["id"] == 12
         assert d["fields"]["spoolman_filament_id"] == 12 and d["fields"]["bed_temp_min"] == 55
         assert missing.status_code == 404
+
+
+class TestEmptySpoolWeight:
+    """The empty spool's weight stays on the filament, where a correction
+    reaches every spool of it, instead of being copied onto each spool."""
+
+    def _add(self, client, core):
+        with (patch("requests.get", side_effect=_get),
+              patch("requests.post", return_value=_resp(201, {"id": 77})) as post,
+              patch("requests.patch", return_value=_resp(200)) as patch_):
+            client.post("/api/spool", json={"fields": {"material": "PLA", "spoolman_filament_id": 12,
+                                                       "core_weight": core}})
+        return post.call_args.kwargs["json"], [c.kwargs["json"] for c in patch_.call_args_list]
+
+    def test_the_makers_weight_is_not_copied(self, client):
+        sent, _ = self._add(client, 140)
+        assert "core_weight" not in sent
+
+    def test_another_weight_goes_onto_the_filament(self, client):
+        sent, patched = self._add(client, 200)
+        assert "core_weight" not in sent and {"spool_weight": 200.0} in [
+            {k: v for k, v in p.items() if k == "spool_weight"} for p in patched]
+
+
+def test_synthesized_colour_name_is_dropped(client):
+    raw = {"id": 5, "material": "PLA", "subtype": "Matte", "color_name": "Matte", "color_name_is_synthesized": True}
+    assert app_module._compact_spool(raw)["color_name"] is None
+
+
+def test_mode_switch_is_said(client):
+    r = _resp(400)
+    r.text = '{"detail":"Spoolman integration is not enabled"}'
+    with patch("requests.get", side_effect=_get), patch("requests.post", return_value=r):
+        d = client.post("/api/spool", json={"fields": {"material": "PLA"}}).get_json()
+    assert d["errors"] == ["mode_changed"] and app_module._inventory_mode_cache["at"] == 0.0

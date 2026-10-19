@@ -202,6 +202,21 @@
   #labelCanvas{width:100%;display:block;background:#fff;border-radius:6px;
     image-rendering:pixelated;image-rendering:crisp-edges;
     box-shadow:0 0 0 1px var(--line),0 6px 18px rgba(0,0,0,.25)}
+  /* The own label's layout: one row a line, in print order. */
+  .lay-demo{position:sticky;top:6px;z-index:2;background:var(--surface);padding:6px 0 8px}
+  .lay-demo canvas{width:100%;display:block;background:#fff;border-radius:6px;border:1px solid var(--line);image-rendering:pixelated}
+  .lay-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .lay-ctl{display:flex;gap:6px;margin-left:auto;flex:0 0 auto}
+  .lay-row.off .lay-name{color:var(--muted)}
+  .lay-row input[type=checkbox]{width:22px;height:22px;margin:0;flex:0 0 auto;accent-color:var(--brand)}
+  .lay-name{flex:1 1 110px;min-width:0;font-size:14px;line-height:1.2}
+  .lay-row select{padding-right:4px}
+  .lay-row select{width:auto;flex:0 0 auto;padding:6px 8px;min-height:36px;font-size:13px}
+  .lay-tog{flex:0 0 auto;width:34px;height:36px;padding:0;border-radius:9px;border:1px solid var(--line);
+    background:var(--field);color:var(--text);font:700 13px var(--display)}
+  .lay-tog[aria-pressed=true]{background:var(--text);color:var(--surface);border-color:var(--text)}
+  .lay-row .icon-btn{width:34px;height:36px;border-radius:9px}
+  .lay-row .icon-btn:disabled{opacity:.3}
   .fieldgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}
   .fieldgrid label{display:flex;gap:8px;align-items:center;margin:5px 0;color:var(--text);
     font:500 14px/1.2 var(--body)}
@@ -287,6 +302,8 @@
   <symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
   <symbol id="i-open" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></symbol>
   <symbol id="i-nfc" viewBox="0 0 24 24"><path d="M6 8.5a5 5 0 0 1 0 7M9.5 6a8.5 8.5 0 0 1 0 12M13 3.5a12 12 0 0 1 0 17"/><rect x="15" y="7" width="6" height="10" rx="1.5"/></symbol>
@@ -469,6 +486,12 @@
 
     <div class="sec">
       <h3>{{ t('form.sec_print') }}</h3>
+      <!-- The slicer profile imported into Bambuddy, one per printer model. -->
+      <div id="profileBox" class="hidden">
+        <label for="profile">{{ t('profile.label') }}</label>
+        <div class="combo"><input id="profile" placeholder="{{ t('profile.placeholder') }}" spellcheck="false"><span class="combo-chev"></span><ul id="profile-list" class="combo-list" hidden></ul></div>
+        <div id="profileHint" class="hint"></div>
+      </div>
       <div class="row">
         <div><label for="nozzle_temp_min">{{ t('form.nozzle_min') }}</label><input id="nozzle_temp_min" inputmode="numeric"></div>
         <div><label for="nozzle_temp_max">{{ t('form.nozzle_max') }}</label><input id="nozzle_temp_max" inputmode="numeric"></div>
@@ -532,8 +555,14 @@
     <div id="spInfo" class="codes"></div>
     <div class="sec">
       <h3>{{ t('spool.sec_edit') }}</h3>
+      <!-- What is left is net, without the empty spool; weighed on a
+           kitchen scale it is gross, and the empty spool comes off. -->
       <div class="row">
         <div><label for="spRemain">{{ t('spool.remaining') }}</label><input id="spRemain" inputmode="decimal"></div>
+        <div><label for="spGross">{{ t('spool.gross') }}</label><input id="spGross" inputmode="decimal" placeholder="{{ t('form.optional_placeholder') }}"></div>
+      </div>
+      <div id="spRemainHint" class="hint"></div>
+      <div class="row">
         <div><label for="spLocation">{{ t('form.storage_location') }}</label><div class="combo"><input id="spLocation" placeholder="{{ t('combo.placeholder') }}"><span class="combo-chev"></span><ul id="spLocation-list" class="combo-list" hidden></ul></div></div>
       </div>
       <label for="spTag">{{ t('form.tag_uid') }}</label>
@@ -544,6 +573,11 @@
       <div id="spNfcHint" class="hint"></div>
       <label for="spNote">{{ t('form.note') }}</label>
       <textarea id="spNote" rows="2" placeholder="{{ t('form.optional_placeholder') }}"></textarea>
+      <div id="spProfileBox" class="hidden">
+        <label for="spProfile">{{ t('profile.label') }}</label>
+        <div class="combo"><input id="spProfile" placeholder="{{ t('profile.placeholder') }}" spellcheck="false"><span class="combo-chev"></span><ul id="spProfile-list" class="combo-list" hidden></ul></div>
+        <div id="spProfileHint" class="hint"></div>
+      </div>
     </div>
     <div class="two" style="margin-top:16px">
       <button id="spLabel" type="button" class="btn-secondary with-ico"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span>{{ t('spool.label') }}</span></button>
@@ -571,6 +605,13 @@
       </div>
       <div id="reorderList"></div>
     </details>
+    <details id="linkBox" class="bm hidden" style="margin-top:10px">
+      <summary style="font-weight:600;font-size:14px">{{ t('profile.link_title') }}</summary>
+      <div class="hint">{{ t('profile.link_hint') }}</div>
+      <button id="linkCheck" type="button" class="btn-secondary" style="margin-top:10px">{{ t('profile.link_check') }}</button>
+      <div id="linkList" class="hint"></div>
+      <button id="linkApply" type="button" class="btn-primary hidden" style="margin-top:10px"></button>
+    </details>
   </section>
 
   <!-- A spool's label: Bambuddy's own template, shown here dot for dot as
@@ -592,8 +633,22 @@
         <div><label for="labelW">{{ t('label.media_w') }}</label><input id="labelW" inputmode="numeric"></div>
         <div><label for="labelL">{{ t('label.media_l') }}</label><input id="labelL" inputmode="numeric"></div>
       </div>
-      <label>{{ t('label.lines') }}</label>
-      <div id="labelFields" class="fieldgrid"></div>
+      <div id="labelOwnBox">
+        <label>{{ t('label.layout') }}</label>
+        <div class="hint" style="margin-top:0">{{ t('label.layout_hint') }}</div>
+        <div class="lay-demo"><canvas id="labelDemo" width="400" height="240"></canvas></div>
+        <div id="labelLayout"></div>
+        <div class="row">
+          <div><label for="labelQrPos">{{ t('label.qr_pos') }}</label><select id="labelQrPos"></select></div>
+          <div><label for="labelQrSize">{{ t('label.qr_size') }}</label><select id="labelQrSize"></select></div>
+        </div>
+        <label for="labelFlow">{{ t('label.flow') }}</label><select id="labelFlow"></select>
+        <button id="labelReset" type="button" class="btn-quiet" style="margin-top:8px">{{ t('label.reset') }}</button>
+      </div>
+      <div id="labelFieldsBox">
+        <label>{{ t('label.lines') }}</label>
+        <div id="labelFields" class="fieldgrid"></div>
+      </div>
     </details>
     <button id="labelPreviewBtn" type="button" class="btn-secondary" style="margin-top:14px">{{ t('label.preview') }}</button>
     <div id="labelBox" class="hidden" style="margin-top:14px">
@@ -1250,6 +1305,9 @@ function applyFields(f){
   if(f.cost_per_kg!=null){ $('cost_per_kg').value = f.cost_per_kg; priceFromKg(); }
   if(f.note!=null) $('note').value = f.note;
   updateSpool();
+  // The profile the lookup found, else one picked from what the form says.
+  if(f.slicer_filament) formProfile.set(f.slicer_filament, false);
+  else profileSuggest();
 }
 
 // The filament in the user's Spoolman the spool will be made on, carrying
@@ -1341,6 +1399,7 @@ function fillForm(d){
   const f = d.fields || {};
   closeSpool();
   extraCodes = [];
+  formProfile.manual = false;
   $('form').classList.remove('hidden');
   const [text, cls] = badgeFor(d.source);
   $('srcBadge').className = 'badge '+cls;
@@ -1898,13 +1957,25 @@ async function openSpool(id){
     .filter(Boolean).join(', ');
   $('spReel').style.setProperty('--spool', sp.rgba ? '#' + String(sp.rgba).slice(0, 6) : '#7a4b2b');
   $('spInfo').textContent = [sp.material_number ? t('spool.article', {code: sp.material_number}) : '',
-                             sp.added ? t('spool.added', {date: sp.added}) : ''].filter(Boolean).join(', ');
+                             sp.added ? t('spool.added', {date: sp.added}) : '',
+                             sp.tray_uuid ? t('spool.bambu_rfid') : ''].filter(Boolean).join(', ');
   $('spRemain').value = left != null ? left : '';
   $('spRemain').disabled = left == null;
+  $('spGross').value = '';
+  $('spGross').disabled = left == null || !sp.core_weight;
+  $('spRemainHint').textContent = sp.core_weight ? t('spool.net_hint', {core: sp.core_weight}) : '';
   setSelect('spLocation', sp.storage_location || '');
   $('spTag').value = sp.tag_uid || '';
   $('spNote').value = sp.note || '';
   $('spNfcHint').textContent = '';
+  // A spool without a profile gets the one that fits as a suggestion,
+  // taken over with Save.
+  if(sp.slicer_filament) spProfile.set(sp.slicer_filament, false);
+  else{
+    spProfile.manual = false;
+    spProfile.suggest({brand: sp.brand || '', material: sp.material || '', subtype: sp.subtype || ''})
+      .then(() => { if(spProfile.pick) $('spProfileHint').textContent += '\n' + t('profile.suggested'); });
+  }
   $('spoolCard').classList.remove('hidden');
   $('spoolCard').scrollIntoView({behavior: 'smooth', block: 'start'});
 }
@@ -1914,6 +1985,10 @@ function closeSpool(){
   $('spoolCard').classList.add('hidden');
 }
 $('spClose').onclick = closeSpool;
+$('spGross').addEventListener('input', () => {
+  const g = parseFloat(String($('spGross').value).replace(',', '.'));
+  if(spoolRec && spoolRec.core_weight && isFinite(g)) $('spRemain').value = Math.max(0, Math.round(g - spoolRec.core_weight));
+});
 $('spOpen').onclick = () => { if(spoolRec && spoolRec.qr) window.open(spoolRec.qr, '_blank', 'noopener'); };
 $('spLabel').onclick = () => {
   if(!spoolRec) return;
@@ -1929,10 +2004,16 @@ $('spSave').onclick = async () => {
   const note = $('spNote').value.trim();
   if(note !== (spoolRec.note || '')) body.note = note;
   const tag = $('spTag').value.replace(/[\s:\-]/g, '').toUpperCase();
-  if(tag && tag !== String(spoolRec.tag_uid || '').toUpperCase()) body.tag_uid = tag;
+  if(tag && tag !== String(spoolRec.tag_uid || '').toUpperCase()){
+    // Behind Spoolman a spool has one tag: a Bambu spool's RFID (what the
+    // AMS and the scale know it by) would be replaced.
+    if(spoolRec.tray_uuid && !spoolRec.tag_uid && !confirm(t('spool.replace_rfid'))) return;
+    body.tag_uid = tag;
+  }
   const left = spoolRemaining(spoolRec), typed = parseFloat(String($('spRemain').value).replace(',', '.'));
   if(left != null && isFinite(typed) && typed >= 0 && Math.round(typed) !== left)
     body.weight_used = Math.max(0, spoolRec.label_weight - typed);
+  if(spProfile.pick !== null && spProfile.pick !== String(spoolRec.slicer_filament || '')) body.slicer_filament = spProfile.pick;
   if(!Object.keys(body).length){ toast(t('spool.nothing'), 'info'); return; }
   $('spSave').disabled = true;
   try{
@@ -1989,6 +2070,168 @@ makeCombo('catalog', {
   },
 });
 
+// ── Slicer profiles ──
+// The filament profiles imported into Bambuddy, offered as lines ("eSUN
+// PLA+"): a line has one profile per printer model (and nozzle), and the
+// server gives the spool the one of each model the user has. Picked by
+// itself from maker, material and line until the user picks one.
+let PRESETS = null;
+const PRESET_LINE = new Map();   // profile id -> its line
+let presetLines = [];
+async function presetsLoad(){
+  if(PRESETS) return PRESETS;
+  try{ PRESETS = await (await fetch('/api/presets')).json(); }
+  catch(e){ PRESETS = {items: [], models: [], error: 'unreachable'}; }
+  const byBase = new Map();
+  for(const p of PRESETS.items || []){
+    const k = (p.base || p.name).toLowerCase();
+    let line = byBase.get(k);
+    if(!line){ line = {id: p.id, base: p.base || p.name, vendor: p.vendor, type: p.type, models: new Set(), nozzles: new Set()}; byBase.set(k, line); }
+    p.models.forEach(m => line.models.add(m));
+    if(p.nozzle && p.nozzle !== '0.4') line.nozzles.add(p.nozzle);
+    PRESET_LINE.set(String(p.id), line);
+  }
+  presetLines = [...byBase.values()];
+  return PRESETS;
+}
+function presetById(id){ return (PRESETS && PRESETS.items || []).find(p => String(p.id) === String(id)); }
+function presetLineSub(line){
+  return [line.models.size ? [...line.models].join(' · ') : t('profile.all_printers'),
+          ...[...line.nozzles].map(n => n + ' mm')].join(' · ');
+}
+// What each of the user's printer models loads: its own row, else the
+// spool's profile, marked when that one is another printer's.
+function presetPlanText(plan){
+  if(!plan || !plan.spool) return '';
+  const models = (PRESETS && PRESETS.models) || [];
+  const own = plan.spool.slicer_filament_name;
+  if(!models.length) return own + (PRESETS && PRESETS.error ? ' — ' + t('profile.printers_unknown') : '');
+  const ownModels = (presetById(plan.spool.slicer_filament) || {}).models || [];
+  const out = [];
+  models.forEach((m, i) => {
+    const row = (plan.per_model || []).find(r => r.printer_model === m && !r.nozzle_diameter);
+    if(row) out.push(m + ': ' + row.slicer_filament_name);
+    else if(i === 0 || !ownModels.length) out.push(m + ': ' + own);
+    else out.push(m + ': ' + own + ' ' + t('profile.other_printer'));
+  });
+  (plan.per_model || []).filter(r => r.nozzle_diameter).forEach(r =>
+    out.push(r.printer_model + ' ' + r.nozzle_diameter + ' mm: ' + r.slicer_filament_name));
+  return out.join('\n');
+}
+function presetWhy(){
+  const e = PRESETS && PRESETS.error;
+  if(e === 'forbidden') return t('profile.forbidden');
+  if(e && /^printers/.test(e)) return t('profile.printers_unknown');
+  return '';
+}
+// One picker: the form's or the spool record's. `pick` is the profile id
+// picked ('' for none), null while nothing was decided.
+function presetPicker(id, hintId, boxId){
+  const w = {pick: null, manual: false, seq: 0};
+  async function show(planUrl){
+    const my = ++w.seq;
+    let plan = null;
+    try{ plan = await (await fetch(planUrl)).json(); }catch(e){ plan = null; }
+    if(my !== w.seq) return null;
+    $(hintId).textContent = plan && plan.spool ? presetPlanText(plan) : '';
+    $(hintId).style.whiteSpace = 'pre-line';
+    return plan;
+  }
+  w.set = async (pid, manual) => {
+    w.manual = !!manual;
+    w.pick = pid ? String(pid) : '';
+    const line = pid ? PRESET_LINE.get(String(pid)) : null;
+    COMBOS[id].setValue(line ? line.base : '');
+    if(!pid){ $(hintId).textContent = manual ? t('profile.none_picked') : (presetWhy() || t('profile.none_found')); return; }
+    if(!line){
+      // A cloud or built-in profile set in Bambuddy: shown, kept unless changed.
+      const name = (spoolRec && spoolRec.slicer_filament_name) || pid;
+      COMBOS[id].setValue(name);
+      $(hintId).textContent = t('profile.from_bambuddy');
+      return;
+    }
+    await show('/api/presets/plan?id=' + encodeURIComponent(pid));
+  };
+  w.suggest = async fields => {
+    if(w.manual) return;
+    const q = new URLSearchParams(fields).toString();
+    const plan = await show('/api/presets/plan?' + q);
+    if(!plan || w.manual) return;
+    w.pick = plan.spool ? plan.spool.slicer_filament : '';
+    const line = w.pick ? PRESET_LINE.get(w.pick) : null;
+    COMBOS[id].setValue(line ? line.base : '');
+    if(!w.pick) $(hintId).textContent = presetWhy() || t('profile.none_found');
+  };
+  makeCombo(id, {
+    source: async q => {
+      await presetsLoad();
+      const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+      const hits = presetLines.filter(l => {
+        const hay = (l.vendor + ' ' + l.base + ' ' + l.type).toLowerCase();
+        return words.every(x => hay.includes(x));
+      }).slice(0, 60).map(l => ({id: l.id, label: l.base, sub: presetLineSub(l)}));
+      return [{id: '', label: t('profile.none'), sub: ''}, ...hits];
+    },
+    render: (li, it) => {
+      li.appendChild(document.createTextNode(it.label));
+      if(it.sub){ const s = document.createElement('span'); s.className = 'sub'; s.textContent = it.sub; li.appendChild(s); }
+    },
+    onPick: it => { $(id).blur(); w.set(it.id, true); },
+  });
+  // Typed away and left: back to what is picked.
+  $(id).addEventListener('blur', () => setTimeout(() => {
+    const line = w.pick ? PRESET_LINE.get(w.pick) : null;
+    if(line && $(id).value !== line.base) COMBOS[id].setValue(line.base);
+  }, 150));
+  presetsLoad().then(d => {
+    $(boxId).classList.toggle('hidden', !((d.items || []).length || d.error === 'forbidden'));
+    $('linkBox').classList.toggle('hidden', !(d.items || []).length);
+  });
+  return w;
+}
+const formProfile = presetPicker('profile', 'profileHint', 'profileBox');
+const spProfile = presetPicker('spProfile', 'spProfileHint', 'spProfileBox');
+let profileTimer = null;
+function profileSuggest(){
+  clearTimeout(profileTimer);
+  profileTimer = setTimeout(() => formProfile.suggest({
+    brand: $('brand').value.trim(), material: $('material').value.trim(), subtype: $('subtype').value.trim()}), 300);
+}
+['brand', 'material', 'subtype'].forEach(id => $(id).addEventListener('change', profileSuggest));
+
+// Every spool without a profile, linked at once: listed first, then done.
+let linkPlan = null;
+$('linkCheck').onclick = async () => {
+  $('linkCheck').disabled = true;
+  $('linkApply').classList.add('hidden');
+  $('linkList').textContent = t('profile.link_checking');
+  try{
+    const d = await (await fetch('/api/presets/link-all', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'})).json();
+    linkPlan = d.plan || [];
+    if(!d.ok && !linkPlan.length){ $('linkList').textContent = d.error === 'forbidden' ? t('profile.forbidden') : t('profile.link_failed', {n: '?'}); return; }
+    if(!linkPlan.length){ $('linkList').textContent = t('profile.link_none'); return; }
+    $('linkList').style.whiteSpace = 'pre-line';
+    $('linkList').textContent = linkPlan.slice(0, 40).map(e => '#' + e.id + ' ' + e.title + ' → ' + e.profile
+      + (e.models.length ? ' (+' + e.models.join(', ') + ')' : '')).join('\n') + (linkPlan.length > 40 ? '\n…' : '');
+    $('linkApply').textContent = t('profile.link_apply', {n: linkPlan.length});
+    $('linkApply').classList.remove('hidden');
+  }catch(e){ $('linkList').textContent = t('profile.link_failed', {n: '?'}); }
+  finally{ $('linkCheck').disabled = false; }
+};
+$('linkApply').onclick = async () => {
+  $('linkApply').disabled = true;
+  try{
+    const d = await (await fetch('/api/presets/link-all', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({apply: true})})).json();
+    if((d.linked || []).length) toast(t('profile.link_done', {n: d.linked.length}) + ' ✓');
+    if((d.errors || []).length) toast(t('profile.link_failed', {n: d.errors.length}), false);
+    $('linkApply').classList.add('hidden');
+    $('linkList').textContent = '';
+    invForget();
+  }catch(e){ toast(t('profile.link_failed', {n: '?'}), false); }
+  finally{ $('linkApply').disabled = false; }
+};
+
 // ── Inventory mode ──
 // Bambuddy is asked whether Spoolman stands behind it; a key without
 // "Read Status" is refused the answer, and then the mode is set by hand.
@@ -1997,9 +2240,12 @@ function showInv(d){
   const denied = d.inventory_mode === 'auto' && !!d.probe && d.probe !== 200;
   let state = denied ? 'bad' : 'ok';
   let title = denied ? t('settings.probe_short') : t('settings.'+d.active);
-  $('invHint').textContent = d.inventory_mode !== 'auto' ? ''
+  // Set here to the other inventory than Bambuddy uses: Bambuddy's is the
+  // one written to, and the hint says so.
+  $('invHint').textContent = d.overridden ? t('settings.overridden', {mode: t('settings.'+d.active)})
+    : d.inventory_mode !== 'auto' ? ''
     : denied ? t('settings.probe_denied', {code: d.probe}) : t('settings.detected', {mode: t('settings.'+d.active)});
-  $('invHint').classList.toggle('err', denied);
+  $('invHint').classList.toggle('err', denied || !!d.overridden);
   // In Spoolman mode the light is whether the app reads the user's Spoolman
   // itself; the folded part says from where, or why not and what is missing.
   const sm = d.spoolman;
@@ -2070,6 +2316,40 @@ const labelCfg = Object.assign({template:LABEL_OWN, w:50, l:30, fields:LABEL_DEF
 // on that size: a choice from back then moves to the own layout once.
 if(!labelCfg.v2){ if(labelCfg.template === 'box_40x30') labelCfg.template = LABEL_OWN; labelCfg.v2 = 1; }
 if(labelCfg.template !== LABEL_OWN && !LABEL_SIZES[labelCfg.template]) labelCfg.template = LABEL_OWN;
+// The own layout as the user arranged it: the lines in print order, each
+// shown or not, in a size, bold, or white on a black band; the QR code's
+// side and size; and how the lines share the height.
+const LABEL_SIZE_DOTS = {xs: 14, s: 18, m: 22, l: 28, xl: 34};
+const LABEL_LAYOUT_DEFAULT = [
+  {f: 'brand', on: true, size: 'l', bold: true, inv: false},
+  {f: 'material', on: true, size: 'm', bold: true, inv: true},
+  {f: 'name', on: true, size: 'm', bold: false, inv: false},
+  {f: 'hex', on: true, size: 's', bold: false, inv: false},
+  {f: 'location', on: true, size: 's', bold: false, inv: false},
+  {f: 'temps', on: false, size: 's', bold: false, inv: false},
+  {f: 'weight', on: false, size: 's', bold: false, inv: false},
+  {f: 'material_number', on: false, size: 's', bold: false, inv: false},
+  {f: 'profile', on: false, size: 's', bold: false, inv: false},
+  {f: 'note', on: false, size: 's', bold: false, inv: false},
+  {f: 'added', on: false, size: 's', bold: false, inv: false},
+  {f: 'spool_id', on: true, size: 'xl', bold: true, inv: false},
+];
+function labelLayoutDefault(fields){
+  return LABEL_LAYOUT_DEFAULT.map(it => Object.assign({}, it, fields ? {on: it.f === 'profile' ? false : fields.includes(it.f)} : {}));
+}
+if(!Array.isArray(labelCfg.layout)){
+  // Set up before the layout could be arranged: the lines ticked then.
+  labelCfg.layout = labelLayoutDefault(labelCfg.fields);
+  labelCfg.qr = {pos: labelCfg.fields.includes('qr') ? 'right' : 'off', size: 'm'};
+  labelCfg.flow = 'last_bottom';
+}
+// A line added in a later version shows up, switched off, before the number.
+for(const it of LABEL_LAYOUT_DEFAULT) if(!labelCfg.layout.some(x => x.f === it.f))
+  labelCfg.layout.splice(Math.max(0, labelCfg.layout.length - 1), 0, Object.assign({}, it, {on: false}));
+labelCfg.layout = labelCfg.layout.filter(x => LABEL_SIZE_DOTS[x.size] && LABEL_LAYOUT_DEFAULT.some(d => d.f === x.f));
+labelCfg.qr = Object.assign({pos: 'right', size: 'm'}, labelCfg.qr || {});
+if(!['top', 'spread', 'last_bottom'].includes(labelCfg.flow)) labelCfg.flow = 'last_bottom';
+let labelLast = null, labelDemoSeq = 0;   // the spool previewed last, for the layout editor
 let labelJob = null;      // the previewed label as the printer takes it
 let labelPng = null;      // Bambuddy's image, for sharing
 let labelPrinter = null;  // the printer picked in this session
@@ -2097,13 +2377,15 @@ function labelSave(){ lsSet('f2b.label', labelCfg); }
     l.appendChild(c); l.appendChild(document.createTextNode(t('label.f_'+f)));
     $('labelFields').appendChild(l);
   }
-  $('labelTpl').onchange = () => { labelCfg.template = $('labelTpl').value; labelSave(); labelRefresh(); };
+  $('labelTpl').onchange = () => { labelCfg.template = $('labelTpl').value; labelSave(); labelTplShow(); labelRefresh(); };
+  labelLayoutInit();
+  labelTplShow();
   for(const id of ['labelW','labelL']) $(id).onchange = () => {
     const w = parseInt($('labelW').value), l = parseInt($('labelL').value);
     if(w >= 10 && w <= 120) labelCfg.w = w;
     if(l >= 10 && l <= 200) labelCfg.l = l;
     $('labelW').value = labelCfg.w; $('labelL').value = labelCfg.l;
-    labelSave(); labelRefresh();
+    labelSave(); labelDemoDraw(); labelRefresh();
   };
   $('labelSpool').oninput = () => { labelJob = null; $('labelBox').classList.add('hidden'); labelHint(''); };
   $('labelSpool').onkeydown = (e) => { if(e.key === 'Enter'){ e.preventDefault(); labelPreview(); } };
@@ -2157,7 +2439,9 @@ async function labelBuild(id){
       if(msg.startsWith('label.')) msg = t('label.err_failed');
       return {error: msg};
     }
-    const cv = await labelDrawOwn(d.spool, d.qr, labelCfg.fields);
+    labelLast = {sp: d.spool, qr: d.qr};
+    labelDemoDraw();
+    const cv = await labelDrawOwn(d.spool, d.qr);
     const png = await new Promise(ok => cv.toBlob(ok, 'image/png'));
     return {raster: labelRaster(cv, id), png};
   }
@@ -2235,27 +2519,30 @@ function labelFit(g, text, maxW){
   while(lo < hi){ const mid = (lo + hi + 1) >> 1; if(g.measureText(text.slice(0, mid)+'…').width <= maxW) lo = mid; else hi = mid - 1; }
   return text.slice(0, lo)+'…';
 }
-function labelLines(sp, fields){
-  const has = f => fields.includes(f);
-  const out = [];
-  const nameBits = [];
-  if(has('name') && sp.color_name) nameBits.push(sp.color_name);
-  if(has('hex') && sp.rgba) nameBits.push('#'+String(sp.rgba).slice(0, 6).toUpperCase());
-  if(nameBits.length) out.push(nameBits.join('  '));
-  if(has('location') && sp.storage_location) out.push(t('label.l_location')+' '+sp.storage_location);
-  if(has('temps') && (sp.nozzle_temp_min || sp.nozzle_temp_max)){
-    const lo = sp.nozzle_temp_min, hi = sp.nozzle_temp_max;
-    out.push(t('label.l_nozzle')+' '+(lo && hi && lo !== hi ? lo+'–'+hi : (lo || hi))+' °C');
+// One line's text on the label, '' when the spool has none.
+function labelText(sp, f){
+  switch(f){
+    case 'brand': return sp.brand || '';
+    case 'material': return [sp.material, sp.subtype].filter(Boolean).join(' ');
+    case 'name': return sp.color_name || '';
+    case 'hex': return sp.rgba ? '#' + String(sp.rgba).slice(0, 6).toUpperCase() : '';
+    case 'location': return sp.storage_location ? t('label.l_location') + ' ' + sp.storage_location : '';
+    case 'temps': {
+      const lo = sp.nozzle_temp_min, hi = sp.nozzle_temp_max;
+      return lo || hi ? t('label.l_nozzle') + ' ' + (lo && hi && lo !== hi ? lo + '–' + hi : (lo || hi)) + ' °C' : '';
+    }
+    case 'weight': return sp.label_weight ? sp.label_weight + ' g' : '';
+    case 'material_number': return sp.material_number || '';
+    case 'profile': return String(sp.slicer_filament_name || '').split('@')[0].trim();
+    case 'note': return String(sp.note || '').split('\n').map(x => x.trim()).filter(Boolean).slice(0, 2).join(' · ');
+    case 'added': return sp.added ? t('label.l_added') + ' ' + sp.added : '';
+    case 'spool_id': return sp.id ? '#' + sp.id : '';
   }
-  if(has('weight') && sp.label_weight) out.push(sp.label_weight+' g');
-  if(has('material_number') && sp.material_number) out.push(sp.material_number);
-  if(has('note') && sp.note) for(const line of String(sp.note).split('\n').slice(0, 2)) if(line.trim()) out.push(line.trim());
-  if(has('added') && sp.added) out.push(t('label.l_added')+' '+sp.added);
-  return out;
+  return '';
 }
-async function labelDrawOwn(sp, qrUrl, fields){
+async function labelDrawOwn(sp, qrUrl, cfg = labelCfg){
   await labelFonts();
-  const W = labelCfg.w * DOTS_PER_MM, H = labelCfg.l * DOTS_PER_MM, M = 8, GAP = 6;
+  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM, M = 8, GAP = 6;
   // A roll wider than the head loses its edges: the sides keep their margin
   // inside what is printed.
   const MX = M + Math.max(0, Math.ceil((W - TSPL_HEAD_DOTS) / 2));
@@ -2264,44 +2551,131 @@ async function labelDrawOwn(sp, qrUrl, fields){
   g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = '#000'; g.textBaseline = 'top';
   // The QR code: whole dots per module, 3 at least, a 2 module quiet zone.
   let qrW = 0;
-  if(fields.includes('qr') && qrUrl){
+  const qrLeft = cfg.qr.pos === 'left';
+  if(cfg.qr.pos !== 'off' && qrUrl){
     try{
       if(!window.qrcode) await loadScript(QR_LIB);
       const q = qrcode(0, 'M'); q.addData(qrUrl); q.make();
-      const n = q.getModuleCount(), box = Math.min(H - 2*M, Math.floor((W - 2*MX) * 0.42));
+      const share = {s: 0.3, m: 0.42, l: 0.55}[cfg.qr.size] || 0.42;
+      const n = q.getModuleCount(), box = Math.min(H - 2*M, Math.floor((W - 2*MX) * share));
       const px = Math.max(3, Math.floor(box / (n + 4)));
       qrW = (n + 4) * px;
-      const x0 = W - MX - qrW, y0 = Math.floor((H - qrW) / 2);
+      const x0 = qrLeft ? MX : W - MX - qrW, y0 = Math.floor((H - qrW) / 2);
       g.fillStyle = '#fff'; g.fillRect(x0, y0, qrW, qrW); g.fillStyle = '#000';
       for(let r = 0; r < n; r++) for(let c = 0; c < n; c++)
         if(q.isDark(r, c)) g.fillRect(x0 + (c + 2)*px, y0 + (r + 2)*px, px, px);
     }catch(e){ qrW = 0; }
   }
+  const TX = qrLeft && qrW ? MX + qrW + GAP : MX;
   const TW = W - 2*MX - (qrW ? qrW + GAP : 0);
+  const rows = cfg.layout.filter(it => it.on).map(it => Object.assign({text: labelText(sp, it.f)}, it)).filter(r => r.text);
+  // Each line in its size; when they do not fit the height, all smaller
+  // alike, down to 12 dots.
+  const pad = r => r.inv ? 8 : 3;
+  let sizes = rows.map(r => LABEL_SIZE_DOTS[r.size]);
+  const room = H - 2*M, need = () => sizes.reduce((a, z, i) => a + z + pad(rows[i]), 0);
+  if(need() > room){
+    const k = room / need();
+    sizes = sizes.map(z => Math.max(12, Math.floor(z * k)));
+  }
+  const heights = sizes.map((z, i) => z + pad(rows[i]));
+  const total = heights.reduce((a, h) => a + h, 0), spare = Math.max(0, room - total);
   let y = M;
-  if(fields.includes('brand') && sp.brand){
-    g.font = '700 30px '+LABEL_FONT; g.fillText(labelFit(g, sp.brand, TW), MX, y); y += 32;
-  }
-  if(fields.includes('material') && sp.material){
-    const band = 30;
-    g.fillRect(MX, y, TW, band); g.fillStyle = '#fff';
-    g.font = '700 24px '+LABEL_FONT;
-    g.fillText(labelFit(g, [sp.material, sp.subtype].filter(Boolean).join(' '), TW - 12), MX + 6, y + 3);
-    g.fillStyle = '#000'; y += band + 4;
-  }
-  const idH = fields.includes('spool_id') ? 34 : 0;
-  const lines = labelLines(sp, fields);
-  const room = H - M - idH - y;
-  // The largest size from 22 down to 14 dots in which every line fits.
-  let size = 22;
-  while(size > 14 && lines.length * (size + 3) > room) size--;
-  g.font = '600 '+size+'px '+LABEL_FONT;
-  for(const line of lines){
-    if(y + size > H - M - idH) break;
-    g.fillText(labelFit(g, line, TW), MX, y); y += size + 3;
-  }
-  if(idH){ g.font = '700 32px '+LABEL_FONT; g.fillText('#'+sp.id, MX, H - M - 32); }
+  rows.forEach((r, i) => {
+    if(cfg.flow === 'last_bottom' && i === rows.length - 1 && rows.length > 1) y = Math.max(y, H - M - heights[i]);
+    if(y + sizes[i] > H - M + 1) return;
+    g.font = (r.bold ? '700 ' : '600 ') + sizes[i] + 'px ' + LABEL_FONT;
+    if(r.inv){
+      g.fillRect(TX, y, TW, heights[i] - 2); g.fillStyle = '#fff';
+      g.fillText(labelFit(g, r.text, TW - 12), TX + 6, y + 3);
+      g.fillStyle = '#000';
+    }else g.fillText(labelFit(g, r.text, TW), TX, y + 1);
+    y += heights[i] + (cfg.flow === 'spread' && rows.length > 1 ? spare / (rows.length - 1) : 0);
+  });
   return cv;
+}
+
+// ── The layout editor ──
+// Every change shows at once on a label above the rows: the spool previewed
+// last, or a made-up one.
+function labelSample(){
+  const d = new Date();
+  return {sp: {id: 123, brand: 'eSUN', material: 'PLA+', subtype: 'Matte', color_name: 'Fire Engine Red', rgba: 'D02020FF',
+               storage_location: 'A2', nozzle_temp_min: 205, nozzle_temp_max: 225, label_weight: 1000,
+               material_number: 'PLA+1KG175RD', slicer_filament_name: 'eSUN PLA+ @BBL X1C', note: '',
+               added: d.toISOString().slice(0, 10)},
+          qr: location.origin + '/?spool=123'};
+}
+async function labelDemoDraw(){
+  const my = ++labelDemoSeq, src = labelLast || labelSample();
+  const cv = await labelDrawOwn(src.sp, src.qr);
+  if(my !== labelDemoSeq) return;
+  const out = $('labelDemo'); out.width = cv.width; out.height = cv.height;
+  out.getContext('2d').drawImage(cv, 0, 0);
+}
+function labelTplShow(){
+  const own = labelCfg.template === LABEL_OWN;
+  $('labelOwnBox').classList.toggle('hidden', !own);
+  $('labelFieldsBox').classList.toggle('hidden', own);
+  // After the page's script has run: the label's fonts and QR are set up by then.
+  if(own) setTimeout(labelDemoDraw);
+}
+function labelLayoutChanged(){
+  // Bambuddy's templates take the same lines, ticked or not.
+  labelCfg.fields = labelCfg.layout.filter(x => x.on && LABEL_FIELDS.includes(x.f)).map(x => x.f)
+    .concat(labelCfg.qr.pos !== 'off' ? ['qr'] : []);
+  document.querySelectorAll('#labelFields input').forEach(c => { c.checked = labelCfg.fields.includes(c.value); });
+  labelSave(); labelLayoutDraw(); labelDemoDraw(); labelRefresh();
+}
+function labelLayoutDraw(){
+  const box = $('labelLayout'); box.innerHTML = '';
+  labelCfg.layout.forEach((it, i) => {
+    const row = document.createElement('div');
+    row.className = 'lay-row' + (it.on ? '' : ' off');
+    const on = document.createElement('input');
+    on.type = 'checkbox'; on.checked = it.on; on.setAttribute('aria-label', t('label.f_' + it.f));
+    on.onchange = () => { it.on = on.checked; labelLayoutChanged(); };
+    const name = document.createElement('span'); name.className = 'lay-name'; name.textContent = t('label.f_' + it.f);
+    name.onclick = () => on.click();
+    const size = document.createElement('select'); size.setAttribute('aria-label', t('label.size'));
+    for(const k of Object.keys(LABEL_SIZE_DOTS)){ const o = document.createElement('option'); o.value = k; o.textContent = k.toUpperCase(); size.appendChild(o); }
+    size.value = it.size;
+    size.onchange = () => { it.size = size.value; labelLayoutChanged(); };
+    const tog = (key, text, label) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'lay-tog'; b.textContent = text;
+      b.setAttribute('aria-pressed', String(!!it[key])); b.setAttribute('aria-label', label); b.title = label;
+      b.onclick = () => { it[key] = !it[key]; labelLayoutChanged(); };
+      return b;
+    };
+    const move = (d, icon, label) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'icon-btn';
+      b.setAttribute('aria-label', label); b.disabled = i + d < 0 || i + d >= labelCfg.layout.length;
+      b.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#' + icon + '"/></svg>';
+      b.onclick = () => { const L = labelCfg.layout; [L[i], L[i + d]] = [L[i + d], L[i]]; labelLayoutChanged(); };
+      return b;
+    };
+    const ctl = document.createElement('div'); ctl.className = 'lay-ctl';
+    ctl.append(size, tog('bold', 'B', t('label.bold')), tog('inv', '■', t('label.band')),
+               move(-1, 'i-up', t('label.up')), move(1, 'i-down', t('label.down')));
+    row.append(on, name, ctl);
+    box.appendChild(row);
+  });
+}
+function labelLayoutInit(){
+  const opts = (id, keys, value, onPick) => {
+    for(const k of keys){ const o = document.createElement('option'); o.value = k; o.textContent = t('label.' + id + '_' + k); $(id === 'qr' ? 'labelQrPos' : id === 'qrsize' ? 'labelQrSize' : 'labelFlow').appendChild(o); }
+  };
+  opts('qr', ['right', 'left', 'off']); opts('qrsize', ['s', 'm', 'l']); opts('flow', ['last_bottom', 'top', 'spread']);
+  $('labelQrPos').value = labelCfg.qr.pos; $('labelQrSize').value = labelCfg.qr.size; $('labelFlow').value = labelCfg.flow;
+  $('labelQrPos').onchange = () => { labelCfg.qr.pos = $('labelQrPos').value; labelLayoutChanged(); };
+  $('labelQrSize').onchange = () => { labelCfg.qr.size = $('labelQrSize').value; labelLayoutChanged(); };
+  $('labelFlow').onchange = () => { labelCfg.flow = $('labelFlow').value; labelLayoutChanged(); };
+  $('labelReset').onclick = () => {
+    labelCfg.layout = labelLayoutDefault(); labelCfg.qr = {pos: 'right', size: 'm'}; labelCfg.flow = 'last_bottom';
+    $('labelQrPos').value = 'right'; $('labelQrSize').value = 'm'; $('labelFlow').value = 'last_bottom';
+    labelLayoutChanged();
+  };
+  labelLayoutDraw();
 }
 
 function labelImage(blob){
@@ -2439,6 +2813,9 @@ $('form').onsubmit = async (e) => {
     note: $('note').value.trim(),
     tag_uid: $('tag_uid').value.trim(),
   };
+  // The profile as picked or suggested ('' for none); the server takes its
+  // line's profile for each printer model.
+  if(formProfile.pick !== null) fields.slicer_filament = formProfile.pick;
   if(smFilament) fields.spoolman_filament_id = smFilament.id;
   if(!fields.material){ toast(t('submit.material_required'), false); return; }
   const quantity = parseInt($('quantity').value)||1;
@@ -2451,6 +2828,7 @@ $('form').onsubmit = async (e) => {
       // Created either way; a tag or price that did not stick is said, not
       // hidden behind the success.
       if(d.tag_error) toast(t('submit.tag_not_linked',{error:d.tag_error}), false);
+      else if(d.profile_error) toast(t('profile.save_failed', {error: d.profile_error}), false);
       else if(d.warnings&&d.warnings.length) toast(t('submit.price_not_set'), false);
       else if(d.filament_filled && d.filament_filled.length) toast(tn('submit.added', d.created)+' ✓ '+t('submit.filament_filled'));
       else toast(tn('submit.added', d.created)+' ✓');
@@ -2458,6 +2836,7 @@ $('form').onsubmit = async (e) => {
       $('tag_uid').value=''; nfcStop(); showSpoolman(null);
       invForget();
       labelOffer(d.spool_ids); }
+    else if((d.errors || [])[0] === 'mode_changed'){ toast(t('submit.mode_changed'), false); fetch('/api/settings').then(r => r.json()).then(showInv).catch(() => {}); }
     else { toast(t('submit.failed')+(d.error?': '+d.error:(d.errors&&d.errors.length?': '+d.errors[0]:'')), false); }
   }catch(e){ toast(t('submit.request_failed'), false); }
   finally{ $('submitBtn').disabled = false; }

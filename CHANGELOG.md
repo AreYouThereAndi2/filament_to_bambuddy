@@ -5,6 +5,12 @@ Releases of the fork [AreYouThereAndi2/filament_to_bambuddy](https://github.com/
 ## Unreleased
 
 ### New
+- **Slicer profiles linked to spools, per printer model.** Any filament profile imported into BamBuddy (OrcaSlicer, Bambu Studio, any maker) is matched to a spool by maker, material and line ("Matte", "Silk", "PLA+" rather than "PLA"). A profile belongs to a printer model ("@BBL X1C", "@BBL P1S 0.2 nozzle"), so the app reads your printers from BamBuddy and gives the spool its line's profile for each of your models: the most used model's on the spool, the others (and other nozzles) as BamBuddy's per-model profiles. Profiles set in BamBuddy are kept.
+  - **Form:** a *Slicer profile* field, suggested by itself and searchable, shows what each printer loads. The lookup returns the suggestion too (`slicer_filament`).
+  - **Spool record:** change the profile; a spool without one gets a suggestion, taken over with Save.
+  - **Your stock → Link slicer profiles:** every spool without a profile, listed with the one that fits, then linked at once. Spools with an imported profile get the rows their other printer models lack.
+  - New: `GET /api/presets`, `GET /api/presets/plan`, `POST /api/presets/link-all`. They need the key's **Read Status**.
+- **Arrange the own label yourself.** Each line can be shown or hidden, moved up or down, set in a size (XS–XL), bold, or white on a black band. The QR code goes right, left or off, in three sizes. The lines stack from the top, keep the last line at the bottom, or spread over the height. A label pinned above the rows shows every change at once. What does not fit the roll shrinks alike. The slicer profile can be a line too.
 - **Your stock** (new card), read once from the active inventory (`GET /api/inventory`, archived spools left out, kept 30 s):
   - **Search:** every word narrows the list (maker, material, colour, location, tag, article number, `#12`); `<200` keeps spools with less than 200 g left. A tap opens the spool's record.
   - **Running low:** spools under a threshold (200 g, changeable), grouped by kind, with what is left, the last price paid and a *Buy more* search.
@@ -18,6 +24,11 @@ Releases of the fork [AreYouThereAndi2/filament_to_bambuddy](https://github.com/
 - **The inventory status folds away.** Below the inventory select only a light and one line remain (green connected, amber address missing, red not reachable or refused); a tap shows the details and *Check again*.
 
 ### Fixed
+- **BamBuddy's inventory mode wins.** Set by hand to the other inventory than BamBuddy uses, the app posted spools where BamBuddy does not show them. It now follows BamBuddy whenever BamBuddy answers, and says so in red. The mode set by hand only counts when BamBuddy refuses the question. A create refused because BamBuddy just switched asks again and says to tap *Add* once more.
+- **Empty spool weight no longer frozen on each spool.** The linked Spoolman filament's (or its maker's) empty-spool weight was copied onto every new spool, so a later correction of the filament never reached them. Now it stays on the filament; a different weight goes onto the filament when it has none.
+- Colour names BamBuddy made up from the line ("Matte") are no longer shown as colours.
+- **Spool record:** *Weighed (gross)* gives what is left minus the empty spool. A Bambu RFID is shown, and replacing it with another tag asks first: behind Spoolman a spool has one tag, and the AMS and the scale know the spool by it.
+- The filament databases are rebuilt in the background at start and before they expire, so the day's first scan no longer waits for them (the scale gave up after 15 s). `?quick=1` lookups skip the shop price.
 - "Amazon code" was shown for every unknown article number. It now appears only for Amazon's own codes (ASIN `B0…`, FNSKU `X0…`); other unknown codes read "not in the database".
 - **Spoolman status.** Under the inventory select a status line says whether the app reads your Spoolman itself: green with the number of filaments and the address (and whether it came from `SPOOLMAN_URL` or BamBuddy), amber when no address is set, red with the reason when it is set but not read (no answer, connection refused, an HTTP code, or an answer that is not Spoolman), and what the app does meanwhile. **Check again** reads Spoolman at once. The reason also goes to the log.
 - `SPOOLMAN_URL` is taken as meant: without `http://`, with a trailing slash or with `/api/v1` on the end.
