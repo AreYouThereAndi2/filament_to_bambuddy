@@ -15,7 +15,8 @@ Diese Anleitung gilt für den Fork [AreYouThereAndi2/filament_to_bambuddy](https
 - BamBuddy erreichbar im Netz.
 - Ein **BamBuddy-API-Schlüssel** (BamBuddy → Settings → API Keys) mit
   - **Manage Inventory** (legt Spulen an, Pflicht),
-  - **Read Status** (Verbindungsanzeige, Inventar-Modus, Druckprofile und Druckermodelle).
+  - **Read Status** (Verbindungsanzeige, Inventar-Modus, Druckprofile und Druckermodelle),
+  - **Benachrichtigungen senden** (nur für die Nachricht, wenn Filament knapp wird).
 
 ## Neu installieren
 
@@ -233,6 +234,11 @@ Die Karte **Dein Bestand** liest deine Spulen aus dem aktiven Inventar (BamBuddy
 
 - **Spule suchen:** Jedes Wort grenzt ein: Marke, Material, Farbe, Lagerort, Tag, Artikelnummer oder `#12`. `<200` zeigt nur Spulen mit weniger als 200 g. Ein Tipp öffnet die Spule.
 - **Nachbestellen:** Spulen unter einer Grenze (200 g, änderbar), nach Sorte gruppiert, mit Restmenge, letztem Preis und *Nachkaufen* (Websuche).
+- **Benachrichtigen, wenn eine Sorte knapp wird** (unten in *Nachbestellen*): Alle paar Stunden schaut die App in den Bestand. Liegen alle Spulen einer Sorte (Marke, Material, Linie, Farbe) zusammen unter der Grenze, kommt einmal eine Nachricht über die Kanäle von BamBuddy (Telegram, ntfy, E-Mail …). Erst wenn die Sorte wieder über der Grenze war, z. B. nach einer neuen Spule, meldet sie sich erneut. Dafür braucht es zwei Dinge in BamBuddy:
+  1. Der API-Schlüssel braucht **Benachrichtigungen senden**.
+  2. Bei mindestens einem Kanal (Einstellungen → Benachrichtigungen) **Nachrichten verbundener Apps** einschalten.
+
+  Darunter steht, über welche Kanäle die Nachricht kommt. **Jetzt prüfen** schaut sofort nach und schickt, was knapp ist. Wie oft geprüft wird: `REORDER_CHECK_HOURS` (Standard 3).
 
 Außerdem:
 
@@ -244,6 +250,9 @@ Außerdem:
 ## Mit der SpoolmanScale verbinden
 
 In der Weboberfläche der Waage → Einstellungen → Barcode-Scanner → **filament_to_bambuddy-Adresse**: `http://<server-ip>:8088`. Scannt die Waage dann einen Code, den keine Spule kennt, fragt sie die App und bietet an, die Spule anzulegen, mit oder ohne den gefundenen Preis.
+
+- **Angelegt wird die Spule von der App**, genau wie vom Handy: Sie kommt auf dein Spoolman-Filament und bekommt die Druckprofile für jedes Druckermodell. Lagerort und Preis kommen aus dem Speicher, und der Code wird gemerkt. Ist die App nicht erreichbar, legt die Waage die Spule selbst über BamBuddy an.
+- **Etiketten von der Waage** kommen im selben Layout, das du am Handy unter *Etikettenrolle und Zeilen* angeordnet hast. Die App merkt sich die Anordnung (`/data/label_layout.json`) und zeichnet das Etikett für die Waage. Ein neues Handy übernimmt sie von dort.
 
 ## Fehlersuche
 
