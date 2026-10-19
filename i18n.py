@@ -341,6 +341,17 @@ EN = {
         "tag_taken": "This tag is already on another spool",
     },
     "inv": {
+        "alert": "Message me when a kind runs out",
+        "alert_hint": "Through Bambuddy's notification channels, every few hours, once per kind: when all its spools together hold less than the limit above.",
+        "alert_via": "Arrives via: {names}",
+        "alert_no_channel": "No Bambuddy channel takes it yet: switch on “Messages from connected apps” on a channel in Bambuddy (Settings → Notifications).",
+        "alert_forbidden": "The API key may not send messages: give it “Send notifications” in Bambuddy.",
+        "alert_failed": "Not sent: {error}",
+        "alert_check": "Check now",
+        "alert_sent": "Sent to {n} channel(s).",
+        "alert_none_low": "Nothing is running out.",
+        "alert_low": "Running out: {list}",
+        "tag_unknown_hint": "Not found. A Bambu spool's RFID chip cannot be read by a phone (MIFARE Classic): find it with the search above or put it on the scale.",
         "title": "Your stock",
         "search_label": "Find a spool",
         "search_placeholder": "Colour, material, location, #12, <200",
@@ -378,6 +389,10 @@ EN = {
         "link_none": "Every spool has a profile, or none fits.",
         "link_done": "{n} spools linked",
         "link_failed": "{n} spools not linked",
+    },
+    "notify": {
+        "title": "Filament running out ({n})",
+        "line": "{title}: {left} g left ({ids})",
     },
 }
 
@@ -705,6 +720,17 @@ DE = {
         "tag_taken": "Dieser Tag hängt schon an einer anderen Spule",
     },
     "inv": {
+        "alert": "Benachrichtigen, wenn eine Sorte knapp wird",
+        "alert_hint": "Über die Benachrichtigungs-Kanäle von BamBuddy, alle paar Stunden, einmal je Sorte: wenn alle ihre Spulen zusammen unter der Grenze oben liegen.",
+        "alert_via": "Kommt über: {names}",
+        "alert_no_channel": "Noch nimmt kein BamBuddy-Kanal das an: in BamBuddy bei einem Kanal „Nachrichten verbundener Apps“ einschalten (Einstellungen → Benachrichtigungen).",
+        "alert_forbidden": "Der API-Key darf keine Nachrichten senden: in BamBuddy „Benachrichtigungen senden“ geben.",
+        "alert_failed": "Nicht gesendet: {error}",
+        "alert_check": "Jetzt prüfen",
+        "alert_sent": "An {n} Kanal/Kanäle gesendet.",
+        "alert_none_low": "Nichts wird knapp.",
+        "alert_low": "Knapp: {list}",
+        "tag_unknown_hint": "Nicht gefunden. Den RFID-Chip einer Bambu-Spule kann ein Handy nicht lesen (MIFARE Classic): über die Suche oben finden oder auf die Waage legen.",
         "title": "Dein Bestand",
         "search_label": "Spule suchen",
         "search_placeholder": "Farbe, Material, Lagerort, #12, <200",
@@ -742,6 +768,10 @@ DE = {
         "link_none": "Jede Spule hat ein Profil, oder keins passt.",
         "link_done": "{n} Spulen verknüpft",
         "link_failed": "{n} Spulen nicht verknüpft",
+    },
+    "notify": {
+        "title": "Filament wird knapp ({n})",
+        "line": "{title}: noch {left} g ({ids})",
     },
 }
 
@@ -1067,6 +1097,17 @@ ES = {
         "tag_taken": "Esta etiqueta ya está en otra bobina",
     },
     "inv": {
+        "alert": "Avisarme cuando un tipo se agote",
+        "alert_hint": "Por los canales de notificación de Bambuddy, cada pocas horas, una vez por tipo: cuando todas sus bobinas juntas tengan menos que el límite de arriba.",
+        "alert_via": "Llega por: {names}",
+        "alert_no_channel": "Ningún canal de Bambuddy lo acepta aún: activa «Mensajes de apps conectadas» en un canal de Bambuddy (Ajustes → Notificaciones).",
+        "alert_forbidden": "La clave API no puede enviar mensajes: dale «Enviar notificaciones» en Bambuddy.",
+        "alert_failed": "No enviado: {error}",
+        "alert_check": "Comprobar ahora",
+        "alert_sent": "Enviado a {n} canal(es).",
+        "alert_none_low": "Nada se está agotando.",
+        "alert_low": "Agotándose: {list}",
+        "tag_unknown_hint": "No encontrada. Un móvil no puede leer el chip RFID de una bobina Bambu (MIFARE Classic): búscala arriba o ponla en la báscula.",
         "title": "Tu inventario",
         "search_label": "Buscar bobina",
         "search_placeholder": "Color, material, ubicación, #12, <200",
@@ -1104,6 +1145,10 @@ ES = {
         "link_none": "Todas las bobinas tienen perfil, o ninguno encaja.",
         "link_done": "{n} bobinas vinculadas",
         "link_failed": "{n} bobinas sin vincular",
+    },
+    "notify": {
+        "title": "Filamento agotándose ({n})",
+        "line": "{title}: quedan {left} g ({ids})",
     },
 }
 
@@ -1429,6 +1474,17 @@ FR = {
         "tag_taken": "Ce tag est déjà sur une autre bobine",
     },
     "inv": {
+        "alert": "Me prévenir quand une sorte s'épuise",
+        "alert_hint": "Par les canaux de notification de Bambuddy, toutes les quelques heures, une fois par sorte : quand toutes ses bobines ensemble ont moins que la limite ci-dessus.",
+        "alert_via": "Arrive par : {names}",
+        "alert_no_channel": "Aucun canal Bambuddy ne l'accepte encore : activez « Messages des applications connectées » sur un canal dans Bambuddy (Paramètres → Notifications).",
+        "alert_forbidden": "La clé API ne peut pas envoyer de messages : donnez-lui « Envoyer des notifications » dans Bambuddy.",
+        "alert_failed": "Non envoyé : {error}",
+        "alert_check": "Vérifier maintenant",
+        "alert_sent": "Envoyé à {n} canal(aux).",
+        "alert_none_low": "Rien ne s'épuise.",
+        "alert_low": "S'épuise : {list}",
+        "tag_unknown_hint": "Introuvable. Un téléphone ne peut pas lire la puce RFID d'une bobine Bambu (MIFARE Classic) : cherchez-la ci-dessus ou posez-la sur la balance.",
         "title": "Ton stock",
         "search_label": "Chercher une bobine",
         "search_placeholder": "Couleur, matière, emplacement, #12, <200",
@@ -1466,6 +1522,10 @@ FR = {
         "link_none": "Chaque bobine a un profil, ou aucun ne convient.",
         "link_done": "{n} bobines liées",
         "link_failed": "{n} bobines non liées",
+    },
+    "notify": {
+        "title": "Filament bientôt épuisé ({n})",
+        "line": "{title} : reste {left} g ({ids})",
     },
 }
 
@@ -1787,6 +1847,17 @@ JA = {
         "tag_taken": "このタグは既に別のスプールに付いています",
     },
     "inv": {
+        "alert": "種類ごとに残りわずかを通知",
+        "alert_hint": "Bambuddyの通知チャンネルで、数時間ごと、種類ごとに1回: その種類の全スプール合計が上の基準を下回ったとき。",
+        "alert_via": "送信先: {names}",
+        "alert_no_channel": "まだ受け付けるBambuddyチャンネルがありません: Bambuddyのチャンネルで「接続アプリからのメッセージ」をオンに (設定 → 通知)。",
+        "alert_forbidden": "APIキーはメッセージを送れません: Bambuddyで「通知を送信」を付与してください。",
+        "alert_failed": "未送信: {error}",
+        "alert_check": "今すぐ確認",
+        "alert_sent": "{n} チャンネルに送信しました。",
+        "alert_none_low": "残りわずかなものはありません。",
+        "alert_low": "残りわずか: {list}",
+        "tag_unknown_hint": "見つかりません。BambuスプールのRFIDチップはスマホで読めません (MIFARE Classic): 上の検索で探すか、はかりに載せてください。",
         "title": "在庫",
         "search_label": "スプールを検索",
         "search_placeholder": "色、素材、保管場所、#12、<200",
@@ -1824,6 +1895,10 @@ JA = {
         "link_none": "すべてのスプールにプロファイルがあるか、合うものがありません。",
         "link_done": "{n} 個のスプールを紐付けました",
         "link_failed": "{n} 個のスプールを紐付けできませんでした",
+    },
+    "notify": {
+        "title": "フィラメント残りわずか ({n})",
+        "line": "{title}: 残り {left} g ({ids})",
     },
 }
 
@@ -2149,6 +2224,17 @@ IT = {
         "tag_taken": "Questo tag è già su un'altra bobina",
     },
     "inv": {
+        "alert": "Avvisami quando un tipo si esaurisce",
+        "alert_hint": "Tramite i canali di notifica di Bambuddy, ogni poche ore, una volta per tipo: quando tutte le sue bobine insieme hanno meno del limite sopra.",
+        "alert_via": "Arriva tramite: {names}",
+        "alert_no_channel": "Nessun canale Bambuddy lo accetta ancora: attiva «Messaggi dalle app collegate» su un canale in Bambuddy (Impostazioni → Notifiche).",
+        "alert_forbidden": "La chiave API non può inviare messaggi: assegnale «Invia notifiche» in Bambuddy.",
+        "alert_failed": "Non inviato: {error}",
+        "alert_check": "Controlla ora",
+        "alert_sent": "Inviato a {n} canale/i.",
+        "alert_none_low": "Niente si sta esaurendo.",
+        "alert_low": "In esaurimento: {list}",
+        "tag_unknown_hint": "Non trovata. Un telefono non può leggere il chip RFID di una bobina Bambu (MIFARE Classic): cercala sopra o mettila sulla bilancia.",
         "title": "Il tuo magazzino",
         "search_label": "Cerca bobina",
         "search_placeholder": "Colore, materiale, posizione, #12, <200",
@@ -2186,6 +2272,10 @@ IT = {
         "link_none": "Ogni bobina ha un profilo, o nessuno è adatto.",
         "link_done": "{n} bobine collegate",
         "link_failed": "{n} bobine non collegate",
+    },
+    "notify": {
+        "title": "Filamento in esaurimento ({n})",
+        "line": "{title}: restano {left} g ({ids})",
     },
 }
 
@@ -2507,6 +2597,17 @@ KO = {
         "tag_taken": "이 태그는 이미 다른 스풀에 있습니다",
     },
     "inv": {
+        "alert": "종류가 부족해지면 알림",
+        "alert_hint": "Bambuddy 알림 채널로, 몇 시간마다, 종류당 한 번: 그 종류의 모든 스풀 합계가 위 기준보다 적을 때.",
+        "alert_via": "전송 채널: {names}",
+        "alert_no_channel": "아직 받는 Bambuddy 채널이 없습니다: Bambuddy의 채널에서 “연결된 앱의 메시지”를 켜세요 (설정 → 알림).",
+        "alert_forbidden": "API 키로 메시지를 보낼 수 없습니다: Bambuddy에서 “알림 보내기” 권한을 주세요.",
+        "alert_failed": "전송 안 됨: {error}",
+        "alert_check": "지금 확인",
+        "alert_sent": "{n}개 채널로 보냈습니다.",
+        "alert_none_low": "부족한 것이 없습니다.",
+        "alert_low": "부족: {list}",
+        "tag_unknown_hint": "찾을 수 없음. 휴대폰은 Bambu 스풀의 RFID 칩을 읽을 수 없습니다 (MIFARE Classic): 위 검색으로 찾거나 저울에 올리세요.",
         "title": "내 재고",
         "search_label": "스풀 검색",
         "search_placeholder": "색상, 재질, 보관 위치, #12, <200",
@@ -2544,6 +2645,10 @@ KO = {
         "link_none": "모든 스풀에 프로필이 있거나 맞는 것이 없습니다.",
         "link_done": "스풀 {n}개 연결됨",
         "link_failed": "스풀 {n}개 연결 안 됨",
+    },
+    "notify": {
+        "title": "필라멘트 부족 ({n})",
+        "line": "{title}: {left} g 남음 ({ids})",
     },
 }
 
@@ -2869,6 +2974,17 @@ PT_BR = {
         "tag_taken": "Esta tag já está em outro carretel",
     },
     "inv": {
+        "alert": "Avisar quando um tipo estiver acabando",
+        "alert_hint": "Pelos canais de notificação do Bambuddy, a cada poucas horas, uma vez por tipo: quando todos os carretéis juntos tiverem menos que o limite acima.",
+        "alert_via": "Chega por: {names}",
+        "alert_no_channel": "Nenhum canal do Bambuddy aceita ainda: ative “Mensagens de apps conectados” em um canal no Bambuddy (Configurações → Notificações).",
+        "alert_forbidden": "A chave de API não pode enviar mensagens: dê “Enviar notificações” no Bambuddy.",
+        "alert_failed": "Não enviado: {error}",
+        "alert_check": "Verificar agora",
+        "alert_sent": "Enviado para {n} canal(is).",
+        "alert_none_low": "Nada está acabando.",
+        "alert_low": "Acabando: {list}",
+        "tag_unknown_hint": "Não encontrado. O celular não lê o chip RFID de um carretel Bambu (MIFARE Classic): procure acima ou coloque na balança.",
         "title": "Seu estoque",
         "search_label": "Buscar carretel",
         "search_placeholder": "Cor, material, local, #12, <200",
@@ -2906,6 +3022,10 @@ PT_BR = {
         "link_none": "Todo carretel tem perfil, ou nenhum serve.",
         "link_done": "{n} carretéis vinculados",
         "link_failed": "{n} carretéis não vinculados",
+    },
+    "notify": {
+        "title": "Filamento acabando ({n})",
+        "line": "{title}: restam {left} g ({ids})",
     },
 }
 
@@ -3227,6 +3347,17 @@ ZH_CN = {
         "tag_taken": "此标签已在另一个料盘上",
     },
     "inv": {
+        "alert": "某种耗材快用完时通知我",
+        "alert_hint": "通过 Bambuddy 的通知渠道，每隔几小时，每种一次：当该种所有料盘合计低于上面的界限时。",
+        "alert_via": "发送到：{names}",
+        "alert_no_channel": "还没有 Bambuddy 渠道接收：在 Bambuddy 的某个渠道中开启“来自已连接应用的消息”（设置 → 通知）。",
+        "alert_forbidden": "API 密钥不能发送消息：在 Bambuddy 中授予“发送通知”。",
+        "alert_failed": "未发送：{error}",
+        "alert_check": "立即检查",
+        "alert_sent": "已发送到 {n} 个渠道。",
+        "alert_none_low": "没有快用完的。",
+        "alert_low": "快用完：{list}",
+        "tag_unknown_hint": "未找到。手机无法读取 Bambu 料盘的 RFID 芯片（MIFARE Classic）：请用上面的搜索查找，或放到秤上。",
         "title": "你的库存",
         "search_label": "查找料盘",
         "search_placeholder": "颜色、材料、位置、#12、<200",
@@ -3264,6 +3395,10 @@ ZH_CN = {
         "link_none": "每个料盘都有配置，或没有合适的。",
         "link_done": "已关联 {n} 个料盘",
         "link_failed": "{n} 个料盘未关联",
+    },
+    "notify": {
+        "title": "耗材即将用完（{n}）",
+        "line": "{title}：剩 {left} g（{ids}）",
     },
 }
 
@@ -3585,6 +3720,17 @@ ZH_TW = {
         "tag_taken": "此標籤已在另一個料盤上",
     },
     "inv": {
+        "alert": "某種耗材快用完時通知我",
+        "alert_hint": "透過 Bambuddy 的通知管道，每隔幾小時，每種一次：當該種所有料盤合計低於上面的界限時。",
+        "alert_via": "傳送到：{names}",
+        "alert_no_channel": "還沒有 Bambuddy 管道接收：在 Bambuddy 的某個管道中開啟「來自已連線應用程式的訊息」（設定 → 通知）。",
+        "alert_forbidden": "API 金鑰不能傳送訊息：在 Bambuddy 中授予「傳送通知」。",
+        "alert_failed": "未傳送：{error}",
+        "alert_check": "立即檢查",
+        "alert_sent": "已傳送到 {n} 個管道。",
+        "alert_none_low": "沒有快用完的。",
+        "alert_low": "快用完：{list}",
+        "tag_unknown_hint": "找不到。手機無法讀取 Bambu 料盤的 RFID 晶片（MIFARE Classic）：請用上面的搜尋尋找，或放到秤上。",
         "title": "你的庫存",
         "search_label": "尋找料盤",
         "search_placeholder": "顏色、材料、位置、#12、<200",
@@ -3622,6 +3768,10 @@ ZH_TW = {
         "link_none": "每個料盤都有設定檔，或沒有合適的。",
         "link_done": "已關聯 {n} 個料盤",
         "link_failed": "{n} 個料盤未關聯",
+    },
+    "notify": {
+        "title": "耗材即將用完（{n}）",
+        "line": "{title}：剩 {left} g（{ids}）",
     },
 }
 
@@ -3947,6 +4097,17 @@ TR = {
         "tag_taken": "Bu etiket zaten başka bir makarada",
     },
     "inv": {
+        "alert": "Bir tür azalınca bana bildir",
+        "alert_hint": "Bambuddy'nin bildirim kanallarıyla, birkaç saatte bir, tür başına bir kez: tüm makaraları birlikte yukarıdaki sınırın altına düşünce.",
+        "alert_via": "Şuradan gelir: {names}",
+        "alert_no_channel": "Henüz hiçbir Bambuddy kanalı kabul etmiyor: Bambuddy'de bir kanalda “Bağlı uygulamalardan mesajlar”ı aç (Ayarlar → Bildirimler).",
+        "alert_forbidden": "API anahtarı mesaj gönderemiyor: Bambuddy'de “Bildirim gönder” iznini ver.",
+        "alert_failed": "Gönderilmedi: {error}",
+        "alert_check": "Şimdi kontrol et",
+        "alert_sent": "{n} kanala gönderildi.",
+        "alert_none_low": "Azalan bir şey yok.",
+        "alert_low": "Azalıyor: {list}",
+        "tag_unknown_hint": "Bulunamadı. Bir telefon Bambu makarasının RFID çipini okuyamaz (MIFARE Classic): yukarıdaki aramayla bul ya da tartıya koy.",
         "title": "Stoğun",
         "search_label": "Makara ara",
         "search_placeholder": "Renk, malzeme, konum, #12, <200",
@@ -3984,6 +4145,10 @@ TR = {
         "link_none": "Her makaranın profili var ya da uyan yok.",
         "link_done": "{n} makara bağlandı",
         "link_failed": "{n} makara bağlanamadı",
+    },
+    "notify": {
+        "title": "Filament azalıyor ({n})",
+        "line": "{title}: {left} g kaldı ({ids})",
     },
 }
 

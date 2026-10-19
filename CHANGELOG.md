@@ -5,6 +5,10 @@ Releases of the fork [AreYouThereAndi2/filament_to_bambuddy](https://github.com/
 ## Unreleased
 
 ### New
+- **The scale creates spools through the app** (`POST /api/spool`), with everything the page does. It falls back to creating them itself only when the app can't be reached.
+- **Labels from the scale in the phone's layout.** The layout arranged on the page is kept on the server too (`/api/label-layout`, `/data/label_layout.json`). `GET /api/label/<id>.bits` draws a spool's label as 1-bit rows for a label printer, and `.png` shows it. Same lines, sizes, band, QR side and font (Barlow Semi Condensed, now served by the app, also for the page offline). A new phone takes the kept layout.
+- **A message when filament runs out.** Every few hours (`REORDER_CHECK_HOURS`, default 3) the stock is read. A kind (maker, material, line, colour) whose spools together hold less than the limit is reported once through BamBuddy's notification channels (`/api/v1/notifications/app-message`). The key needs **Send notifications**, and a channel needs **Messages from connected apps**. Switch it on in *Your stock → Running low*; *Check now* sends it at once.
+- Holding a Bambu spool's chip to the phone (MIFARE Classic, unreadable by Web NFC) now says to find the spool with the search or put it on the scale.
 - **Slicer profiles linked to spools, per printer model.** Any filament profile imported into BamBuddy (OrcaSlicer, Bambu Studio, any maker) is matched to a spool by maker, material and line ("Matte", "Silk", "PLA+" rather than "PLA"). A profile belongs to a printer model ("@BBL X1C", "@BBL P1S 0.2 nozzle"), so the app reads your printers from BamBuddy and gives the spool its line's profile for each of your models: the most used model's on the spool, the others (and other nozzles) as BamBuddy's per-model profiles. Profiles set in BamBuddy are kept.
   - **Form:** a *Slicer profile* field, suggested by itself and searchable, shows what each printer loads. The lookup returns the suggestion too (`slicer_filament`).
   - **Spool record:** change the profile; a spool without one gets a suggestion, taken over with Save.

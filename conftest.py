@@ -4,6 +4,7 @@ import pytest
 
 # The filament databases are not fetched in the background during tests.
 os.environ.setdefault("WARM_INDEXES", "off")
+os.environ.setdefault("REORDER_WATCH", "off")
 
 
 @pytest.fixture(autouse=True)
