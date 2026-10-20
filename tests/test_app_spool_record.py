@@ -108,3 +108,63 @@ class TestInventory:
         assert app_module._inventory_cache["list"] is None
         with patch("requests.post", return_value=_resp(404)):
             assert client.post("/api/spool/99/archive").status_code == 404
+
+
+class TestOpenSpool:
+    """GET /api/spool/<id>/openspool: the JSON the phone writes onto an NFC sticker."""
+
+    def _get(self, client, spool, spool_id=12):
+        _mode("local")
+        with patch("requests.get", return_value=_resp(payload=spool)):
+            r = client.get(f"/api/spool/{spool_id}/openspool")
+        return r
+
+    def test_normal_spool(self, client):
+        spool = {"id": 12, "material": "PLA", "brand": "Bambu Lab", "rgba": "FF8000FF",
+                 "nozzle_temp_min": 190, "nozzle_temp_max": 230.0}
+        r = self._get(client, spool)
+        assert r.status_code == 200 and r.mimetype == "application/json"
+        # The body is the record itself, compact, in the firmware's key order.
+        assert r.get_data(as_text=True) == (
+            '{"protocol":"openspool","version":"1.0","type":"PLA","color_hex":"FF8000",'
+            '"brand":"Bambu Lab","min_temp":"190","max_temp":"230","spool_id":12}')
+
+    def test_missing_temps_colour_and_brand_are_left_out(self, client):
+        r = self._get(client, {"id": 5, "material": "PETG", "rgba": None, "nozzle_temp_min": None,
+                               "nozzle_temp_max": ""}, spool_id=5)
+        assert r.get_json() == {"protocol": "openspool", "version": "1.0", "type": "PETG", "spool_id": 5}
+
+    def test_long_brand_is_trimmed_first(self, client):
+        spool = {"material": "PLA", "brand": "B" * 300, "rgba": "112233FF",
+                 "nozzle_temp_min": 190, "nozzle_temp_max": 220}
+        r = self._get(client, spool)
+        d = r.get_json()
+        assert len(r.get_data()) == app_module.OPENSPOOL_MAX_BYTES
+        assert d["brand"] == "B" * len(d["brand"]) and 0 < len(d["brand"]) < 300
+        assert d["min_temp"] == "190" and d["max_temp"] == "220" and d["spool_id"] == 12
+
+    def test_temps_go_when_the_brand_alone_is_not_enough(self):
+        rec = app_module.openspool_record({"material": "X" * 160, "brand": "Brand",
+                                           "nozzle_temp_min": 200, "nozzle_temp_max": 240}, 123456)
+        assert "brand" not in rec and "min_temp" not in rec and "max_temp" not in rec
+        assert rec["type"] == "X" * 160 and rec["spool_id"] == 123456
+        assert app_module._openspool_size(rec) <= app_module.OPENSPOOL_MAX_BYTES
+
+    def test_never_over_the_size_limit(self):
+        for brand in ("", "Ä" * 50, "Prusament " * 30):
+            for material in ("PLA", "M" * 300):
+                rec = app_module.openspool_record({"material": material, "brand": brand, "rgba": "#abcdef",
+                                                   "nozzle_temp_min": "205", "nozzle_temp_max": "225"}, 7)
+                assert app_module._openspool_size(rec) <= app_module.OPENSPOOL_MAX_BYTES
+                assert rec["protocol"] == "openspool" and rec["spool_id"] == 7
+
+    def test_multibyte_brand_counts_bytes(self, client):
+        r = self._get(client, {"material": "PLA", "brand": "Ü" * 200})
+        assert len(r.get_data()) <= app_module.OPENSPOOL_MAX_BYTES
+        assert r.get_json()["brand"].startswith("Ü")
+
+    def test_unknown_spool(self, client):
+        _mode("local")
+        with patch("requests.get", return_value=_resp(404)):
+            r = client.get("/api/spool/99/openspool")
+        assert r.status_code == 404 and r.get_json() == {"ok": False, "error": "not_found"}

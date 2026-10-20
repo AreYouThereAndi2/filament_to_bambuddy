@@ -1697,6 +1697,68 @@ def spool_data(spool_id: int):
     return jsonify(ok=True, spool=spool, qr=_spool_qr(spool_id))
 
 
+# ---- OpenSpool record for an NFC sticker ----------------------------------------
+# The phone writes this onto an NTAG sticker as one NDEF record of type
+# application/json, the OpenSpool record the SpoolmanScale reads. Kept to
+# 230 bytes so it fits an NTAG213 as well as an NTAG215 with room to spare.
+OPENSPOOL_MAX_BYTES = 230
+
+
+def _openspool_size(rec: dict) -> int:
+    return len(json.dumps(rec, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
+
+
+def _openspool_temp(value) -> str | None:
+    try:
+        t = round(float(value))
+    except (TypeError, ValueError):
+        return None
+    return str(t) if t > 0 else None
+
+
+def openspool_record(spool: dict, spool_id: int) -> dict:
+    """A spool as an OpenSpool record of at most OPENSPOOL_MAX_BYTES as compact
+    JSON. A colour, brand or temperature the spool does not have is left out.
+    Too long, the brand is shortened (and dropped if it has to), then the
+    temperatures go; the material is cut only if even that does not fit."""
+    rec: dict = {"protocol": "openspool", "version": "1.0",
+                 "type": str(spool.get("material") or "").strip()}
+    color = str(spool.get("rgba") or "").strip().lstrip("#")[:6]
+    if re.fullmatch(r"[0-9A-Fa-f]{6}", color):
+        rec["color_hex"] = color.upper()
+    brand = str(spool.get("brand") or "").strip()
+    if brand:
+        rec["brand"] = brand
+    lo, hi = _openspool_temp(spool.get("nozzle_temp_min")), _openspool_temp(spool.get("nozzle_temp_max"))
+    if lo:
+        rec["min_temp"] = lo
+    if hi:
+        rec["max_temp"] = hi
+    rec["spool_id"] = spool_id
+
+    while "brand" in rec and _openspool_size(rec) > OPENSPOOL_MAX_BYTES:
+        rec["brand"] = rec["brand"][:-1].rstrip()
+        if not rec["brand"]:
+            del rec["brand"]
+    if _openspool_size(rec) > OPENSPOOL_MAX_BYTES:
+        rec.pop("min_temp", None)
+        rec.pop("max_temp", None)
+    while rec["type"] and _openspool_size(rec) > OPENSPOOL_MAX_BYTES:
+        rec["type"] = rec["type"][:-1]
+    return rec
+
+
+@app.get("/api/spool/<int:spool_id>/openspool")
+def spool_openspool(spool_id: int):
+    """The OpenSpool record for a spool's NFC sticker: the body is exactly
+    the JSON to write, compact."""
+    spool, error, status = _spool_record(spool_id)
+    if spool is None:
+        return jsonify(ok=False, error=error), status
+    body = json.dumps(openspool_record(spool, spool_id), separators=(",", ":"), ensure_ascii=False)
+    return Response(body, mimetype="application/json", headers={"Cache-Control": "no-store"})
+
+
 # ---- the own label, drawn here for the scale ---------------------------------
 # The page keeps its label layout in the phone; it also hands it here, so the
 # scale prints the same label: it asks for the label as dots and only sends
