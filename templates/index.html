@@ -293,6 +293,65 @@
   .reo-buy{flex:0 0 auto;font:600 13.5px/1.2 var(--display);white-space:nowrap}
   #dupLine a{margin-right:6px}
   .combo-search>.ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+
+  /* Storage locations: a tile a place, the colours stored there as dots.
+     Two columns on a phone, three on a wider screen. */
+  .loc-ib{width:44px;height:44px}
+  .loc-stats{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 4px}
+  .loc-chip{display:inline-flex;align-items:center;gap:8px;width:auto;min-height:44px;padding:0 14px;border-radius:999px;
+    background:var(--raised);border:1px dashed var(--line);color:var(--text);font:600 14.5px/1.1 var(--display)}
+  .loc-chip:active{background:var(--line)}
+  .loc-chip .n{color:var(--muted);font-weight:500}
+  .loc-group{margin-top:10px}
+  .loc-group>summary{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;list-style:none;
+    font:600 16px/1.2 var(--display);color:var(--text)}
+  .loc-group>summary::-webkit-details-marker{display:none}
+  .loc-group>summary::after{content:"";width:7px;height:7px;margin-left:auto;flex:0 0 auto;
+    border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);transition:transform .15s}
+  .loc-group[open]>summary::after{transform:rotate(-135deg) translateY(-2px)}
+  .loc-group>summary .n{color:var(--muted);font:500 13px/1 var(--body)}
+  .loc-group.warn>summary{color:var(--warn)}
+  .loc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px}
+  .loc-tile{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-height:88px;width:100%;padding:10px 11px;
+    text-align:left;background:var(--raised);border:1px solid var(--line);border-radius:14px;color:var(--text);
+    font:inherit;letter-spacing:0}
+  .loc-tile:active{background:var(--line)}
+  .loc-name{font:600 16px/1.15 var(--display);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;
+    -webkit-box-orient:vertical;overflow:hidden}
+  .loc-count{font:500 12.5px/1.2 var(--body);color:var(--muted)}
+  .loc-dots{display:flex;flex-wrap:nowrap;align-items:center;gap:3px;margin-top:auto;padding-top:4px;overflow:hidden}
+  .loc-dot{width:13px;height:13px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.28)}
+  .loc-dot.none{box-shadow:inset 0 0 0 1.5px var(--muted)}
+  .loc-more{font:600 12px/1 var(--body);color:var(--muted);margin-left:2px}
+  /* Nothing stored: an outline only, so full and empty places tell apart at a glance. */
+  .loc-tile.empty{background:transparent;border-style:dashed}
+  .loc-tile.empty .loc-name{color:var(--muted)}
+  .loc-tile.unknown{border-color:color-mix(in srgb,var(--warn) 60%,transparent)}
+  .loc-act{min-height:44px;padding:8px 4px}
+  /* The bulk form: a three-way switch, and the names it will make. */
+  .seg{display:flex;gap:4px;padding:4px;margin-top:12px;border-radius:calc(var(--r-ctl) + 4px);background:var(--inset);
+    border:1px solid var(--line)}
+  .seg button{flex:1;min-height:44px;padding:8px 6px;background:none;color:var(--muted);font-size:16px}
+  .seg button[aria-pressed=true]{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .loc-check{display:flex;gap:10px;align-items:center;min-height:44px;margin:8px 0 0;color:var(--text);font:500 14.5px/1.3 var(--body)}
+  .loc-check input{width:22px;height:22px;margin:0;flex:0 0 auto;accent-color:var(--brand)}
+  .loc-preview{margin-top:10px}
+  .loc-names{max-height:200px;overflow:auto;margin-top:4px;padding:2px 0 6px}
+  .loc-names .chip{font-size:13.5px;padding:5px 9px;margin:5px 5px 0 0}
+  .loc-names .chip.old{color:var(--muted);text-decoration:line-through;background:none;border-style:dashed}
+  /* A place opened: a sheet from below on a phone, a box in the middle on a wide screen. */
+  dialog.sheet{width:100%;max-width:560px;max-height:86vh;margin:auto auto 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    border:1px solid var(--card-border);border-bottom:none;border-radius:var(--r-card) var(--r-card) 0 0;
+    background:var(--surface);color:var(--text);overflow:auto;overscroll-behavior:contain}
+  dialog.sheet::backdrop{background:rgba(0,0,0,.5)}
+  @media (min-width:600px){ dialog.sheet{margin:auto;border-radius:var(--r-card);border-bottom:1px solid var(--card-border)} }
+  .loc-sp{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:8px 2px;text-align:left;
+    background:none;border:none;border-top:1px solid var(--line);border-radius:0;color:var(--text);font:inherit}
+  .loc-sp:first-child{border-top:none}
+  .loc-sp:active{background:var(--raised)}
+  .loc-sp .sw{width:18px;height:18px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+  .loc-sp .main{flex:1;min-width:0;font:600 15px/1.25 var(--display);overflow-wrap:anywhere}
+  .loc-sp .left{flex:0 0 auto;font-size:13px;color:var(--muted)}
   @media (prefers-reduced-motion:reduce){
     .vf-scanline{animation:none;top:50%}
     .spool .wind{transition:none}
@@ -313,6 +372,7 @@
   <symbol id="i-nfc" viewBox="0 0 24 24"><path d="M6 8.5a5 5 0 0 1 0 7M9.5 6a8.5 8.5 0 0 1 0 12M13 3.5a12 12 0 0 1 0 17"/><rect x="15" y="7" width="6" height="10" rx="1.5"/></symbol>
   <symbol id="i-box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+  <symbol id="i-shelf" viewBox="0 0 24 24"><path d="M4 3v18M20 3v18M4 10h16M4 17h16"/><rect x="7" y="6" width="3" height="4"/><rect x="12" y="13" width="3" height="4"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
@@ -624,6 +684,71 @@
       <button id="linkApply" type="button" class="btn-primary hidden" style="margin-top:10px"></button>
     </details>
   </section>
+
+  <!-- Where the spools are: BamBuddy's storage locations as tiles with the
+       colours stored in each, and many made at once from a pattern. -->
+  <section class="card" id="locCard">
+    <div class="form-head" style="margin-bottom:6px">
+      <h2 class="card-title with-ico grow" style="margin:0;justify-content:flex-start"><svg class="ico" aria-hidden="true"><use href="#i-shelf"/></svg><span>{{ t('loc.title') }}</span></h2>
+      <button id="locReload" type="button" class="icon-btn loc-ib" aria-label="{{ t('loc.reload') }}" title="{{ t('loc.reload') }}"><svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg></button>
+    </div>
+    <div id="locSummary" class="hint" style="margin-top:0" role="status"></div>
+    <div id="locStats" class="loc-stats"></div>
+    <div id="locView"></div>
+    <details id="locBulk" class="bm" style="margin-top:14px">
+      <summary style="font-weight:600;font-size:14px;min-height:44px;display:flex;align-items:center">{{ t('loc.create_title') }}</summary>
+      <div class="hint" style="margin-top:0">{{ t('loc.create_hint') }}</div>
+      <div class="seg" role="group" aria-label="{{ t('loc.create_title') }}">
+        <button type="button" data-mode="list" aria-pressed="true">{{ t('loc.mode_list') }}</button>
+        <button type="button" data-mode="range" aria-pressed="false">{{ t('loc.mode_range') }}</button>
+        <button type="button" data-mode="grid" aria-pressed="false">{{ t('loc.mode_grid') }}</button>
+      </div>
+      <div id="locModeList">
+        <label for="locList">{{ t('loc.list_label') }}</label>
+        <textarea id="locList" rows="5" spellcheck="false" autocomplete="off" placeholder="Drybox 1&#10;Drybox 2&#10;AMS 2 Pro"></textarea>
+      </div>
+      <div id="locModeRange" class="hidden">
+        <div class="row">
+          <div><label for="locPrefix">{{ t('loc.prefix') }}</label><input id="locPrefix" autocomplete="off" placeholder="Regal A-"></div>
+          <div style="flex:0 0 34%"><label for="locSuffix">{{ t('loc.suffix') }}</label><input id="locSuffix" autocomplete="off" placeholder="{{ t('form.optional_placeholder') }}"></div>
+        </div>
+        <div class="row">
+          <div><label for="locFrom">{{ t('loc.from') }}</label><input id="locFrom" autocomplete="off" autocapitalize="characters" value="1"></div>
+          <div><label for="locTo">{{ t('loc.to') }}</label><input id="locTo" autocomplete="off" autocapitalize="characters" value="12"></div>
+        </div>
+        <div class="hint">{{ t('loc.range_hint') }}</div>
+      </div>
+      <div id="locModeGrid" class="hidden">
+        <div class="row">
+          <div><label for="locRowFrom">{{ t('loc.rows_from') }}</label><input id="locRowFrom" autocomplete="off" autocapitalize="characters" value="A"></div>
+          <div><label for="locRowTo">{{ t('loc.to') }}</label><input id="locRowTo" autocomplete="off" autocapitalize="characters" value="D"></div>
+        </div>
+        <div class="row">
+          <div><label for="locColFrom">{{ t('loc.cols_from') }}</label><input id="locColFrom" autocomplete="off" autocapitalize="characters" value="1"></div>
+          <div><label for="locColTo">{{ t('loc.to') }}</label><input id="locColTo" autocomplete="off" autocapitalize="characters" value="6"></div>
+        </div>
+        <label for="locTemplate">{{ t('loc.template') }}</label>
+        <input id="locTemplate" autocomplete="off" spellcheck="false" value="{row}{col}">
+        <div id="locTemplateHint" class="hint"></div>
+      </div>
+      <label id="locPadBox" class="loc-check hidden"><input id="locPad" type="checkbox"><span>{{ t('loc.pad') }}</span></label>
+      <div id="locPreview" class="loc-preview" aria-live="polite"></div>
+      <button id="locCreate" type="button" class="btn-primary" style="margin-top:12px;min-height:52px" disabled>{{ t('loc.create_none') }}</button>
+      <div id="locResult" class="hint" role="status"></div>
+      <button id="locResultLabels" type="button" class="btn-secondary with-ico hidden" style="margin-top:8px"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span></span></button>
+    </details>
+  </section>
+
+  <!-- A storage location opened: its spools, rename, delete, label. -->
+  <dialog id="locSheet" class="sheet" aria-labelledby="locSheetTitle">
+    <div class="form-head" style="margin-bottom:4px">
+      <h2 id="locSheetTitle" class="card-title grow" style="margin:0;overflow-wrap:anywhere"></h2>
+      <button id="locSheetClose" type="button" class="icon-btn loc-ib" aria-label="{{ t('spool.close') }}"><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div id="locSheetSub" class="hint" style="margin-top:0"></div>
+    <div id="locSheetSpools" style="margin-top:8px"></div>
+    <div id="locSheetActions"></div>
+  </dialog>
 
   <!-- A spool's label: Bambuddy's own template, shown here dot for dot as
        the label printer prints it, and printed only on a tap. -->
@@ -2049,7 +2174,7 @@ $('spGross').addEventListener('input', () => {
 $('spOpen').onclick = () => { if(spoolRec && spoolRec.qr) window.open(spoolRec.qr, '_blank', 'noopener'); };
 $('spLabel').onclick = () => {
   if(!spoolRec) return;
-  $('labelSpool').value = spoolRec.id;
+  labelLocs = null; $('labelSpool').value = spoolRec.id;
   $('labelCard').scrollIntoView({behavior: 'smooth', block: 'start'});
   labelPreview();
 };
@@ -2076,7 +2201,7 @@ $('spSave').onclick = async () => {
   try{
     const d = await (await fetch('/api/spool/' + spoolRec.id, {method: 'PATCH',
       headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})).json();
-    if(d.ok){ toast(t('spool.saved') + ' ✓'); invForget(); openSpool(spoolRec.id); }
+    if(d.ok){ toast(t('spool.saved') + ' ✓'); invForget(); if(LOC) locLoad(); openSpool(spoolRec.id); }
     else if(d.tag_error === 'tag_taken') toast(t('spool.tag_taken'), false);
     else toast(t('spool.save_failed') + (d.error ? ': ' + d.error : (d.errors && d.errors.length ? ': ' + d.errors[0] : (d.tag_error ? ': ' + d.tag_error : ''))), false);
   }catch(e){ toast(t('spool.save_failed'), false); }
@@ -2088,7 +2213,7 @@ $('spEmpty').onclick = async () => {
   if(!confirm(t('spool.empty_confirm', {id}))) return;
   try{
     const d = await (await fetch('/api/spool/' + id + '/archive', {method: 'POST'})).json();
-    if(d.ok){ toast(t('spool.emptied', {id}) + ' ✓'); invForget(); closeSpool(); }
+    if(d.ok){ toast(t('spool.emptied', {id}) + ' ✓'); invForget(); if(LOC) locLoad(); closeSpool(); }
     else toast(t('spool.save_failed') + (d.error ? ': ' + d.error : ''), false);
   }catch(e){ toast(t('spool.save_failed'), false); }
 };
@@ -2345,6 +2470,344 @@ $('invMode').onchange = async () => {
   }catch(e){ toast(t('settings.save_failed'), false); }
 };
 
+// ── Storage locations ──
+// BamBuddy's list of places, read with the stock: a tile a place with the
+// colours stored there, grouped by what the names begin with ("Regal A" for
+// "Regal A-01" … "Regal A-12"). A tile opens the place: its spools (a tap
+// opens one), rename, delete when empty, its label. Spools without a place
+// and places BamBuddy's list does not have (to take over) come apart.
+let LOC = null, locSeq = 0;
+const LOC_DOTS = 8;
+const LOC_JSON = {'Content-Type': 'application/json'};
+const locKey = n => String(n || '').trim().toLowerCase();
+const locClosed = new Set(lsGet('f2b.locClosed', []));
+function locErr(d){
+  if(!d) return t('loc.err_unreachable');
+  if(d.error === 'forbidden') return t('loc.err_forbidden', {perm: t('loc.perm_' + (d.permission || 'manage_inventory'))});
+  if(['unsupported', 'unreachable', 'has_spools', 'name_taken', 'name', 'not_found', 'too_many', 'too_long',
+      'bad_range', 'template', 'empty'].includes(d.error)) return t('loc.err_' + d.error, d);
+  return t('loc.err_failed', {error: d.detail || d.error || '?'});
+}
+async function locCall(url, method, body){
+  try{
+    const r = await fetch(url, {method, headers: LOC_JSON, body: body ? JSON.stringify(body) : undefined});
+    return await r.json();
+  }catch(e){ return null; }
+}
+function locCount(l){ return Math.max(l.spools.length, l.spool_count || 0); }
+// The form's and the record's location lists follow BamBuddy's.
+function locSyncOptions(){
+  if(!LOC || !OPTS) return;
+  OPTS.locations = LOC.locations.map(l => l.name);
+  fillSelect('storage_location', OPTS.locations);
+  fillSelect('spLocation', OPTS.locations);
+}
+async function locLoad(fresh){
+  const my = ++locSeq;
+  if(!LOC) $('locSummary').textContent = t('loc.loading');
+  let d = null;
+  try{ d = await (await fetch('/api/locations' + (fresh ? '?fresh=1' : ''))).json(); }catch(e){}
+  if(my !== locSeq) return;
+  if(!d || !d.ok){
+    LOC = null;
+    $('locView').innerHTML = ''; $('locStats').innerHTML = '';
+    $('locSummary').textContent = locErr(d);
+    $('locSummary').classList.add('err');
+    return;
+  }
+  LOC = d;
+  $('locSummary').classList.remove('err');
+  locSyncOptions();
+  locRender();
+  locPreviewSoon();
+}
+function locDot(s){
+  const dot = document.createElement('span');
+  const hex = spoolHex(s);
+  dot.className = 'loc-dot' + (hex ? '' : ' none');
+  if(hex) dot.style.background = hex;
+  return dot;
+}
+function locTile(name, spools, count, cls, onClick){
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'loc-tile' + (count ? '' : ' empty') + (cls ? ' ' + cls : '');
+  const n = document.createElement('span'); n.className = 'loc-name'; n.textContent = name;
+  const c = document.createElement('span'); c.className = 'loc-count';
+  c.textContent = count ? tn('loc.count', count) : t('loc.empty');
+  const dots = document.createElement('span'); dots.className = 'loc-dots'; dots.setAttribute('aria-hidden', 'true');
+  const shown = spools.length > LOC_DOTS ? LOC_DOTS - 1 : spools.length;
+  for(const s of spools.slice(0, shown)) dots.appendChild(locDot(s));
+  if(spools.length > shown){
+    const more = document.createElement('span'); more.className = 'loc-more'; more.textContent = '+' + (spools.length - shown);
+    dots.appendChild(more);
+  }
+  b.append(n, c, dots);
+  b.setAttribute('aria-label', name + ', ' + c.textContent);
+  b.onclick = onClick;
+  return b;
+}
+function locGroupBox(key, title, n, cls){
+  const det = document.createElement('details');
+  det.className = 'loc-group' + (cls ? ' ' + cls : '');
+  det.open = !locClosed.has(key);
+  const sum = document.createElement('summary');
+  const name = document.createElement('span'); name.textContent = title;
+  const cnt = document.createElement('span'); cnt.className = 'n'; cnt.textContent = n;
+  sum.append(name, cnt);
+  det.appendChild(sum);
+  det.addEventListener('toggle', () => {
+    if(det.open) locClosed.delete(key); else locClosed.add(key);
+    lsSet('f2b.locClosed', [...locClosed]);
+  });
+  return det;
+}
+function locRender(){
+  const d = LOC, view = $('locView'), stats = $('locStats');
+  view.innerHTML = ''; stats.innerHTML = '';
+  const stored = d.locations.reduce((a, l) => a + l.spools.length, 0);
+  $('locSummary').textContent = (d.locations.length ? t('loc.summary', {n: d.locations.length, s: stored}) : t('loc.none_yet'))
+    + (d.stock_error ? ' ' + t('loc.stock_error') : '');
+  // Without a place: one chip, opened like a place.
+  if(d.unassigned.length){
+    const chip = document.createElement('button');
+    chip.type = 'button'; chip.className = 'loc-chip';
+    const dot = locDot({});
+    const label = document.createElement('span'); label.textContent = t('loc.unassigned');
+    const n = document.createElement('span'); n.className = 'n'; n.textContent = d.unassigned.length;
+    chip.append(dot, label, n);
+    chip.onclick = () => locOpen('none', {name: t('loc.unassigned'), spools: d.unassigned});
+    stats.appendChild(chip);
+  }
+  // The groups in BamBuddy's order, the rest last; one group alone needs no heading.
+  const groups = new Map();
+  for(const l of d.locations){
+    const k = l.group || '';
+    if(!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(l);
+  }
+  const keys = [...groups.keys()].filter(k => k).concat(groups.has('') ? [''] : []);
+  for(const k of keys){
+    const list = groups.get(k);
+    const grid = document.createElement('div'); grid.className = 'loc-grid';
+    for(const l of list) grid.appendChild(locTile(l.name, l.spools, locCount(l), '', () => locOpen('loc', l)));
+    if(keys.length === 1 && !k){ view.appendChild(grid); continue; }
+    const box = locGroupBox('g:' + k, k || t('loc.others'), list.length);
+    box.appendChild(grid);
+    if(k){
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'btn-quiet loc-act';
+      b.textContent = t('loc.group_labels', {n: list.length});
+      b.onclick = () => labelForLocations(list.map(l => l.name));
+      box.appendChild(b);
+    }
+    view.appendChild(box);
+  }
+  // Names on spools BamBuddy's list does not have: taken over one by one or all.
+  if(d.unknown.length){
+    const box = locGroupBox('unknown', t('loc.unknown_title'), d.unknown.length, 'warn');
+    const hint = document.createElement('div'); hint.className = 'hint'; hint.style.margin = '0 0 8px';
+    hint.textContent = t('loc.unknown_hint');
+    const grid = document.createElement('div'); grid.className = 'loc-grid';
+    for(const u of d.unknown) grid.appendChild(locTile(u.name, u.spools, u.spools.length, 'unknown', () => locOpen('unknown', u)));
+    const all = document.createElement('button');
+    all.type = 'button'; all.className = 'btn-secondary'; all.style.marginTop = '10px';
+    all.textContent = t('loc.adopt_all', {n: d.unknown.length});
+    all.onclick = () => locAdopt(d.unknown.map(u => u.name), all);
+    box.append(hint, grid, all);
+    view.appendChild(box);
+  }
+}
+
+// One place in the sheet.
+function locSheetClose(){ const s = $('locSheet'); if(s.open) s.close(); }
+$('locSheetClose').onclick = locSheetClose;
+// A tap beside the sheet closes it.
+$('locSheet').addEventListener('click', e => {
+  const r = $('locSheet').getBoundingClientRect();
+  if(e.target === $('locSheet') && (e.clientY < r.top || e.clientY > r.bottom || e.clientX < r.left || e.clientX > r.right)) locSheetClose();
+});
+function locOpen(kind, item){
+  $('locSheetTitle').textContent = item.name;
+  const count = kind === 'loc' ? locCount(item) : item.spools.length;
+  $('locSheetSub').textContent = [count ? tn('loc.count', count) : t('loc.nothing_here'),
+    kind === 'unknown' ? t('loc.unknown_one') : kind === 'none' ? t('loc.unassigned_hint') : ''].filter(Boolean).join(' · ');
+  const list = $('locSheetSpools'); list.innerHTML = '';
+  for(const s of [...item.spools].sort((a, b) => a.id - b.id)){
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'loc-sp';
+    const sw = document.createElement('span'); sw.className = 'sw';
+    sw.style.background = spoolHex(s) || 'transparent';
+    const main = document.createElement('span'); main.className = 'main'; main.textContent = '#' + s.id + '  ' + spoolTitle(s);
+    const left = document.createElement('span'); left.className = 'left'; left.textContent = s.remaining != null ? s.remaining + ' g' : '';
+    b.append(sw, main, left);
+    b.onclick = () => { locSheetClose(); openSpool(s.id); };
+    list.appendChild(b);
+  }
+  const act = $('locSheetActions'); act.innerHTML = '';
+  if(kind === 'unknown'){
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-primary'; b.style.marginTop = '14px';
+    b.textContent = t('loc.adopt');
+    b.onclick = async () => { if(await locAdopt([item.name], b)) locSheetClose(); };
+    act.appendChild(b);
+  }else if(kind === 'loc'){
+    const lab = document.createElement('label'); lab.htmlFor = 'locRename'; lab.textContent = t('loc.rename_label');
+    const row = document.createElement('div'); row.className = 'row';
+    const cin = document.createElement('div');
+    const input = document.createElement('input'); input.id = 'locRename'; input.value = item.name; input.autocomplete = 'off';
+    input.maxLength = 255; input.enterKeyHint = 'done';
+    cin.appendChild(input);
+    const cbtn = document.createElement('div'); cbtn.style.flex = '0 0 auto';
+    const ren = document.createElement('button'); ren.type = 'button'; ren.className = 'btn-secondary'; ren.style.width = 'auto';
+    ren.textContent = t('loc.rename');
+    cbtn.appendChild(ren);
+    row.append(cin, cbtn);
+    const rename = async () => {
+      const name = input.value.trim();
+      if(!name){ toast(t('loc.err_name'), false); return; }
+      if(name === item.name) return;
+      ren.disabled = true;
+      const d = await locCall('/api/locations/' + item.id, 'PATCH', {name});
+      ren.disabled = false;
+      if(d && d.ok){ toast(t('loc.renamed', {name}) + ' ✓'); invForget(); locSheetClose(); locLoad(true); }
+      else toast(locErr(d), false);
+    };
+    ren.onclick = rename;
+    input.onkeydown = e => { if(e.key === 'Enter'){ e.preventDefault(); rename(); } };
+    const label = document.createElement('button'); label.type = 'button'; label.className = 'btn-secondary with-ico';
+    label.style.marginTop = '14px';
+    label.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg>';
+    const ls = document.createElement('span'); ls.textContent = t('loc.label'); label.appendChild(ls);
+    label.onclick = () => { locSheetClose(); labelForLocations([item.name]); };
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'btn-quiet loc-act';
+    del.style.cssText = 'display:block;margin:10px auto 0;color:var(--danger)';
+    del.textContent = t('loc.delete');
+    const blocked = count > 0;
+    del.disabled = blocked;
+    if(blocked){ del.style.color = 'var(--muted)'; del.style.textDecoration = 'none'; del.textContent = t('loc.delete_blocked'); }
+    del.onclick = async () => {
+      if(!confirm(t('loc.delete_confirm', {name: item.name}))) return;
+      const d = await locCall('/api/locations/' + item.id, 'DELETE');
+      if(d && d.ok){ toast(t('loc.deleted', {name: item.name}) + ' ✓'); locSheetClose(); locLoad(); }
+      else toast(locErr(d), false);
+    };
+    act.append(lab, row, label, del);
+  }
+  const sheet = $('locSheet');
+  if(sheet.showModal) sheet.showModal(); else sheet.setAttribute('open', '');
+}
+
+// Names made in BamBuddy: {created, exists, failed, results} or the refusal.
+function locResultText(d){
+  if(!d || !d.results) return locErr(d);
+  const parts = [t('loc.res_created', {n: d.created || 0})];
+  if(d.exists) parts.push(t('loc.res_exists', {n: d.exists}));
+  if(d.failed){
+    const first = d.results.find(r => r.status === 'error');
+    parts.push(t('loc.res_failed', {n: d.failed}) + (first ? ' (' + first.name + ': ' + first.error + ')' : ''));
+  }
+  return parts.join(', ');
+}
+async function locAdopt(names, btn){
+  if(btn) btn.disabled = true;
+  const d = await locCall('/api/locations/bulk', 'POST', {names});
+  if(btn) btn.disabled = false;
+  const ok = !!(d && d.results && !d.failed);
+  toast(d && d.results ? locResultText(d) : locErr(d), ok);
+  locLoad(true);
+  return ok;
+}
+
+// ── Many places at once ──
+// One name a line, a running number or letter ("Regal A-" 1 to 12), or
+// rows times columns; the server makes the names, the page shows them with
+// those BamBuddy has already struck through, and makes the new ones.
+let locMode = lsGet('f2b.locMode', 'list');
+let locNew = [], locPrevTimer = null, locPrevSeq = 0, locMade = [];
+$('locTemplateHint').textContent = t('loc.template_hint');
+function locSetMode(mode){
+  locMode = ['list', 'range', 'grid'].includes(mode) ? mode : 'list';
+  lsSet('f2b.locMode', locMode);
+  document.querySelectorAll('#locBulk .seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === locMode)));
+  $('locModeList').classList.toggle('hidden', locMode !== 'list');
+  $('locModeRange').classList.toggle('hidden', locMode !== 'range');
+  $('locModeGrid').classList.toggle('hidden', locMode !== 'grid');
+  $('locPadBox').classList.toggle('hidden', locMode === 'list');
+  locPreviewSoon();
+}
+function locSpec(){
+  const v = id => $(id).value, pad = $('locPad').checked;
+  if(locMode === 'range') return {mode: 'range', prefix: v('locPrefix'), suffix: v('locSuffix'), start: v('locFrom'), end: v('locTo'), pad};
+  if(locMode === 'grid') return {mode: 'grid', row_start: v('locRowFrom'), row_end: v('locRowTo'), col_start: v('locColFrom'),
+                                 col_end: v('locColTo'), template: v('locTemplate'), pad};
+  return {mode: 'list', text: v('locList')};
+}
+function locPreviewSoon(){ clearTimeout(locPrevTimer); locPrevTimer = setTimeout(locPreview, 250); }
+async function locPreview(){
+  if(!$('locBulk').open) return;
+  const my = ++locPrevSeq;
+  const spec = locSpec();
+  // Nothing typed yet is no error to ask the server about.
+  const d = spec.mode === 'list' && !spec.text.trim() ? {ok: false, error: 'empty'}
+          : await locCall('/api/locations/preview', 'POST', spec);
+  if(my !== locPrevSeq) return;
+  const box = $('locPreview'); box.innerHTML = '';
+  locNew = [];
+  const head = document.createElement('div'); head.className = 'hint'; head.style.marginTop = '0';
+  box.appendChild(head);
+  if(!d || !d.ok){
+    head.textContent = d && d.error === 'empty' ? t('loc.preview_empty') : locErr(d);
+    head.classList.toggle('err', !(d && d.error === 'empty'));
+  }else{
+    const have = new Set((LOC ? LOC.locations : []).map(l => locKey(l.name)));
+    locNew = d.names.filter(n => !have.has(locKey(n)));
+    const old = d.names.length - locNew.length;
+    head.textContent = tn('loc.preview_n', d.names.length) + (old ? ' · ' + t('loc.preview_old', {n: old}) : '');
+    const names = document.createElement('div'); names.className = 'loc-names';
+    for(const n of d.names){
+      const c = document.createElement('span');
+      const isOld = have.has(locKey(n));
+      c.className = 'chip' + (isOld ? ' old' : '');
+      c.textContent = n;
+      if(isOld) c.title = t('loc.exists');
+      names.appendChild(c);
+    }
+    box.appendChild(names);
+  }
+  $('locCreate').disabled = !locNew.length;
+  $('locCreate').textContent = locNew.length ? tn('loc.create_n', locNew.length) : t('loc.create_none');
+}
+document.querySelectorAll('#locBulk .seg button').forEach(b => { b.onclick = () => locSetMode(b.dataset.mode); });
+['locList', 'locPrefix', 'locSuffix', 'locFrom', 'locTo', 'locRowFrom', 'locRowTo', 'locColFrom', 'locColTo', 'locTemplate']
+  .forEach(id => $(id).addEventListener('input', locPreviewSoon));
+$('locPad').addEventListener('change', locPreviewSoon);
+$('locBulk').addEventListener('toggle', () => { if($('locBulk').open){ if(!LOC) locLoad(); locPreview(); } });
+$('locCreate').onclick = async () => {
+  if(!locNew.length) return;
+  const names = locNew.slice();
+  $('locCreate').disabled = true;
+  $('locResult').classList.remove('err');
+  $('locResult').textContent = t('loc.creating', {n: names.length});
+  $('locResultLabels').classList.add('hidden');
+  const d = await locCall('/api/locations/bulk', 'POST', {names});
+  $('locResult').textContent = locResultText(d);
+  $('locResult').classList.toggle('err', !(d && d.results) || !!d.failed);
+  locMade = d && d.results ? d.results.filter(r => r.status === 'created').map(r => r.name) : [];
+  if(locMade.length){
+    $('locResultLabels').querySelector('span').textContent = t('loc.labels_new', {n: locMade.length});
+    $('locResultLabels').classList.remove('hidden');
+    toast(t('loc.res_created', {n: locMade.length}) + ' ✓');
+  }
+  await locLoad(true);
+};
+$('locResultLabels').onclick = () => labelForLocations(locMade);
+$('locReload').onclick = () => locLoad(true);
+locSetMode(locMode);
+// Read once the card comes into view, not with every page load.
+if('IntersectionObserver' in window){
+  const io = new IntersectionObserver(es => { if(es.some(e => e.isIntersecting)){ io.disconnect(); if(!LOC) locLoad(); } });
+  io.observe($('locCard'));
+}else locLoad();
+
 // ── Spool label ──
 // Bambuddy draws the label (its templates, at the printer's 203 dpi); here
 // it is placed on the loaded roll, turned into the dots the head prints and
@@ -2411,6 +2874,7 @@ let labelJob = null;      // the previewed label as the printer takes it
 let labelPng = null;      // Bambuddy's image, for sharing
 let labelPrinter = null;  // the printer picked in this session
 let labelSeq = 0;
+let labelLocs = null;     // [{loc: name}] while storage location labels are shown
 
 function labelHint(msg, err){ $('labelHint').textContent = msg||''; $('labelHint').classList.toggle('err', !!err); }
 // The layout is also kept on the server: the scale prints the same label.
@@ -2468,7 +2932,7 @@ function labelSave(){
     $('labelW').value = labelCfg.w; $('labelL').value = labelCfg.l;
     labelSave(); labelDemoDraw(); labelRefresh();
   };
-  $('labelSpool').oninput = () => { labelJob = null; $('labelBox').classList.add('hidden'); labelHint(''); };
+  $('labelSpool').oninput = () => { labelLocs = null; labelJob = null; $('labelBox').classList.add('hidden'); labelHint(''); };
   $('labelSpool').onkeydown = (e) => { if(e.key === 'Enter'){ e.preventDefault(); labelPreview(); } };
   $('labelPreviewBtn').onclick = () => labelPreview();
   $('labelPrintBtn').onclick = () => labelPrint();
@@ -2489,11 +2953,12 @@ function labelOffer(ids){
     $('labelChips').appendChild(s);
     for(const id of ids){
       const a = document.createElement('a'); a.href = '#'; a.className = 'chip'; a.textContent = '#'+id;
-      a.onclick = (e) => { e.preventDefault(); $('labelSpool').value = id; labelPreview(); };
+      a.onclick = (e) => { e.preventDefault(); labelLocs = null; $('labelSpool').value = id; labelPreview(); };
       $('labelChips').appendChild(a);
     }
   }
   // All of them at once: the preview shows the first, Print prints each.
+  labelLocs = null;
   $('labelSpool').value = ids.join(', ');
   labelPreview();
 }
@@ -2513,6 +2978,11 @@ function labelIds(){
 // One spool's label, drawn and turned into the printer's dots: {raster, png}
 // or {error}. The canvas shows it as it is built.
 async function labelBuild(id){
+  if(id && id.loc){
+    const cv = await locLabelDraw(id.loc);
+    const png = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+    return {raster: labelRaster(cv, id.loc), png};
+  }
   if(labelCfg.template === LABEL_OWN){
     const d = await (await fetch('/api/spool/' + id)).json().catch(() => ({}));
     if(!d.ok){
@@ -2539,7 +3009,7 @@ async function labelBuild(id){
   return {raster: labelRaster(await labelImage(blob), id), png: blob};
 }
 async function labelPreview(){
-  const ids = labelIds();
+  const ids = labelLocs || labelIds();
   if(!ids.length){ labelHint(t('label.need_id'), true); $('labelSpool').focus(); return; }
   const seq = ++labelSeq;
   labelHint(t('label.loading'));
@@ -2554,8 +3024,10 @@ async function labelPreview(){
     if(!labelJob.fits){
       const [w, h] = LABEL_SIZES[labelCfg.template];
       labelHint(t('label.too_big', {tpl: w + ' × ' + h, w: labelCfg.w, l: labelCfg.l}), true);
-    }else if(ids.length > 1) labelHint(t('label.batch_ready', {n: ids.length, id: ids[0]}));
-    else labelHint(navigator.bluetooth ? t('label.ready', {id: ids[0]}) : t('label.no_bt'));
+    }else if(labelLocs && ids.length > 1) labelHint(t('loc.label_batch', {n: ids.length, name: ids[0].loc}));
+    else if(ids.length > 1) labelHint(t('label.batch_ready', {n: ids.length, id: ids[0]}));
+    else if(!navigator.bluetooth) labelHint(t('label.no_bt'));
+    else labelHint(labelLocs ? t('loc.label_ready', {name: ids[0].loc}) : t('label.ready', {id: ids[0]}));
   }catch(e){
     if(seq === labelSeq) labelHint(t('label.err_failed'), true);
   }finally{ if(seq === labelSeq) $('labelPreviewBtn').disabled = false; }
@@ -2572,7 +3044,7 @@ makeCombo('labelLoc', {
   onPick: async it => {
     $('labelLoc').value = ''; $('labelLoc').blur();
     const ids = (await inventoryList()).filter(s => s.storage_location === it.value).map(s => s.id).sort((a, b) => a - b);
-    $('labelSpool').value = ids.join(', ');
+    labelLocs = null; $('labelSpool').value = ids.join(', ');
     labelJob = null; labelPreview();
   },
 });
@@ -2580,7 +3052,7 @@ $('labelToday').onclick = async () => {
   const d = new Date(), today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   const ids = (await inventoryList(true)).filter(s => s.added === today).map(s => s.id).sort((a, b) => a - b);
   if(!ids.length){ labelHint(t('label.none_today')); return; }
-  $('labelSpool').value = ids.join(', ');
+  labelLocs = null; $('labelSpool').value = ids.join(', ');
   labelJob = null; labelPreview();
 };
 
@@ -2673,6 +3145,61 @@ async function labelDrawOwn(sp, qrUrl, cfg = labelCfg){
     }else g.fillText(labelFit(g, r.text, TW), TX, y + 1);
     y += heights[i] + (cfg.flow === 'spread' && rows.length > 1 ? spare / (rows.length - 1) : 0);
   });
+  return cv;
+}
+
+// A storage location's label: the name as large as it fits (in two lines
+// when that is larger) and a QR code holding the name, on the side the own
+// layout puts it.
+function labelForLocations(names){
+  labelLocs = names.slice(0, 60).map(n => ({loc: n}));
+  if(!labelLocs.length){ labelLocs = null; return; }
+  $('labelSpool').value = '';
+  $('labelChips').innerHTML = '';
+  labelJob = null;
+  $('labelCard').scrollIntoView({behavior: 'smooth', block: 'start'});
+  labelPreview();
+}
+async function locLabelDraw(name, cfg = labelCfg){
+  await labelFonts();
+  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM, M = 8, GAP = 10;
+  const MX = M + Math.max(0, Math.ceil((W - TSPL_HEAD_DOTS) / 2));
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = '#000'; g.textBaseline = 'top';
+  let qrW = 0;
+  const qrLeft = cfg.qr.pos === 'left';
+  try{
+    if(!window.qrcode) await loadScript(QR_LIB);
+    const q = qrcode(0, 'M');
+    // As UTF-8 bytes: "Küche" scans as "Küche".
+    q.addData(String.fromCharCode(...new TextEncoder().encode(name)), 'Byte'); q.make();
+    const n = q.getModuleCount(), box = Math.min(H - 2*M, Math.floor((W - 2*MX) * 0.45));
+    const px = Math.max(3, Math.floor(box / (n + 4)));
+    qrW = (n + 4) * px;
+    const x0 = qrLeft ? MX : W - MX - qrW, y0 = Math.floor((H - qrW) / 2);
+    for(let r = 0; r < n; r++) for(let c = 0; c < n; c++)
+      if(q.isDark(r, c)) g.fillRect(x0 + (c + 2)*px, y0 + (r + 2)*px, px, px);
+  }catch(e){ qrW = 0; }
+  const TX = qrLeft && qrW ? MX + qrW + GAP : MX, TW = W - 2*MX - (qrW ? qrW + GAP : 0);
+  const cap = Math.max(12, Math.round(H * 0.09));
+  g.font = '600 ' + cap + 'px ' + LABEL_FONT;
+  g.fillText(labelFit(g, t('form.storage_location'), TW), TX, M);
+  // The largest size the name fits at, on one line or split in two at a space.
+  const room = H - 2*M - cap - 6, words = name.split(/\s+/);
+  let best = {size: 0, lines: [name]};
+  for(let size = Math.min(room, 120); size >= 14 && !best.size; size -= 2){
+    g.font = '700 ' + size + 'px ' + LABEL_FONT;
+    if(g.measureText(name).width <= TW){ best = {size, lines: [name]}; break; }
+    if(size * 2.1 <= room) for(let i = 1; i < words.length; i++){
+      const a = words.slice(0, i).join(' '), b = words.slice(i).join(' ');
+      if(g.measureText(a).width <= TW && g.measureText(b).width <= TW){ best = {size, lines: [a, b]}; break; }
+    }
+  }
+  if(!best.size) best = {size: 14, lines: [name]};
+  g.font = '700 ' + best.size + 'px ' + LABEL_FONT;
+  const lh = Math.round(best.size * 1.05), top = M + cap + 6 + Math.max(0, Math.floor((room - lh * best.lines.length) / 2));
+  best.lines.forEach((line, i) => g.fillText(labelFit(g, line, TW), TX, top + i * lh));
   return cv;
 }
 
@@ -2825,7 +3352,7 @@ async function labelPrint(){
       if(i > 0){
         labelHint(t('label.preparing', {i: i + 1, n: ids.length}));
         const b = await labelBuild(ids[i]);
-        if(b.error || !b.raster.fits){ skipped.push('#' + ids[i]); continue; }
+        if(b.error || !b.raster.fits){ skipped.push(ids[i].loc || '#' + ids[i]); continue; }
         r = b.raster;
       }
       const job = r.job;
@@ -2845,6 +3372,7 @@ async function labelPrint(){
       printed++;
     }
     const done = many ? t('label.printed_n', {n: printed}) + (skipped.length ? t('label.skipped', {ids: skipped.join(', ')}) : '')
+                      : typeof labelJob.id === 'string' ? t('loc.label_printed', {name: labelJob.id})
                       : t('label.printed', {id: labelJob.id});
     labelHint(done, skipped.length > 0);
     toast(done, skipped.length ? false : true);
@@ -2863,7 +3391,8 @@ async function labelPrint(){
 // its 203 dpi, so a label app prints it at size), else as a download.
 async function labelShare(){
   if(!labelPng || !labelJob) return;
-  const file = new File([labelPng], 'spool-'+labelJob.id+'.png', {type:'image/png'});
+  const base = typeof labelJob.id === 'string' ? 'location-' + labelJob.id.replace(/[^\w-]+/g, '_') : 'spool-' + labelJob.id;
+  const file = new File([labelPng], base + '.png', {type:'image/png'});
   if(navigator.canShare && navigator.canShare({files:[file]})){
     try{ await navigator.share({files:[file]}); }catch(e){}
     return;
