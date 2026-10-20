@@ -26,6 +26,8 @@ from pathlib import Path
 
 import requests
 
+from catalog_util import canon_gtin
+
 log = logging.getLogger(__name__)
 
 _RAW = "https://raw.githubusercontent.com/TigerTag-Project"
@@ -60,12 +62,6 @@ _GTIN_INDEX: dict | None = None
 _SKU_INDEX: dict | None = None
 _BRANDS: list | None = None
 _INDEX_LOADED_AT = 0.0
-
-
-def _canon(barcode: str) -> str:
-    """Digits only, leading zeros stripped: a UPC-A and its EAN-13 compare equal."""
-    digits = re.sub(r"\D", "", barcode or "")
-    return digits.lstrip("0") or "0"
 
 
 def _sku_key(code: str) -> str:
@@ -132,7 +128,7 @@ def _build_index(catalog: list, materials: list, aspects: list) -> tuple:
     for entry in catalog:
         if not isinstance(entry, dict) or entry.get("product_type") not in (None, "Filament"):
             continue
-        gtin = _canon(entry.get("barcode")) if entry.get("barcode") else None
+        gtin = canon_gtin(entry.get("barcode")) if entry.get("barcode") else None
         if gtin == "0":
             gtin = None
         sku = _sku_key(entry.get("sku")) or None
@@ -266,7 +262,7 @@ def _hit(entry) -> tuple | None:
 def lookup(barcode: str) -> tuple | None:
     """(fields, all_codes) for an EAN/UPC, or None."""
     try:
-        return _hit(get_gtin_index().get(_canon(barcode)))
+        return _hit(get_gtin_index().get(canon_gtin(barcode)))
     except Exception:
         return None
 

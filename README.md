@@ -58,6 +58,19 @@ In Bambuddy's own inventory the tag goes into the create request; in Spoolman
 mode it is linked right after (`PATCH /spools/{id}/tag`), because that create
 request has no tag. A tag only makes sense with a quantity of 1.
 
+**Write to NFC sticker** (in a spool's record, and after adding spools)
+writes the spool's OpenSpool record onto an NTAG213/215
+sticker, the record the SpoolmanScale reads: one NDEF record of type
+`application/json` with `protocol`, `version`, `type` (material), `color_hex`,
+`brand`, `min_temp`, `max_temp` and `spool_id`. The server builds it
+(`GET /api/spool/<id>/openspool`, the body is exactly what is written) and
+keeps it to 230 bytes: a long maker name is shortened first, then the
+temperatures are left out. The sticker's UID, read in the same tap, is then
+linked to the spool as a scanned tag is. **The sticker is never locked**: it is
+written with overwrite and never made read-only, so it can be rewritten for the
+next spool. A sticker that is already read-only is reported as such. Like the
+scan, this needs Chrome on Android; on iOS the button is not shown.
+
 ### Amazon numbers
 
 Amazon has no public barcode lookup, and reading its pages is against its
@@ -250,6 +263,7 @@ Each created spool is tagged `data_origin = "barcode-scan"`.
 | `ofd.py` | Open Filament Database client — builds the GTIN + article-number (SKU) indexes, cached/refreshed daily |
 | `tigertag.py` | TigerTag catalogue client — EAN + article-number (SKU) indexes from TigerTag's CC0 catalogue, cached/refreshed daily |
 | `spoolmandb_community.py` | SpoolmanDB-Community client — builds the GTIN + SKU indexes from the community filament repo, cached/refreshed daily |
+| `catalog_util.py` | Helpers the catalogue clients share: GTIN canonicalisation, `#RRGGBB` → RRGGBBAA |
 | `filament_parse.py` | Heuristics turning product/label text into filament fields (paste-title + label OCR), English and German |
 | `locations.py` | Storage locations: names from a list, a range or a grid; the locations merged with the stock and grouped for the tiles |
 | `upc_lookup.py` | UPCitemdb fallback for retail barcodes the filament databases don't know; title + average offer price |

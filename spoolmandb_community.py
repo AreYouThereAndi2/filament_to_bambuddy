@@ -38,6 +38,8 @@ from pathlib import Path
 
 import requests
 
+from catalog_util import canon_gtin, hex_to_rgba
+
 log = logging.getLogger(__name__)
 
 SPOOLMANDB_COMMUNITY_TARBALL_URL = "https://codeload.github.com/Icezaza2543/SpoolmanDB-Community/tar.gz/refs/heads/main"
@@ -72,26 +74,8 @@ _INDEX_LOADED_AT = 0.0
 # get_names() of the variants loaded now: (the variants list, its names).
 _NAMES_MEMO: tuple | None = None
 
-
-def _canon(barcode: str) -> str:
-    """Canonical GTIN form for matching: digits only, leading zeros stripped.
-
-    Duplicated from `ofd.py`'s `_canon()` deliberately, to keep this module
-    decoupled from the OFD client (either can be swapped/removed independently).
-    """
-    digits = re.sub(r"\D", "", barcode or "")
-    return digits.lstrip("0") or "0"
-
-
-def _hex_to_rgba(color_hex) -> str | None:
-    if isinstance(color_hex, list):
-        color_hex = color_hex[0] if color_hex else None
-    if not isinstance(color_hex, str):
-        return None
-    h = color_hex.lstrip("#")
-    if len(h) == 6 and re.fullmatch(r"[0-9A-Fa-f]{6}", h):
-        return h.upper() + "FF"  # RRGGBBAA, opaque
-    return None
+# The tests call it by this name.
+_canon = canon_gtin
 
 
 def _subtype_from_template(name_template: str) -> str | None:
@@ -146,7 +130,7 @@ def _parse_manufacturer_file(manufacturer: str, data: dict) -> list:
         for color in filament.get("colors", []):
             color_name = color.get("name")
             hexes = color.get("hexes")
-            rgba = _hex_to_rgba(color.get("hex") or hexes)
+            rgba = hex_to_rgba(color.get("hex") or hexes)
             eans = color.get("eans") or []
             eans_refill = color.get("eans_refill") or []
             codes = color.get("codes") or []
@@ -194,17 +178,17 @@ def _all_codes_for(variant: dict) -> list:
     """Every code (GTIN or SKU) associated with one variant, tagged by kind/refill-ness."""
     codes = []
     for barcode in variant.get("eans") or []:
-        # _canon() assumes a string (re.sub raises TypeError on anything
+        # canon_gtin() assumes a string (re.sub raises TypeError on anything
         # else) - a single malformed upstream EAN (e.g. serialized as a
         # number instead of a string) would otherwise raise here and abort
         # the whole refresh for every manufacturer, not just the offending one.
         if not isinstance(barcode, str) or not barcode.strip():
             continue
-        codes.append({"code": _canon(barcode), "kind": "gtin", "is_refill": False})
+        codes.append({"code": canon_gtin(barcode), "kind": "gtin", "is_refill": False})
     for barcode in variant.get("eans_refill") or []:
         if not isinstance(barcode, str) or not barcode.strip():
             continue
-        codes.append({"code": _canon(barcode), "kind": "gtin", "is_refill": True})
+        codes.append({"code": canon_gtin(barcode), "kind": "gtin", "is_refill": True})
     for code in variant.get("codes") or []:
         if not isinstance(code, str):
             continue
@@ -453,7 +437,7 @@ def lookup(barcode: str) -> tuple | None:
         idx = get_gtin_index()
     except Exception:
         return None
-    entry = idx.get(_canon(barcode))
+    entry = idx.get(canon_gtin(barcode))
     if not entry:
         return None
     return entry["fields"], entry["all_codes"]

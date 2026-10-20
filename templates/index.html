@@ -635,6 +635,13 @@
         <div style="flex:0 0 120px"><button id="spNfcBtn" type="button" class="btn-secondary">{{ t('form.nfc_scan') }}</button></div>
       </div>
       <div id="spNfcHint" class="hint"></div>
+      <!-- The spool's OpenSpool record onto an NTAG sticker, which is then
+           linked like a scanned tag. Android only, like the scan. -->
+      <div id="spNfcWriteBox" class="hidden">
+        <button id="spNfcWrite" type="button" class="btn-secondary" style="margin-top:8px" data-idle="{{ t('spool.nfc_write') }}">{{ t('spool.nfc_write') }}</button>
+        <div class="hint">{{ t('spool.nfc_write_hint') }}</div>
+        <div id="spNfcWriteHint" class="hint"></div>
+      </div>
       <label for="spNote">{{ t('form.note') }}</label>
       <textarea id="spNote" rows="2" placeholder="{{ t('form.optional_placeholder') }}"></textarea>
       <div id="spProfileBox" class="hidden">
@@ -763,6 +770,12 @@
       <div style="flex:0 0 auto"><button id="labelToday" type="button" class="btn-secondary" style="width:auto;padding:11px 14px">{{ t('label.today') }}</button></div>
     </div>
     <div id="labelChips"></div>
+    <!-- After spools were added: their OpenSpool record onto a sticker each. -->
+    <div id="newNfcBox" class="hidden" style="margin-top:8px">
+      <div id="newNfcBtns"></div>
+      <div class="hint">{{ t('spool.nfc_write_hint') }}</div>
+      <div id="newNfcHint" class="hint"></div>
+    </div>
     <details class="bm" style="margin-top:12px">
       <summary style="font-weight:500;font-size:13.5px;color:var(--muted)">{{ t('label.settings') }}</summary>
       <div class="row">
@@ -1861,7 +1874,7 @@ function nfcStop(){
   if(nfcAbort){ try{ nfcAbort.abort(); }catch(e){} }
   nfcAbort = null;
   clearTimeout(nfcTimer); nfcTimer = null;
-  if(nfcBtnEl) nfcBtnEl.textContent = t('form.nfc_scan');
+  if(nfcBtnEl) nfcBtnEl.textContent = nfcBtnEl.dataset.idle || t('form.nfc_scan');
   nfcBtnEl = null;
 }
 // The same reader serves the new spool's form and an existing spool's
@@ -1923,6 +1936,88 @@ nfcBind('spNfcBtn', 'spTag', 'spNfcHint');
 // hint says where to find the spool instead.
 nfcBind('tagOpenBtn', uid => openSpoolByTag(uid), 'tagOpenHint',
         {alone: true, unreadable: () => t('inv.tag_unknown_hint')});
+
+// ── An OpenSpool sticker, written by the phone ──
+// The server builds the record (/api/spool/<id>/openspool, at most 230
+// bytes); it goes onto the sticker as one application/json record, which is
+// what the SpoolmanScale reads. A scan runs alongside the write only for the
+// sticker's UID, which is then linked to the spool as a scanned tag is.
+// The sticker is never made read-only: it is rewritten for the next spool.
+// rec is the open spool's record, or null for one just added.
+async function nfcWriteSpool(id, btn, hint, rec){
+  if(nfcAbort){                                     // a second tap cancels
+    const same = nfcBtnEl === btn;
+    nfcStop(); hint.textContent = '';
+    if(same) return;
+  }
+  let json;
+  try{
+    const r = await fetch('/api/spool/' + id + '/openspool');
+    if(!r.ok){ const d = await r.json().catch(() => ({})); throw new Error(d.error || r.status); }
+    json = await r.text();
+  }catch(e){ hint.textContent = t('spool.nfc_write_no_data', {error: e && e.message || e}); return; }
+  const ctrl = new AbortController();
+  nfcAbort = ctrl; nfcBtnEl = btn;
+  btn.textContent = t('form.nfc_cancel');
+  hint.textContent = t('spool.nfc_write_waiting');
+  nfcTimer = setTimeout(() => {
+    if(nfcAbort !== ctrl) return;
+    nfcStop(); hint.textContent = t('form.nfc_timeout');
+  }, 20000);
+  let uid = '', seen = false;
+  try{
+    const ndef = new NDEFReader();
+    ndef.onreading = (ev) => { seen = true; uid = (ev.serialNumber || '').replace(/:/g, '').toUpperCase(); };
+    ndef.onreadingerror = () => { seen = true; };
+    await ndef.scan({signal: ctrl.signal});
+    await ndef.write({records: [{recordType: 'mime', mediaType: 'application/json',
+                                 data: new TextEncoder().encode(json)}]},
+                     {overwrite: true, signal: ctrl.signal});
+  }catch(err){
+    if(nfcAbort !== ctrl) return;
+    nfcStop();
+    const name = err && err.name, msg = String(err && err.message || err || '');
+    // Refused once a sticker was there, or said so: a locked sticker. Refused
+    // before any sticker: the NFC permission.
+    if(/read.?only|not writable|locked|write.?protect/i.test(msg) || (name === 'NotAllowedError' && seen))
+      hint.textContent = t('spool.nfc_write_locked');
+    else if(name === 'NotAllowedError') hint.textContent = t('form.nfc_denied');
+    else hint.textContent = t('spool.nfc_write_failed', {error: msg || name});
+    return;
+  }
+  // The UID comes with the scan's reading, which may land just after the write.
+  for(let i = 0; i < 10 && !uid && !seen && nfcAbort === ctrl; i++) await new Promise(ok => setTimeout(ok, 100));
+  if(nfcAbort !== ctrl) return;
+  nfcStop();
+  if(navigator.vibrate) navigator.vibrate(100);
+  if(!uid){ hint.textContent = t('spool.nfc_write_no_uid'); return; }
+  const had = rec ? String(rec.tag_uid || '').replace(/[\s:\-]/g, '').toUpperCase() : '';
+  if(uid === had){ hint.textContent = t('spool.nfc_write_linked', {uid}); return; }
+  hint.textContent = t('spool.nfc_write_done');
+  if(rec && !spoolTagReplaceOk(rec)) return;
+  if(!(await spoolPatch(id, {tag_uid: uid}))) return;
+  invForget();
+  if(rec){ rec.tag_uid = uid; if(rec === spoolRec) $('spTag').value = uid; }
+  hint.textContent = t('spool.nfc_write_linked', {uid});
+}
+if('NDEFReader' in window){
+  $('spNfcWriteBox').classList.remove('hidden');
+  $('spNfcWrite').onclick = () => { if(spoolRec) nfcWriteSpool(spoolRec.id, $('spNfcWrite'), $('spNfcWriteHint'), spoolRec); };
+}
+// After spools were added: a button per spool (iOS: none).
+function nfcOffer(ids){
+  ids = (ids || []).filter(n => Number.isInteger(n) && n > 0).slice(0, 20);
+  $('newNfcBtns').innerHTML = ''; $('newNfcHint').textContent = '';
+  $('newNfcBox').classList.toggle('hidden', !ids.length || !('NDEFReader' in window));
+  if(!('NDEFReader' in window)) return;
+  for(const id of ids){
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn-secondary'; b.style.marginTop = '8px';
+    b.dataset.idle = b.textContent = t('spool.nfc_write') + (ids.length > 1 ? ' #' + id : '');
+    b.onclick = () => nfcWriteSpool(id, b, $('newNfcHint'), null);
+    $('newNfcBtns').appendChild(b);
+  }
+}
 
 // ── The user's spools ──
 // One compact list from the active inventory (archived ones left out), kept
@@ -2150,6 +2245,7 @@ async function openSpool(id){
   $('spTag').value = sp.tag_uid || '';
   $('spNote').value = sp.note || '';
   $('spNfcHint').textContent = '';
+  $('spNfcWriteHint').textContent = '';
   // A spool without a profile gets the one that fits as a suggestion,
   // taken over with Save.
   if(sp.slicer_filament) spProfile.set(sp.slicer_filament, false);
@@ -2187,9 +2283,7 @@ $('spSave').onclick = async () => {
   if(note !== (spoolRec.note || '')) body.note = note;
   const tag = $('spTag').value.replace(/[\s:\-]/g, '').toUpperCase();
   if(tag && tag !== String(spoolRec.tag_uid || '').toUpperCase()){
-    // Behind Spoolman a spool has one tag: a Bambu spool's RFID (what the
-    // AMS and the scale know it by) would be replaced.
-    if(spoolRec.tray_uuid && !spoolRec.tag_uid && !confirm(t('spool.replace_rfid'))) return;
+    if(!spoolTagReplaceOk(spoolRec)) return;
     body.tag_uid = tag;
   }
   const left = spoolRemaining(spoolRec), typed = parseFloat(String($('spRemain').value).replace(',', '.'));
@@ -2199,14 +2293,26 @@ $('spSave').onclick = async () => {
   if(!Object.keys(body).length){ toast(t('spool.nothing'), 'info'); return; }
   $('spSave').disabled = true;
   try{
-    const d = await (await fetch('/api/spool/' + spoolRec.id, {method: 'PATCH',
+    if(await spoolPatch(spoolRec.id, body)){ toast(t('spool.saved') + ' ✓'); invForget(); if(LOC) locLoad(); openSpool(spoolRec.id); }
+  }finally{ $('spSave').disabled = false; }
+};
+// Behind Spoolman a spool has one tag: a Bambu spool's RFID (what the AMS
+// and the scale know it by) would be replaced. Asked before a tag is linked.
+function spoolTagReplaceOk(rec){
+  return !(rec.tray_uuid && !rec.tag_uid) || confirm(t('spool.replace_rfid'));
+}
+// Changes a spool (Save, a tag linked after writing a sticker): true when
+// it stuck; what did not is said in a toast.
+async function spoolPatch(id, body){
+  try{
+    const d = await (await fetch('/api/spool/' + id, {method: 'PATCH',
       headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})).json();
-    if(d.ok){ toast(t('spool.saved') + ' ✓'); invForget(); if(LOC) locLoad(); openSpool(spoolRec.id); }
-    else if(d.tag_error === 'tag_taken') toast(t('spool.tag_taken'), false);
+    if(d.ok) return true;
+    if(d.tag_error === 'tag_taken') toast(t('spool.tag_taken'), false);
     else toast(t('spool.save_failed') + (d.error ? ': ' + d.error : (d.errors && d.errors.length ? ': ' + d.errors[0] : (d.tag_error ? ': ' + d.tag_error : ''))), false);
   }catch(e){ toast(t('spool.save_failed'), false); }
-  finally{ $('spSave').disabled = false; }
-};
+  return false;
+}
 $('spEmpty').onclick = async () => {
   if(!spoolRec) return;
   const id = spoolRec.id;
@@ -3445,7 +3551,8 @@ $('form').onsubmit = async (e) => {
       $('form').classList.add('hidden'); $('manual').value=''; currentBarcode=null;
       $('tag_uid').value=''; nfcStop(); showSpoolman(null);
       invForget();
-      labelOffer(d.spool_ids); }
+      labelOffer(d.spool_ids);
+      nfcOffer(d.spool_ids); }
     else if((d.errors || [])[0] === 'mode_changed'){ toast(t('submit.mode_changed'), false); fetch('/api/settings').then(r => r.json()).then(showInv).catch(() => {}); }
     else { toast(t('submit.failed')+(d.error?': '+d.error:(d.errors&&d.errors.length?': '+d.errors[0]:'')), false); }
   }catch(e){ toast(t('submit.request_failed'), false); }

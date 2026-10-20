@@ -29,6 +29,8 @@ from pathlib import Path
 
 import requests
 
+from catalog_util import canon_gtin, hex_to_rgba
+
 log = logging.getLogger(__name__)
 
 OFD_ALL_URL = "https://api.openfilamentdatabase.org/json/all.json"
@@ -53,25 +55,8 @@ _BRANDS: list | None = None
 _NAMES: list | None = None
 _INDEX_LOADED_AT = 0.0
 
-
-def _canon(barcode: str) -> str:
-    """Canonical GTIN form for matching: digits only, leading zeros stripped.
-
-    Makes a UPC-A (12-digit) and its EAN-13 (leading-zero) form compare equal.
-    """
-    digits = re.sub(r"\D", "", barcode or "")
-    return digits.lstrip("0") or "0"
-
-
-def _hex_to_rgba(color_hex) -> str | None:
-    if isinstance(color_hex, list):
-        color_hex = color_hex[0] if color_hex else None
-    if not isinstance(color_hex, str):
-        return None
-    h = color_hex.lstrip("#")
-    if len(h) == 6 and re.fullmatch(r"[0-9A-Fa-f]{6}", h):
-        return h.upper() + "FF"   # RRGGBBAA, opaque
-    return None
+# The tests call it by this name.
+_canon = canon_gtin
 
 
 def _subtype_from(filament_name: str, material: str) -> str | None:
@@ -134,7 +119,7 @@ def _build_index(all_json: dict) -> tuple:
             fields["subtype"] = sub
         if variant.get("name"):
             fields["color_name"] = variant["name"]
-        rgba = _hex_to_rgba(variant.get("color_hex"))
+        rgba = hex_to_rgba(variant.get("color_hex"))
         if rgba:
             fields["rgba"] = rgba
         if size.get("filament_weight"):
@@ -163,7 +148,7 @@ def _build_index(all_json: dict) -> tuple:
         codes_for_variant = variant_codes.setdefault(variant_id, [])
 
         if gtin:
-            canonical_gtin = _canon(gtin)
+            canonical_gtin = canon_gtin(gtin)
             gtin_index[canonical_gtin] = {"fields": fields, "variant_id": variant_id}
             if not any(c["code"] == canonical_gtin for c in codes_for_variant):
                 codes_for_variant.append({"code": canonical_gtin, "kind": "gtin", "is_refill": is_refill})
@@ -193,7 +178,7 @@ def _build_names(all_json: dict) -> list:
         if not brand or not material:
             continue
         fields: dict = {}
-        rgba = _hex_to_rgba(variant.get("color_hex"))
+        rgba = hex_to_rgba(variant.get("color_hex"))
         if rgba:
             fields["rgba"] = rgba
         for src, dst in (("min_print_temperature", "nozzle_temp_min"),
@@ -369,7 +354,7 @@ def lookup(barcode: str) -> tuple | None:
         idx = get_gtin_index()
     except Exception:
         return None
-    entry = idx.get(_canon(barcode))
+    entry = idx.get(canon_gtin(barcode))
     if not entry:
         return None
     return entry["fields"], _codes_for_variant(entry["variant_id"])
