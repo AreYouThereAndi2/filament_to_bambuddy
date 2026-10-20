@@ -251,6 +251,27 @@ Außerdem:
 - **Mehrere Etiketten:** In *Spulen-ID* gehen `12, 15, 20-24`; dazu *Alle aus Lagerort …* und *Heute angelegt*. *Drucken* schickt alle nacheinander an den Drucker.
 - **Leer: archivieren:** Im Spulen-Datensatz archiviert das eine aufgebrauchte Spule in BamBuddy. Sie verschwindet aus dem Bestand, ihre Daten bleiben erhalten.
 
+## Lagerorte
+
+Die Karte **Lagerorte** zeigt BamBuddys Liste der Lagerorte als Kacheln, gruppiert nach dem Namensanfang („Regal A“ für „Regal A-01“ bis „Regal A-12“). Jede Kachel zeigt, wie viele Spulen dort liegen, und ihre Farben als Punkte; leere Orte sind nur umrandet. Ein Tipp öffnet den Ort:
+
+- **die Spulen dort**: ein Tipp öffnet den Spulen-Datensatz,
+- **Umbenennen**: BamBuddy zieht die Spulen mit, auch in Spoolman,
+- **Etikett drucken**: der Name groß und ein QR-Code mit dem Namen, auf der Etikettenrolle, die für Spulen eingestellt ist,
+- **Lagerort löschen**: nur, wenn er leer ist.
+
+**Ohne Lagerort** (oben) listet Spulen ohne Platz. Unter **Unbekannte Orte** stehen Namen, die Spulen tragen, die BamBuddys Liste aber nicht kennt (z. B. von früher von Hand eingetippt): **Übernehmen** legt sie in BamBuddy an.
+
+**Lagerorte anlegen** legt bis zu 200 auf einmal an:
+
+- **Liste**: ein Name pro Zeile.
+- **Bereich**: Text davor, von–bis (Zahlen oder Buchstaben), Text danach. Mit *Führende Nullen* wird aus „Regal A-“ 1 bis 12 „Regal A-01“ bis „Regal A-12“.
+- **Raster**: Reihen × Spalten (z. B. A–D × 1–6) mit einem Namensmuster wie `{row}{col}` oder `Regal {row} / Fach {col}`.
+
+Die Namen erscheinen, bevor etwas angelegt wird; was BamBuddy schon hat, ist durchgestrichen. Danach gibt es auf Wunsch gleich die Etiketten für die neuen Orte.
+
+Zum Lesen braucht der API-Schlüssel **Read Status** („Status lesen“), zum Anlegen, Umbenennen und Löschen **Manage Inventory** („Bestand verwalten“). Fehlt eines, sagt die Karte, welches.
+
 ## Mit der SpoolmanScale verbinden
 
 In der Weboberfläche der Waage → Einstellungen → Barcode-Scanner → **filament_to_bambuddy-Adresse**: `http://<server-ip>:8088`. Scannt die Waage dann einen Code, den keine Spule kennt, fragt sie die App und bietet an, die Spule anzulegen, mit oder ohne den gefundenen Preis.

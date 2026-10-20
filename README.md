@@ -79,6 +79,37 @@ UPCitemdb, which mostly covers what Amazon sells. An **ASIN** (`B0…`) or an
 Amazon FNSKU label (`X00…`) is not a product barcode; for those, copy the
 listing title into **Paste product title** and tap **Fill**.
 
+### Storage locations
+
+The **Storage locations** card shows BamBuddy's list of locations
+(`/api/v1/inventory/locations`) as tiles, grouped by what the names start with
+("Shelf A" for "Shelf A-01" … "Shelf A-12"). Each tile shows how many spools
+are stored there and their colours as dots; empty places are drawn as an
+outline only. A tap opens the place: its spools (a tap opens a spool's record),
+**Rename** (BamBuddy moves the spools along, in Spoolman too), **Print label**
+(the name large and a QR code holding it, on the label roll set up for spools)
+and **Delete**, offered only for an empty place. Spools without a location are
+behind the *No location* chip. Names that spools carry but BamBuddy's list
+lacks are shown under *Unknown locations*, to adopt one by one or all at once.
+
+**Create locations** makes up to 200 at once, in one of three ways:
+
+- **List**: one name per line.
+- **Range**: text before, from–to (numbers or letters), text after; *Leading
+  zeros* gives `Shelf A-01` … `Shelf A-12`.
+- **Grid**: rows × columns (e.g. A–D × 1–6) into a pattern such as
+  `{row}{col}` or `Shelf {row} / Box {col}`.
+
+The names appear before anything is created, those BamBuddy already has
+struck through. Afterwards the new ones can be labelled in one go.
+
+Routes: `GET /api/locations` (list merged with the stock, plus the spools
+without a location and the unknown names), `POST /api/locations/preview`
+(the names a pattern gives), `POST /api/locations/bulk` (`{"names": [...]}`,
+each answered with `created`, `exists` or `error`), `PATCH` and `DELETE
+/api/locations/<id>`. Reading needs the key's **Read Status**, changing it
+**Manage Inventory**; a refusal names the one missing.
+
 > **Tested with** Bambuddy v0.2.4.8. Requires **Python 3.10+**.
 
 ---
@@ -113,9 +144,11 @@ page shows a status line: 🟢 connected, 🟡 connected-but-permission-issue, o
 
 Create the key in **Bambuddy → Settings → API Keys** with these enabled:
 
-- ✅ **Manage Inventory** — *required* (this is what creates spools)
-- ✅ **Read Status** — the connection check, BamBuddy's inventory mode, and the
-  imported slicer profiles and printer models the profile linking needs
+- ✅ **Manage Inventory** — *required* (this is what creates spools; also
+  creating, renaming and deleting storage locations)
+- ✅ **Read Status** — the connection check, BamBuddy's inventory mode, the
+  storage locations, and the imported slicer profiles and printer models the
+  profile linking needs
 - ☑️ **Send notifications** — optional, only for the message when filament runs out
 
 Without **Manage Inventory** the add will fail with `403`; without **Read
@@ -232,6 +265,7 @@ Each created spool is tagged `data_origin = "barcode-scan"`.
 | `spoolmandb_community.py` | SpoolmanDB-Community client — builds the GTIN + SKU indexes from the community filament repo, cached/refreshed daily |
 | `catalog_util.py` | Helpers the catalogue clients share: GTIN canonicalisation, `#RRGGBB` → RRGGBBAA |
 | `filament_parse.py` | Heuristics turning product/label text into filament fields (paste-title + label OCR), English and German |
+| `locations.py` | Storage locations: names from a list, a range or a grid; the locations merged with the stock and grouped for the tiles |
 | `upc_lookup.py` | UPCitemdb fallback for retail barcodes the filament databases don't know; title + average offer price |
 | `templates/index.html` | Mobile UI (barcode scan + manual entry + editable form), Bambuddy dark/green theme |
 | `static/manifest.webmanifest`, `static/sw.js`, `static/icons/` | PWA manifest, service worker, and app icons |
