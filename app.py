@@ -1918,6 +1918,167 @@ def update_spool(spool_id: int):
         (200 if not errors else 502)
 
 
+# ---- storage locations --------------------------------------------------------
+# BamBuddy's list of storage locations, shown with the spools stored in each
+# and made in bulk from a pattern (see locations.py). The list is the same
+# in Spoolman mode; a rename there is carried to Spoolman's spools by
+# BamBuddy. Reading needs the key's "Read Status", changing it "Manage
+# Inventory": a refusal names the one missing.
+_LOCATIONS_PATH = "/api/v1/inventory/locations"
+
+
+def _bambuddy_send(method: str, path: str, body: dict | None = None):
+    """A change sent to Bambuddy ("post", "patch", "delete"): (response,
+    None) or (None, "unreachable")."""
+    try:
+        return getattr(requests, method)(f"{BAMBUDDY_URL}{path}", json=body, timeout=20,
+                                         headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}), None
+    except Exception as e:
+        log.warning("%s %s: Bambuddy not reachable: %s", method.upper(), path, e)
+        return None, "unreachable"
+
+
+def _bambuddy_detail(r) -> str:
+    """Bambuddy's reason for a refusal: its "detail", else the text."""
+    try:
+        detail = (r.json() or {}).get("detail")
+        if isinstance(detail, list) and detail and isinstance(detail[0], dict):
+            detail = detail[0].get("msg")   # FastAPI's validation errors
+    except Exception:
+        detail = None
+    return str(detail or r.text or "")[:200]
+
+
+def _location_refusal(r, extra: dict | None = None):
+    """A refused location change as the page's error and HTTP status."""
+    if r.status_code in (401, 403):
+        return jsonify(ok=False, error="forbidden", permission="manage_inventory", **(extra or {})), 403
+    if r.status_code == 404:
+        return jsonify(ok=False, error="not_found", **(extra or {})), 404
+    return jsonify(ok=False, error="failed", status=r.status_code, detail=_bambuddy_detail(r), **(extra or {})), 502
+
+
+@app.get("/api/locations")
+def locations_list():
+    """BamBuddy's storage locations with the spools in each, the spools
+    without one and the names on spools BamBuddy's list does not have."""
+    import locations
+    if not BAMBUDDY_API_KEY:
+        return jsonify(ok=False, error="no_key"), 400
+    data, error = _bambuddy_get(_LOCATIONS_PATH)
+    if error == "forbidden":
+        return jsonify(ok=False, error="forbidden", permission="read_status"), 403
+    if error == "http 404":
+        # A BamBuddy from before its list of locations.
+        return jsonify(ok=False, error="unsupported"), 502
+    if error or not isinstance(data, list):
+        return jsonify(ok=False, error=error or "failed"), 502
+    spools, stock_error, _ = _read_inventory(fresh=bool(request.args.get("fresh")))
+    return jsonify(ok=True, stock_error=stock_error, **locations.merge(data, spools or []))
+
+
+@app.post("/api/locations/preview")
+def locations_preview():
+    """The names a pattern gives (see locations.expand_pattern), nothing made."""
+    import locations
+    try:
+        names = locations.expand_pattern(request.get_json(force=True, silent=True) or {})
+    except locations.PatternError as e:
+        return jsonify(ok=False, error=e.code, **e.info), 400
+    return jsonify(ok=True, names=names)
+
+
+@app.post("/api/locations/bulk")
+def locations_bulk():
+    """{"names": [...], "identifier_prefix": "R-"}: each name made in
+    BamBuddy, at most 200. Each gets "created", "exists" (BamBuddy has it,
+    in any case) or "error"; the identifier, when a prefix is given, is the
+    prefix and the name's number in the list ("R-01")."""
+    import locations
+    if not BAMBUDDY_API_KEY:
+        return jsonify(ok=False, error="no_key"), 400
+    body = request.get_json(force=True, silent=True) or {}
+    if not isinstance(body.get("names"), list):
+        return jsonify(ok=False, error="names"), 400
+    try:
+        names = locations.clean_names(body["names"])
+    except locations.PatternError as e:
+        return jsonify(ok=False, error=e.code, **e.info), 400
+    if not names:
+        return jsonify(ok=False, error="empty"), 400
+    prefix = str(body.get("identifier_prefix") or "").strip()
+    width = len(str(len(names)))
+    results: list = []
+    for i, name in enumerate(names, 1):
+        payload = {"name": name}
+        if prefix:
+            payload["identifier"] = f"{prefix}{str(i).zfill(width)}"[:100]
+        r, error = _bambuddy_send("post", _LOCATIONS_PATH, payload)
+        if r is None:
+            return jsonify(ok=False, error=error, results=results), 502
+        if r.status_code in (401, 403):
+            return _location_refusal(r, {"results": results})
+        if r.status_code == 409:
+            results.append({"name": name, "status": "exists"})
+        elif r.ok:
+            try:
+                new_id = (r.json() or {}).get("id")
+            except Exception:
+                new_id = None
+            results.append({"name": name, "status": "created", "id": new_id})
+        else:
+            results.append({"name": name, "status": "error", "error": f"{r.status_code}: {_bambuddy_detail(r)}"})
+    count = {s: sum(1 for x in results if x["status"] == s) for s in ("created", "exists", "error")}
+    log.info("locations made: %d new, %d there already, %d failed", count["created"], count["exists"], count["error"])
+    return jsonify(ok=not count["error"], results=results, created=count["created"], exists=count["exists"],
+                   failed=count["error"])
+
+
+@app.patch("/api/locations/<int:location_id>")
+def location_update(location_id: int):
+    """Rename a location ({"name"}) or set its identifier: BamBuddy moves
+    its spools along, in Spoolman too."""
+    if not BAMBUDDY_API_KEY:
+        return jsonify(ok=False, error="no_key"), 400
+    body = request.get_json(force=True, silent=True) or {}
+    patch: dict = {}
+    if "name" in body:
+        name = str(body.get("name") or "").strip()
+        if not name or len(name) > 255:
+            return jsonify(ok=False, error="name"), 400
+        patch["name"] = name
+    if "identifier" in body:
+        patch["identifier"] = str(body.get("identifier") or "").strip()[:100]
+    if not patch:
+        return jsonify(ok=True, changed=[])
+    r, error = _bambuddy_send("patch", f"{_LOCATIONS_PATH}/{location_id}", patch)
+    if r is None:
+        return jsonify(ok=False, error=error), 502
+    if r.status_code == 409:
+        return jsonify(ok=False, error="name_taken"), 409
+    if not r.ok:
+        return _location_refusal(r)
+    _inventory_forget()
+    log.info("location %s changed: %s", location_id, ", ".join(sorted(patch)))
+    return jsonify(ok=True, changed=sorted(patch))
+
+
+@app.delete("/api/locations/<int:location_id>")
+def location_delete(location_id: int):
+    """Delete a location; BamBuddy refuses while spools are stored there."""
+    if not BAMBUDDY_API_KEY:
+        return jsonify(ok=False, error="no_key"), 400
+    r, error = _bambuddy_send("delete", f"{_LOCATIONS_PATH}/{location_id}")
+    if r is None:
+        return jsonify(ok=False, error=error), 502
+    if r.status_code == 409:
+        return jsonify(ok=False, error="has_spools"), 409
+    if not r.ok:
+        return _location_refusal(r)
+    log.info("location %s deleted", location_id)
+    return jsonify(ok=True)
+
+
 def _labels_path() -> str:
     """Bambuddy's label route for the active inventory: its own spools or
     Spoolman's, which have ids of their own."""
