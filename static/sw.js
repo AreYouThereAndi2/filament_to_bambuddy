@@ -1,5 +1,5 @@
 /* filament_to_bambuddy service worker — app-shell cache for installable PWA */
-const CACHE = "f2b-v7";
+const CACHE = "f2b-v8";
 const SHELL = [
   "/",
   "/manifest.webmanifest",

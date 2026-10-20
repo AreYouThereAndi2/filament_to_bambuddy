@@ -103,6 +103,8 @@ Die **Waage** braucht kein HTTPS. Sie spricht die App direkt über `http://<serv
 - Gelesen werden **NTAG**-Sticker (NTAG213/215), wie sie die SpoolmanScale beschreibt.
 - **Bambu-Lab-Tags sind MIFARE Classic.** Die kann Web NFC auf keinem Handy lesen: Chrome fragt nach der Berechtigung, und der Scan bricht danach mit einem Lesefehler ab oder liefert nichts. Die Seite sagt das jetzt. Solche Spulen auf die Waage legen, die liest und verknüpft sie.
 - Nach 20 Sekunden ohne Tag bricht der Scan ab; ein zweiter Tipp auf den Knopf bricht ihn sofort ab.
+- **Auf NFC-Aufkleber schreiben** (im Datensatz einer Spule und gleich nach dem Anlegen): Das Handy schreibt den OpenSpool-Datensatz der Spule (Material, Farbe, Marke, Düsentemperaturen, Spulennummer) auf einen NTAG213/215-Aufkleber, so wie die SpoolmanScale ihn liest, und verknüpft die UID des Aufklebers gleich mit der Spule. Höchstens 230 Byte: Ein langer Markenname wird zuerst gekürzt, dann fallen die Temperaturen weg.
+- **Der Aufkleber wird nie gesperrt.** Er bleibt beschreibbar und kann für die nächste Rolle wiederverwendet werden. Ein schon schreibgeschützter Aufkleber lässt sich nicht beschreiben; die Seite sagt das.
 
 ## Amazon-Nummern und Preis
 
@@ -125,6 +127,7 @@ Was geht wo:
 | Barcode mit der Kamera, Etikett fotografieren | ja | ja |
 | 🔦 Licht beim Scannen | ja | nur wenn iOS es der Seite erlaubt; sonst erscheint der Knopf nicht |
 | NFC-Tag lesen | ja (NTAG) | nein: Apple lässt Web-Apps nicht an NFC, den Tag legt die Waage an |
+| NFC-Aufkleber beschreiben (OpenSpool) | ja (NTAG213/215) | nein, der Knopf erscheint nicht |
 | Shop-Seite aus der Zwischenablage oder als Link übernehmen | ja | ja |
 | Shop-Seite per **Teilen → Filament** übernehmen | ja, mit installierter App | nein: iOS bietet Web-Apps nicht im Teilen-Menü an |
 
@@ -220,6 +223,7 @@ Profile und Drucker liest die App mit dem Recht **Read Status** des API-Schlüss
 Den QR-Code auf dem Etikett einer Spule mit **Barcode scannen** lesen. Das geht mit BamBuddys Etiketten, den eigenen der App und Spoolmans `web+spoolman:s-…`. Statt einer Suche öffnet sich dann **Spule #12** mit Material, Marke, Farbe, Restgewicht, Artikelnummer und Datum. Dort lässt sich:
 
 - **ein NFC-Tag nachträglich verknüpfen:** *Scannen* tippen und den Tag ans Handy halten (Chrome auf Android) oder die UID eintippen. Hängt der Tag schon an einer anderen Spule, sagt die App das.
+- **einen NFC-Aufkleber beschreiben:** *Auf NFC-Aufkleber schreiben* tippen und den Aufkleber ans Handy halten. Er bekommt den OpenSpool-Datensatz und wird mit der Spule verknüpft (siehe *NFC am Handy*).
 - **Lagerort, Notiz und Restgewicht ändern**, dann **Änderungen speichern**. Das Restgewicht ist netto, ohne Leerspule. Mit der Küchenwaage samt Spule gewogen? Den Wert unter **Gewogen (brutto)** eintragen, die App zieht die Leerspule ab.
 - **das Druckprofil ändern** (siehe *Druckprofile*).
 - Hängt an der Spule ein **Bambu-RFID** (vom AMS oder der Waage), steht das dabei. Hinter Spoolman hat eine Spule nur einen Tag: Ein anderer Tag würde den RFID ersetzen, daran erkennen AMS und Waage die Spule. Die App fragt vorher.
