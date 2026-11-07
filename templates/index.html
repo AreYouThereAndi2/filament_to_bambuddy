@@ -1419,6 +1419,17 @@ async function importPage(query){
 }
 (function(){
   const qs = new URLSearchParams(location.search);
+  // ?barcode= from the scale: its QR code for a code nobody knew opens the
+  // app with that code looked up, the same as typing it into the field.
+  const code = (qs.get('barcode')||'').trim();
+  if(code){
+    history.replaceState(null, '', location.pathname);
+    const gtin = extractGtinFromManualEntry(code);
+    const lookup = (gtin && isValidUpcEanBarcode(gtin)) ? gtin
+      : isPlausibleSku(code) ? code.toUpperCase() : null;
+    if(lookup) optionsReady.then(() => onBarcode(lookup));
+    return;
+  }
   let query = null;
   if(qs.get('import')) query = 'data='+encodeURIComponent(qs.get('import'));
   // The share sheet replaces the query with title, text and url.
