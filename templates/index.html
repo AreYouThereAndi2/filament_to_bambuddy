@@ -221,6 +221,10 @@
   .lay-tog[aria-pressed=true]{background:var(--text);color:var(--surface);border-color:var(--text)}
   .lay-row .icon-btn{width:34px;height:36px;border-radius:9px}
   .lay-row .icon-btn:disabled{opacity:.3}
+  /* Two on one: a switch, its direction, and below what else goes with it. */
+  .lay-two{display:flex;gap:10px;align-items:center;margin-top:12px}
+  .lay-two .loc-check{flex:1;min-width:0;margin:0}
+  .lay-two select{width:auto;max-width:55%;flex:0 0 auto;min-height:44px;padding:8px 10px;font-size:15px}
   .fieldgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}
   .fieldgrid label{display:flex;gap:8px;align-items:center;margin:5px 0;color:var(--text);
     font:500 14px/1.2 var(--body)}
@@ -977,6 +981,23 @@
         <div id="labelFields" class="fieldgrid"></div>
       </div>
     </details>
+    <!-- Two on one: half size, twice on the roll's label, cut apart along a
+         dashed line (small holders on a shelf edge). -->
+    <div id="labelTwoUpBox" class="lay-two">
+      <label class="loc-check"><input id="labelTwoUp" type="checkbox"><span>{{ t('label.twoup') }}</span></label>
+      <select id="labelTwoUpDir" aria-label="{{ t('label.twoup') }}">
+        <option value="stack">{{ t('label.twoup_stack') }}</option>
+        <option value="side">{{ t('label.twoup_side') }}</option>
+      </select>
+    </div>
+    <div id="labelTwoUpMore" class="hidden">
+      <div id="labelTwoUpFor" class="hint" style="margin-top:2px"></div>
+      <label class="loc-check" style="margin-top:4px"><input id="labelTwoUpCut" type="checkbox"><span>{{ t('label.twoup_cut') }}</span></label>
+      <select id="labelTwoUpOdd" aria-label="{{ t('label.twoup_odd_twice') }}" style="margin-top:6px;min-height:44px">
+        <option value="twice">{{ t('label.twoup_odd_twice') }}</option>
+        <option value="empty">{{ t('label.twoup_odd_empty') }}</option>
+      </select>
+    </div>
     <button id="labelPreviewBtn" type="button" class="btn-secondary" style="margin-top:14px">{{ t('label.preview') }}</button>
     <div id="labelBox" class="hidden" style="margin-top:14px">
       <canvas id="labelCanvas" width="400" height="240"></canvas>
@@ -4029,6 +4050,27 @@ for(const it of LABEL_LAYOUT_DEFAULT) if(!labelCfg.layout.some(x => x.f === it.f
 labelCfg.layout = labelCfg.layout.filter(x => LABEL_SIZE_DOTS[x.size] && LABEL_LAYOUT_DEFAULT.some(d => d.f === x.f));
 labelCfg.qr = Object.assign({pos: 'right', size: 'm'}, labelCfg.qr || {});
 if(!['top', 'spread', 'last_bottom'].includes(labelCfg.flow)) labelCfg.flow = 'last_bottom';
+// Two on one ("2 auf 1"), for spool and for location labels, as label_render.py
+// keeps it: stacked or side by side, the cut line, an odd last one twice or
+// with its half empty. Missing (set up before) is off.
+const LABEL_TWOUP_DEFAULT = {spool: {on: false, dir: 'side', cut: true, odd: 'twice'},
+                             loc: {on: false, dir: 'stack', cut: true, odd: 'twice'}};
+function labelTwoupClean(v){
+  const out = {};
+  for(const k of ['spool', 'loc']){
+    const d = LABEL_TWOUP_DEFAULT[k], it = v && typeof v === 'object' && v[k] && typeof v[k] === 'object' ? v[k] : {};
+    out[k] = {on: 'on' in it ? !!it.on : d.on, dir: ['stack', 'side'].includes(it.dir) ? it.dir : d.dir,
+              cut: 'cut' in it ? !!it.cut : d.cut, odd: ['twice', 'empty'].includes(it.odd) ? it.odd : d.odd};
+  }
+  return out;
+}
+labelCfg.twoup = labelTwoupClean(labelCfg.twoup);
+// A QR module at least 3 dots (0.375 mm): thinner ones smear on the head and
+// a phone no longer reads them. Each half keeps 4 dots more by the cut.
+const LABEL_MIN_QR_DOTS = 3, LABEL_CUT_PAD = 4;
+// The lines a half keeps when not all fit, the first ones longest.
+const LABEL_KEEP = ['material', 'brand', 'name', 'location', 'spool_id', 'hex', 'temps', 'weight', 'profile',
+                    'material_number', 'added', 'note'];
 let labelLast = null, labelDemoSeq = 0;   // the spool previewed last, for the layout editor
 let labelJob = null;      // the previewed label as the printer takes it
 let labelPng = null;      // Bambuddy's image, for sharing
@@ -4041,7 +4083,8 @@ function labelHint(msg, err){ $('labelHint').textContent = msg||''; $('labelHint
 let labelSyncTimer = null;
 function labelSyncUp(){
   fetch('/api/label-layout', {method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({layout: labelCfg.layout, qr: labelCfg.qr, flow: labelCfg.flow, w: labelCfg.w, l: labelCfg.l})})
+    body: JSON.stringify({layout: labelCfg.layout, qr: labelCfg.qr, flow: labelCfg.flow, w: labelCfg.w, l: labelCfg.l,
+                          twoup: labelCfg.twoup})})
     .catch(() => {});
 }
 function labelSave(){
@@ -4078,7 +4121,9 @@ function labelSave(){
   fetch('/api/label-layout').then(r => r.json()).then(d => {
     if(!d || !d.ok) return;
     if(d.saved && !hadOwn){
-      Object.assign(labelCfg, {layout: d.layout.layout, qr: d.layout.qr, flow: d.layout.flow, w: d.layout.w, l: d.layout.l});
+      Object.assign(labelCfg, {layout: d.layout.layout, qr: d.layout.qr, flow: d.layout.flow, w: d.layout.w, l: d.layout.l,
+                               twoup: labelTwoupClean(d.layout.twoup)});
+      labelTwoUpSync();
       lsSet('f2b.label', labelCfg);
       $('labelW').value = labelCfg.w; $('labelL').value = labelCfg.l;
       $('labelQrPos').value = labelCfg.qr.pos; $('labelQrSize').value = labelCfg.qr.size; $('labelFlow').value = labelCfg.flow;
@@ -4092,7 +4137,7 @@ function labelSave(){
     $('labelW').value = labelCfg.w; $('labelL').value = labelCfg.l;
     labelSave(); labelDemoDraw(); labelRefresh();
   };
-  $('labelSpool').oninput = () => { labelLocs = null; labelJob = null; $('labelBox').classList.add('hidden'); labelHint(''); };
+  $('labelSpool').oninput = () => { labelLocs = null; labelJob = null; $('labelBox').classList.add('hidden'); labelHint(''); labelTwoUpSync(); };
   $('labelSpool').onkeydown = (e) => { if(e.key === 'Enter'){ e.preventDefault(); labelPreview(); } };
   $('labelPreviewBtn').onclick = () => labelPreview();
   $('labelPrintBtn').onclick = () => labelPrint();
@@ -4102,6 +4147,40 @@ function labelSave(){
 
 // A shown preview follows the settings; nothing is fetched before one is asked for.
 function labelRefresh(){ if(!$('labelBox').classList.contains('hidden')) labelPreview(); }
+
+// Two on one: the switch shows the setting of what is being labelled,
+// locations or spools (spools only in the own layout: BamBuddy's templates
+// come as images of their own size).
+function labelTwoUpKind(){ return labelLocs ? 'loc' : 'spool'; }
+function labelTwoUpUsable(kind){ return kind === 'loc' || labelCfg.template === LABEL_OWN; }
+function labelTwoUpSync(){
+  const kind = labelTwoUpKind(), tu = labelCfg.twoup[kind], usable = labelTwoUpUsable(kind);
+  $('labelTwoUpBox').classList.toggle('hidden', !usable);
+  $('labelTwoUp').checked = tu.on; $('labelTwoUpDir').value = tu.dir; $('labelTwoUpDir').disabled = !tu.on;
+  $('labelTwoUpCut').checked = tu.cut; $('labelTwoUpOdd').value = tu.odd;
+  $('labelTwoUpMore').classList.toggle('hidden', !usable || !tu.on);
+  $('labelTwoUpFor').textContent = t(kind === 'loc' ? 'label.twoup_for_loc' : 'label.twoup_for_spool');
+}
+function labelTwoUpSet(key, value){
+  labelCfg.twoup[labelTwoUpKind()][key] = value;
+  labelSave(); labelTwoUpSync(); labelRefresh();
+}
+$('labelTwoUp').onchange = () => labelTwoUpSet('on', $('labelTwoUp').checked);
+$('labelTwoUpDir').onchange = () => labelTwoUpSet('dir', $('labelTwoUpDir').value);
+$('labelTwoUpCut').onchange = () => labelTwoUpSet('cut', $('labelTwoUpCut').checked);
+$('labelTwoUpOdd').onchange = () => labelTwoUpSet('odd', $('labelTwoUpOdd').value);
+labelTwoUpSync();
+// Labels two to a roll label, in order; an odd last one twice or beside an empty half.
+function labelPairs(items, odd){
+  const out = [];
+  for(let i = 0; i + 1 < items.length; i += 2) out.push([items[i], items[i + 1]]);
+  if(items.length % 2) out.push([items[items.length - 1], odd === 'twice' ? items[items.length - 1] : null]);
+  return out;
+}
+function labelItemName(it){
+  if(it && it.pair) return it.pair.filter(x => x != null).map(x => x.loc || '#' + x).join(' + ');
+  return it && it.loc ? it.loc : '#' + it;
+}
 
 // After spools were added: their ids, one tap from a preview. Never printed by itself.
 function labelOffer(ids){
@@ -4120,6 +4199,7 @@ function labelOffer(ids){
   // All of them at once: the preview shows the first, Print prints each.
   labelLocs = null;
   $('labelSpool').value = ids.join(', ');
+  labelTwoUpSync();
   labelPreview();
 }
 
@@ -4136,12 +4216,28 @@ function labelIds(){
   return out;
 }
 // One spool's label, drawn and turned into the printer's dots: {raster, png}
-// or {error}. The canvas shows it as it is built.
-async function labelBuild(id){
+// or {error}. The canvas shows it as it is built (or `out`, a canvas of its own).
+async function labelBuild(id, out){
+  if(id && id.pair){
+    const parts = [];
+    for(const x of id.pair){
+      if(x == null || id.kind === 'loc'){ parts.push(x); continue; }
+      const d = await (await fetch('/api/spool/' + x)).json().catch(() => ({}));
+      if(!d.ok){
+        let msg = t('label.err_' + (d.error || 'failed'), {id: x});
+        if(msg.startsWith('label.')) msg = t('label.err_failed');
+        return {error: msg};
+      }
+      parts.push({sp: d.spool, qr: d.qr});
+    }
+    const {cv, noQr} = await labelTwoUpDraw(id.kind, parts);
+    const png = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+    return {raster: labelRaster(cv, labelItemName(id), out), png, noQr};
+  }
   if(id && id.loc){
     const cv = await locLabelDraw(id.loc);
     const png = await new Promise(ok => cv.toBlob(ok, 'image/png'));
-    return {raster: labelRaster(cv, id.loc), png};
+    return {raster: labelRaster(cv, id.loc, out), png};
   }
   if(labelCfg.template === LABEL_OWN){
     const d = await (await fetch('/api/spool/' + id)).json().catch(() => ({}));
@@ -4154,7 +4250,7 @@ async function labelBuild(id){
     labelDemoDraw();
     const cv = await labelDrawOwn(d.spool, d.qr);
     const png = await new Promise(ok => cv.toBlob(ok, 'image/png'));
-    return {raster: labelRaster(cv, id), png};
+    return {raster: labelRaster(cv, id, out), png};
   }
   const r = await fetch('/api/label', {method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({spool_id: id, template: labelCfg.template, fields: labelCfg.fields})});
@@ -4166,24 +4262,37 @@ async function labelBuild(id){
     return {error: msg};
   }
   const blob = await r.blob();
-  return {raster: labelRaster(await labelImage(blob), id), png: blob};
+  return {raster: labelRaster(await labelImage(blob), id, out), png: blob};
 }
 async function labelPreview(){
   const ids = labelLocs || labelIds();
   if(!ids.length){ labelHint(t('label.need_id'), true); $('labelSpool').focus(); return; }
+  // Two on one: the labels in pairs, each pair one roll label.
+  const kind = labelTwoUpKind(), tu = labelCfg.twoup[kind], two = tu.on && labelTwoUpUsable(kind);
+  const items = two ? labelPairs(ids, tu.odd).map(pair => ({pair, kind})) : ids;
   const seq = ++labelSeq;
   labelHint(t('label.loading'));
   $('labelPreviewBtn').disabled = true;
   try{
-    const b = await labelBuild(ids[0]);
+    // Built aside and shown only while it is still the one asked for: a
+    // slower earlier preview must not paint over a newer one.
+    const off = document.createElement('canvas');
+    const b = await labelBuild(items[0], off);
     if(seq !== labelSeq) return;
+    if(!b.error){
+      const cv = $('labelCanvas'); cv.width = off.width; cv.height = off.height;
+      cv.getContext('2d').drawImage(off, 0, 0);
+    }
     if(b.error){ labelJob = null; labelBatch = []; $('labelBox').classList.add('hidden'); labelHint(b.error, true); return; }
-    labelPng = b.png; labelJob = b.raster; labelBatch = ids;
+    labelPng = b.png; labelJob = b.raster; labelBatch = items;
     $('labelBox').classList.remove('hidden');
     $('labelPrintBtn').disabled = !labelJob.fits;
     if(!labelJob.fits){
       const [w, h] = LABEL_SIZES[labelCfg.template];
       labelHint(t('label.too_big', {tpl: w + ' × ' + h, w: labelCfg.w, l: labelCfg.l}), true);
+    }else if(two){
+      labelHint((ids.length === 1 && tu.odd === 'twice' ? t('label.twoup_single') : t('label.twoup_batch', {n: ids.length, k: items.length}))
+                + (b.noQr ? ' ' + t('label.twoup_noqr') : ''));
     }else if(labelLocs && ids.length > 1) labelHint(t('loc.label_batch', {n: ids.length, name: ids[0].loc}));
     else if(ids.length > 1) labelHint(t('label.batch_ready', {n: ids.length, id: ids[0]}));
     else if(!navigator.bluetooth) labelHint(t('label.no_bt'));
@@ -4253,59 +4362,125 @@ function labelText(sp, f){
   }
   return '';
 }
+// The margins a label keeps: wider at the sides where the roll is wider
+// than the head, which loses its edges.
+function labelMargins(cfg){
+  const W = cfg.w * DOTS_PER_MM, M = 8;
+  return {M, MX: M + Math.max(0, Math.ceil((W - TSPL_HEAD_DOTS) / 2))};
+}
 async function labelDrawOwn(sp, qrUrl, cfg = labelCfg){
   await labelFonts();
-  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM, M = 8, GAP = 6;
-  // A roll wider than the head loses its edges: the sides keep their margin
-  // inside what is printed.
-  const MX = M + Math.max(0, Math.ceil((W - TSPL_HEAD_DOTS) / 2));
+  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM, {M, MX} = labelMargins(cfg);
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
   g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = '#000'; g.textBaseline = 'top';
+  await labelDrawOwnInto(g, sp, qrUrl, cfg, {x: 0, y: 0, w: W, h: H, ml: MX, mt: M, mr: MX, mb: M}, false);
+  return cv;
+}
+// One spool's label into the region b ({x, y, w, h} and the margins ml, mt,
+// mr, mb it keeps): {qr: drawn, lines: kept}. A half lets the QR code take
+// more of the width (error correction L, a version smaller), leaves it out
+// rather than print it finer than LABEL_MIN_QR_DOTS, and drops the lines
+// least needed when even the smallest size does not fit.
+async function labelDrawOwnInto(g, sp, qrUrl, cfg, b, half){
+  const GAP = 6, W = b.w, H = b.h, iw = W - b.ml - b.mr, ih = H - b.mt - b.mb;
   // The QR code: whole dots per module, 3 at least, a 2 module quiet zone.
   let qrW = 0;
   const qrLeft = cfg.qr.pos === 'left';
   if(cfg.qr.pos !== 'off' && qrUrl){
     try{
       if(!window.qrcode) await loadScript(QR_LIB);
-      const q = qrcode(0, 'M'); q.addData(qrUrl); q.make();
-      const share = {s: 0.3, m: 0.42, l: 0.55}[cfg.qr.size] || 0.42;
-      const n = q.getModuleCount(), box = Math.min(H - 2*M, Math.floor((W - 2*MX) * share));
-      const px = Math.max(3, Math.floor(box / (n + 4)));
-      qrW = (n + 4) * px;
-      const x0 = qrLeft ? MX : W - MX - qrW, y0 = Math.floor((H - qrW) / 2);
-      g.fillStyle = '#fff'; g.fillRect(x0, y0, qrW, qrW); g.fillStyle = '#000';
-      for(let r = 0; r < n; r++) for(let c = 0; c < n; c++)
-        if(q.isDark(r, c)) g.fillRect(x0 + (c + 2)*px, y0 + (r + 2)*px, px, px);
+      const q = qrcode(0, half ? 'L' : 'M'); q.addData(qrUrl); q.make();
+      const share = {s: 0.3, m: 0.42, l: 0.55}[cfg.qr.size] || 0.42, n = q.getModuleCount();
+      const px = half ? labelQrModule(n, Math.min(ih, Math.floor(iw * Math.max(share, 0.6))))
+                      : Math.max(LABEL_MIN_QR_DOTS, Math.floor(Math.min(ih, Math.floor(iw * share)) / (n + 4)));
+      if(px){
+        qrW = (n + 4) * px;
+        const x0 = b.x + (qrLeft ? b.ml : W - b.mr - qrW), y0 = b.y + b.mt + Math.floor((ih - qrW) / 2);
+        g.fillStyle = '#fff'; g.fillRect(x0, y0, qrW, qrW); g.fillStyle = '#000';
+        for(let r = 0; r < n; r++) for(let c = 0; c < n; c++)
+          if(q.isDark(r, c)) g.fillRect(x0 + (c + 2)*px, y0 + (r + 2)*px, px, px);
+      }
     }catch(e){ qrW = 0; }
   }
-  const TX = qrLeft && qrW ? MX + qrW + GAP : MX;
-  const TW = W - 2*MX - (qrW ? qrW + GAP : 0);
-  const rows = cfg.layout.filter(it => it.on).map(it => Object.assign({text: labelText(sp, it.f)}, it)).filter(r => r.text);
+  const TX = b.x + b.ml + (qrLeft && qrW ? qrW + GAP : 0);
+  const TW = iw - (qrW ? qrW + GAP : 0);
+  let rows = cfg.layout.filter(it => it.on).map(it => Object.assign({text: labelText(sp, it.f)}, it)).filter(r => r.text);
   // Each line in its size; when they do not fit the height, all smaller
-  // alike, down to 12 dots.
-  const pad = r => r.inv ? 8 : 3;
-  let sizes = rows.map(r => LABEL_SIZE_DOTS[r.size]);
-  const room = H - 2*M, need = () => sizes.reduce((a, z, i) => a + z + pad(rows[i]), 0);
-  if(need() > room){
-    const k = room / need();
-    sizes = sizes.map(z => Math.max(12, Math.floor(z * k)));
+  // alike, down to 12 dots; in a half then the least needed lines go.
+  const pad = r => r.inv ? 8 : 3, room = ih;
+  const rank = r => { const i = LABEL_KEEP.indexOf(r.f); return i < 0 ? LABEL_KEEP.length : i; };
+  let sizes;
+  for(;;){
+    sizes = rows.map(r => LABEL_SIZE_DOTS[r.size]);
+    const need = sizes.reduce((a, z, i) => a + z + pad(rows[i]), 0);
+    if(need > room) sizes = sizes.map(z => Math.max(12, Math.floor(z * room / need)));
+    if(!half || rows.length <= 1 || sizes.reduce((a, z, i) => a + z + pad(rows[i]), 0) <= room) break;
+    const worst = rows.reduce((w, r) => rank(r) > rank(w) ? r : w);
+    rows = rows.filter(r => r !== worst);
   }
   const heights = sizes.map((z, i) => z + pad(rows[i]));
   const total = heights.reduce((a, h) => a + h, 0), spare = Math.max(0, room - total);
-  let y = M;
+  const bottom = b.y + H - b.mb, kept = [];
+  let y = b.y + b.mt;
   rows.forEach((r, i) => {
-    if(cfg.flow === 'last_bottom' && i === rows.length - 1 && rows.length > 1) y = Math.max(y, H - M - heights[i]);
-    if(y + sizes[i] > H - M + 1) return;
+    if(cfg.flow === 'last_bottom' && i === rows.length - 1 && rows.length > 1) y = Math.max(y, bottom - heights[i]);
+    if(y + sizes[i] > bottom + 1) return;
     g.font = (r.bold ? '700 ' : '600 ') + sizes[i] + 'px ' + LABEL_FONT;
     if(r.inv){
       g.fillRect(TX, y, TW, heights[i] - 2); g.fillStyle = '#fff';
       g.fillText(labelFit(g, r.text, TW - 12), TX + 6, y + 3);
       g.fillStyle = '#000';
     }else g.fillText(labelFit(g, r.text, TW), TX, y + 1);
+    kept.push(r.f);
     y += heights[i] + (cfg.flow === 'spread' && rows.length > 1 ? spare / (rows.length - 1) : 0);
   });
-  return cv;
+  return {qr: !!qrW, lines: kept};
+}
+
+// ── Two on one ──
+// The roll's label split in the middle: stacked (cut across) or side by
+// side (cut down), each half a whole small label with its margin, and more
+// of it by the cut; a dashed line two dots thick marks the cut.
+function labelHalves(cfg, dir){
+  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM, {M, MX} = labelMargins(cfg), C = M + LABEL_CUT_PAD;
+  if(dir === 'stack'){
+    const top = Math.floor(H / 2);
+    return [{x: 0, y: 0, w: W, h: top, ml: MX, mt: M, mr: MX, mb: C},
+            {x: 0, y: top, w: W, h: H - top, ml: MX, mt: C, mr: MX, mb: M}];
+  }
+  const left = Math.floor(W / 2);
+  return [{x: 0, y: 0, w: left, h: H, ml: MX, mt: M, mr: C, mb: M},
+          {x: left, y: 0, w: W - left, h: H, ml: C, mt: M, mr: MX, mb: M}];
+}
+function labelCut(g, cfg, dir){
+  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM;
+  g.fillStyle = '#000';
+  if(dir === 'stack'){ const y = Math.floor(H / 2) - 1; for(let x = 0; x < W; x += 14) g.fillRect(x, y, Math.min(8, W - x), 2); }
+  else{ const x = Math.floor(W / 2) - 1; for(let y = 0; y < H; y += 14) g.fillRect(x, y, 2, Math.min(8, H - y)); }
+}
+// Dots per QR module in a square of `box` dots: 0 when finer than the head prints readably.
+function labelQrModule(n, box){ const px = n > 0 ? Math.floor(box / (n + 4)) : 0; return px >= LABEL_MIN_QR_DOTS ? px : 0; }
+// A pair on one roll label: [{sp, qr}] for spools or [{loc}] for places,
+// null for an empty half. {cv, noQr}: noQr when a half lost its QR code.
+async function labelTwoUpDraw(kind, pair, cfg = labelCfg){
+  await labelFonts();
+  const tu = cfg.twoup[kind], W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = '#000'; g.textBaseline = 'top';
+  const halves = labelHalves(cfg, tu.dir);
+  let noQr = false;
+  for(let i = 0; i < 2; i++){
+    const it = pair[i];
+    if(!it) continue;
+    const info = kind === 'loc' ? await locLabelDrawInto(g, it.loc, cfg, halves[i], true)
+                                : await labelDrawOwnInto(g, it.sp, it.qr, cfg, halves[i], true);
+    if(!info.qr && (kind === 'loc' || (cfg.qr.pos !== 'off' && it.qr))) noQr = true;
+    g.fillStyle = '#000';
+  }
+  if(tu.cut) labelCut(g, cfg, tu.dir);
+  return {cv, noQr};
 }
 
 // A storage location's label: the name as large as it fits (in two lines
@@ -4317,50 +4492,63 @@ function labelForLocations(names){
   $('labelSpool').value = '';
   $('labelChips').innerHTML = '';
   labelJob = null;
+  labelTwoUpSync();
   $('labelCard').scrollIntoView({behavior: 'smooth', block: 'start'});
   labelPreview();
 }
 async function locLabelDraw(name, cfg = labelCfg){
   await labelFonts();
-  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM, M = 8, GAP = 10;
-  const MX = M + Math.max(0, Math.ceil((W - TSPL_HEAD_DOTS) / 2));
+  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM, {M, MX} = labelMargins(cfg);
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
   g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = '#000'; g.textBaseline = 'top';
+  await locLabelDrawInto(g, name, cfg, {x: 0, y: 0, w: W, h: H, ml: MX, mt: M, mr: MX, mb: M}, false);
+  return cv;
+}
+// A place's label into the region b: {qr: drawn}. A half has no room for
+// the "Storage location" heading, only the name, and a QR code no finer
+// than the head prints readably.
+async function locLabelDrawInto(g, name, cfg, b, half){
+  const GAP = 10, W = b.w, H = b.h, iw = W - b.ml - b.mr, ih = H - b.mt - b.mb;
   let qrW = 0;
   const qrLeft = cfg.qr.pos === 'left';
   try{
     if(!window.qrcode) await loadScript(QR_LIB);
-    const q = qrcode(0, 'M');
+    const q = qrcode(0, half ? 'L' : 'M');
     // As UTF-8 bytes: "Küche" scans as "Küche".
     q.addData(String.fromCharCode(...new TextEncoder().encode(name)), 'Byte'); q.make();
-    const n = q.getModuleCount(), box = Math.min(H - 2*M, Math.floor((W - 2*MX) * 0.45));
-    const px = Math.max(3, Math.floor(box / (n + 4)));
-    qrW = (n + 4) * px;
-    const x0 = qrLeft ? MX : W - MX - qrW, y0 = Math.floor((H - qrW) / 2);
-    for(let r = 0; r < n; r++) for(let c = 0; c < n; c++)
-      if(q.isDark(r, c)) g.fillRect(x0 + (c + 2)*px, y0 + (r + 2)*px, px, px);
+    const n = q.getModuleCount(), box = Math.min(ih, Math.floor(iw * (half ? 0.6 : 0.45)));
+    const px = half ? labelQrModule(n, box) : Math.max(LABEL_MIN_QR_DOTS, Math.floor(box / (n + 4)));
+    if(px){
+      qrW = (n + 4) * px;
+      const x0 = b.x + (qrLeft ? b.ml : W - b.mr - qrW), y0 = b.y + b.mt + Math.floor((ih - qrW) / 2);
+      for(let r = 0; r < n; r++) for(let c = 0; c < n; c++)
+        if(q.isDark(r, c)) g.fillRect(x0 + (c + 2)*px, y0 + (r + 2)*px, px, px);
+    }
   }catch(e){ qrW = 0; }
-  const TX = qrLeft && qrW ? MX + qrW + GAP : MX, TW = W - 2*MX - (qrW ? qrW + GAP : 0);
-  const cap = Math.max(12, Math.round(H * 0.09));
-  g.font = '600 ' + cap + 'px ' + LABEL_FONT;
-  g.fillText(labelFit(g, t('form.storage_location'), TW), TX, M);
+  const TX = b.x + b.ml + (qrLeft && qrW ? qrW + GAP : 0), TW = iw - (qrW ? qrW + GAP : 0);
+  const cap = half ? 0 : Math.max(12, Math.round(H * 0.09));
+  if(cap){
+    g.font = '600 ' + cap + 'px ' + LABEL_FONT;
+    g.fillText(labelFit(g, t('form.storage_location'), TW), TX, b.y + b.mt);
+  }
   // The largest size the name fits at, on one line or split in two at a space.
-  const room = H - 2*M - cap - 6, words = name.split(/\s+/);
+  const room = ih - (cap ? cap + 6 : 0), words = name.split(/\s+/);
   let best = {size: 0, lines: [name]};
   for(let size = Math.min(room, 120); size >= 14 && !best.size; size -= 2){
     g.font = '700 ' + size + 'px ' + LABEL_FONT;
     if(g.measureText(name).width <= TW){ best = {size, lines: [name]}; break; }
     if(size * 2.1 <= room) for(let i = 1; i < words.length; i++){
-      const a = words.slice(0, i).join(' '), b = words.slice(i).join(' ');
-      if(g.measureText(a).width <= TW && g.measureText(b).width <= TW){ best = {size, lines: [a, b]}; break; }
+      const a = words.slice(0, i).join(' '), c = words.slice(i).join(' ');
+      if(g.measureText(a).width <= TW && g.measureText(c).width <= TW){ best = {size, lines: [a, c]}; break; }
     }
   }
   if(!best.size) best = {size: 14, lines: [name]};
   g.font = '700 ' + best.size + 'px ' + LABEL_FONT;
-  const lh = Math.round(best.size * 1.05), top = M + cap + 6 + Math.max(0, Math.floor((room - lh * best.lines.length) / 2));
+  const lh = Math.round(best.size * 1.05);
+  const top = b.y + b.mt + (cap ? cap + 6 : 0) + Math.max(0, Math.floor((room - lh * best.lines.length) / 2));
   best.lines.forEach((line, i) => g.fillText(labelFit(g, line, TW), TX, top + i * lh));
-  return cv;
+  return {qr: !!qrW};
 }
 
 // ── The layout editor ──
@@ -4383,6 +4571,7 @@ async function labelDemoDraw(){
 }
 function labelTplShow(){
   const own = labelCfg.template === LABEL_OWN;
+  labelTwoUpSync();
   $('labelOwnBox').classList.toggle('hidden', !own);
   $('labelFieldsBox').classList.toggle('hidden', own);
   // After the page's script has run: the label's fonts and QR are set up by then.
@@ -4458,9 +4647,9 @@ function labelImage(blob){
 // The label in the middle of the roll, in black and white dots, drawn into
 // the preview; and the rows the head prints, a 0 bit for a black dot as
 // TSPL's BITMAP wants them.
-function labelRaster(img, id){
+function labelRaster(img, id, out){
   const W = labelCfg.w * DOTS_PER_MM, H = labelCfg.l * DOTS_PER_MM;
-  const cv = $('labelCanvas'); cv.width = W; cv.height = H;
+  const cv = out || $('labelCanvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d', {willReadFrequently:true});
   g.imageSmoothingEnabled = false;
   g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
@@ -4512,7 +4701,7 @@ async function labelPrint(){
       if(i > 0){
         labelHint(t('label.preparing', {i: i + 1, n: ids.length}));
         const b = await labelBuild(ids[i]);
-        if(b.error || !b.raster.fits){ skipped.push(ids[i].loc || '#' + ids[i]); continue; }
+        if(b.error || !b.raster.fits){ skipped.push(labelItemName(ids[i])); continue; }
         r = b.raster;
       }
       const job = r.job;

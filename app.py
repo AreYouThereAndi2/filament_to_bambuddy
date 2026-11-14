@@ -1804,7 +1804,9 @@ def set_label_layout():
 def own_label(spool_id: int, fmt: str):
     """A spool's label in the kept layout: .png to look at, .bits for a
     printer (rows of bytes, a 1 bit black, X-Width and X-Height saying the
-    size). ?w= and ?l= give the roll in mm, else the layout's own."""
+    size). ?w= and ?l= give the roll in mm, else the layout's own.
+    ?twoup=stack (or v) / side (or h) / 1 (the kept direction) puts the
+    label twice on the roll's label, half size, to cut apart."""
     import label_render
     if fmt not in ("png", "bits"):
         return jsonify(ok=False, error="format"), 404
@@ -1821,7 +1823,14 @@ def own_label(spool_id: int, fmt: str):
             pass
     locale = _resolve_request_locale()
     words = {k: i18n.get_translation(locale, f"label.l_{k}") for k in ("location", "nozzle", "added")}
-    img = label_render.render(spool, _spool_qr(spool_id), cfg, words)
+    twoup = str(request.args.get("twoup") or "").strip().lower()
+    if twoup in ("stack", "side", "v", "h", "1", "true", "on"):
+        kept = cfg["twoup"]["spool"]
+        direction = {"v": "stack", "h": "side"}.get(twoup, twoup if twoup in label_render.TWOUP_DIRS else kept["dir"])
+        item = (spool, _spool_qr(spool_id))
+        img, _ = label_render.render_two_up([item, item], cfg, words, direction, kept["cut"])
+    else:
+        img = label_render.render(spool, _spool_qr(spool_id), cfg, words)
     if fmt == "png":
         import io
         buf = io.BytesIO()

@@ -128,6 +128,11 @@ places through the table; *Done* writes the location at once; scanning the
 spool's label or tag and the compartment's label checks each step) or booked
 at once. **Scan & put away** puts any single spool where it belongs.
 
+**2 on 1** (label card): two half-size labels on one roll label, stacked or
+side by side, with a dashed cut line in the middle, for small holders; several
+labels are paired, an odd last one printed twice or beside an empty half. The
+scale asks for it with `GET /api/label/<id>.bits?twoup=stack|side`.
+
 Routes: `GET /api/inventory?sort=material,color:desc`, `GET
 /api/inventory.csv`, `POST /api/locations/plan` (the plan and its `steps`),
 `POST /api/locations/apply` (`{"moves": [{"id", "from", "to"}]}`) and `POST
