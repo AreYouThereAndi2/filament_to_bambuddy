@@ -177,8 +177,12 @@ class TestListRoute:
             d = client.get("/api/locations").get_json()
         assert d["ok"] and d["stock_error"] is None
         assert [loc["name"] for loc in d["locations"]] == ["A1", "A2"]
-        assert d["locations"][0]["spools"][0] == {"id": 7, "rgba": "FF0000FF", "color_name": "Red", "material": "PLA+",
-                                                  "subtype": "", "brand": "eSUN", "remaining": 750}
+        spool = d["locations"][0]["spools"][0]
+        keys = spool.pop("sort")
+        assert spool == {"id": 7, "rgba": "FF0000FF", "color_name": "Red", "material": "PLA+",
+                         "subtype": "", "brand": "eSUN", "remaining": 750, "color_family": "red"}
+        # Sorted on the page by the same keys as on the server.
+        assert keys["material"] == ["pla", ["+"]] and keys["brand"] == "esun" and keys["location"] == "a00000001"
         assert [s["id"] for s in d["unassigned"]] == [8]
         assert d["unknown"][0]["name"] == "Garage"
 
