@@ -110,6 +110,35 @@ each answered with `created`, `exists` or `error`), `PATCH` and `DELETE
 /api/locations/<id>`. Reading needs the key's **Read Status**, changing it
 **Manage Inventory**; a refusal names the one missing.
 
+### Sorting and shelves
+
+Lists of spools (*Your stock*, *All spools*, *Running low*, a location's
+spools) sort by **material, colour, maker**, what is left, location, number or
+date added, in two steps ("material, then colour"), each up or down. Colour
+sorts by hue (then white → grey → black, then transparent), material by family
+(PLA, PLA+, PLA Silk together). *All spools* shows a heading per group, and the
+stock comes as statistics and as a CSV file in the same order.
+
+**Sort into a shelf** plans which spool goes into which place of a group
+("Regal A-1" … "Regal A-12", in name order) with a number of spools per place,
+keeping as many spools where they are as the order allows. New spools wait
+without a location and are placed here. The plan is carried out **step by
+step** (one spool at a time, always into a place with room, rings of full
+places through the table; *Done* writes the location at once; scanning the
+spool's label or tag and the compartment's label checks each step) or booked
+at once. **Scan & put away** puts any single spool where it belongs.
+
+**2 on 1** (label card): two half-size labels on one roll label, stacked or
+side by side, with a dashed cut line in the middle, for small holders; several
+labels are paired, an odd last one printed twice or beside an empty half. The
+scale asks for it with `GET /api/label/<id>.bits?twoup=stack|side`.
+
+Routes: `GET /api/inventory?sort=material,color:desc`, `GET
+/api/inventory.csv`, `POST /api/locations/plan` (the plan and its `steps`),
+`POST /api/locations/apply` (`{"moves": [{"id", "from", "to"}]}`) and `POST
+/api/locations/suggest` (a place for a new spool). Planning needs **Read
+Status**, applying **Manage Inventory**.
+
 > **Tested with** Bambuddy v0.2.4.8. Requires **Python 3.10+**.
 
 ---
@@ -266,6 +295,7 @@ Each created spool is tagged `data_origin = "barcode-scan"`.
 | `catalog_util.py` | Helpers the catalogue clients share: GTIN canonicalisation, `#RRGGBB` → RRGGBBAA |
 | `filament_parse.py` | Heuristics turning product/label text into filament fields (paste-title + label OCR), English and German |
 | `locations.py` | Storage locations: names from a list, a range or a grid; the locations merged with the stock and grouped for the tiles |
+| `spool_sort.py` | Sort keys (material family, colour hue, maker …), the shelf plan that keeps most spools in place, the steps to get there, and a place for a new spool |
 | `upc_lookup.py` | UPCitemdb fallback for retail barcodes the filament databases don't know; title + average offer price |
 | `templates/index.html` | Mobile UI (barcode scan + manual entry + editable form), Bambuddy dark/green theme |
 | `static/manifest.webmanifest`, `static/sw.js`, `static/icons/` | PWA manifest, service worker, and app icons |

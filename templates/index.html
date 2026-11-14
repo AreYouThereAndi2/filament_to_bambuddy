@@ -221,6 +221,10 @@
   .lay-tog[aria-pressed=true]{background:var(--text);color:var(--surface);border-color:var(--text)}
   .lay-row .icon-btn{width:34px;height:36px;border-radius:9px}
   .lay-row .icon-btn:disabled{opacity:.3}
+  /* Two on one: a switch, its direction, and below what else goes with it. */
+  .lay-two{display:flex;gap:10px;align-items:center;margin-top:12px}
+  .lay-two .loc-check{flex:1;min-width:0;margin:0}
+  .lay-two select{width:auto;max-width:55%;flex:0 0 auto;min-height:44px;padding:8px 10px;font-size:15px}
   .fieldgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}
   .fieldgrid label{display:flex;gap:8px;align-items:center;margin:5px 0;color:var(--text);
     font:500 14px/1.2 var(--body)}
@@ -352,7 +356,86 @@
   .loc-sp .sw{width:18px;height:18px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
   .loc-sp .main{flex:1;min-width:0;font:600 15px/1.25 var(--display);overflow-wrap:anywhere}
   .loc-sp .left{flex:0 0 auto;font-size:13px;color:var(--muted)}
+  /* Sorting: a key and its direction, then a second one. */
+  .sortpick{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 8px;align-items:center;margin-top:10px}
+  .sortpick .sp-lbl{font:600 13.5px/1.2 var(--display);color:var(--muted);white-space:nowrap}
+  .sortpick select{padding:8px 10px;min-height:44px;font-size:15px}
+  .sp-dir{width:44px;height:44px;padding:0;display:grid;place-items:center;border-radius:var(--r-ctl);
+    background:var(--raised);border:1px solid var(--line);color:var(--text)}
+  .sp-dir:active{background:var(--line)}
+  .sp-dir:disabled{opacity:.35}
+  .sp-dir svg{width:20px;height:20px}
+  .grp-head{display:flex;align-items:center;gap:8px;margin:16px 0 0;padding:0 2px 6px;border-bottom:1px solid var(--line);
+    font:600 15.5px/1.2 var(--display)}
+  .grp-head:first-child{margin-top:4px}
+  .grp-head .n{margin-left:auto;color:var(--muted);font:500 12.5px/1 var(--body);white-space:nowrap}
+  .grp-head .sw{width:12px;height:12px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.28)}
+  .grp-head + .loc-sp{border-top:none}
+  .loc-sp .sub{display:block;font:400 12.5px/1.3 var(--body);color:var(--muted);margin-top:2px}
+  /* Statistics: a line a group, a bar for what is left. */
+  .stat-row{padding:9px 0;border-top:1px solid var(--line)}
+  .stat-row:first-child{border-top:none}
+  .stat-top{display:flex;gap:8px;align-items:baseline}
+  .stat-name{flex:1;min-width:0;font:600 15px/1.25 var(--display);overflow-wrap:anywhere}
+  .stat-num{flex:0 0 auto;font-size:12.5px;color:var(--muted);white-space:nowrap}
+  .stat-bar{height:6px;border-radius:3px;background:var(--inset);margin-top:6px;overflow:hidden}
+  .stat-bar>span{display:block;height:100%;border-radius:3px;background:var(--brand)}
+  /* The shelf plan: a box a place, what moves marked. */
+  .plan-note{margin-top:10px;padding:10px 12px;border-radius:12px;font-size:13.5px;line-height:1.4;
+    border:1px solid color-mix(in srgb,var(--warn) 55%,transparent);background:color-mix(in srgb,var(--warn) 10%,transparent)}
+  .plan-note.info{border-color:var(--line);background:var(--raised)}
+  .plan-place{margin-top:10px;padding:2px 12px 4px;border:1px solid var(--line);border-radius:14px}
+  .plan-head{display:flex;align-items:baseline;gap:8px;min-height:38px;padding-top:9px;font:600 16px/1.2 var(--display)}
+  .plan-head .n{margin-left:auto;color:var(--muted);font:500 12.5px/1 var(--body);white-space:nowrap}
+  .plan-head.full .n{color:var(--warn)}
+  .plan-sp{display:flex;align-items:center;gap:10px;min-height:40px;padding:6px 0;border-top:1px solid var(--line)}
+  .plan-sp .sw{width:16px;height:16px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+  .plan-sp .main{flex:1;min-width:0;font:600 14.5px/1.25 var(--display);overflow-wrap:anywhere}
+  .plan-sp .mv{flex:0 1 auto;max-width:45%;text-align:right;font-size:12.5px;line-height:1.25;color:var(--muted);overflow-wrap:anywhere}
+  .plan-sp.move .mv{color:var(--warn);font-weight:600}
+  .plan-sp.move .main::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin:0 6px 2px 0}
+  .plan-sp.empty{color:var(--muted);font-size:13px}
+  .loc-acts{display:flex;flex-wrap:wrap;gap:0 18px}
+  /* The guide: one step a screen, big enough to hit with a spool in hand. */
+  .guide-bar{height:6px;border-radius:3px;background:var(--inset);overflow:hidden}
+  .guide-bar>span{display:block;height:100%;width:0;background:var(--brand);transition:width .25s}
+  .guide-card{margin-top:12px;border:1px solid var(--line);border-radius:16px;background:var(--raised);overflow:hidden}
+  .guide-sp{display:flex;gap:12px;align-items:center;padding:14px}
+  .guide-sp .sw{width:34px;height:34px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.28)}
+  .guide-name{font:700 20px/1.15 var(--display);overflow-wrap:anywhere}
+  .guide-sub{font-size:13px;color:var(--muted);margin-top:3px}
+  .guide-pick{margin-left:auto;flex:0 0 auto;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;
+    background:var(--brand);color:var(--on-brand);font:700 17px/1 var(--display)}
+  .guide-leg{display:grid;grid-template-columns:58px minmax(0,1fr);align-items:center;gap:10px;padding:11px 14px;border-top:1px solid var(--line)}
+  .guide-k{font:600 12.5px/1 var(--display);letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  .guide-v{font:700 24px/1.1 var(--display);overflow-wrap:anywhere}
+  .guide-v small{display:block;font:500 12.5px/1.3 var(--body);color:var(--muted);margin-top:2px}
+  .guide-v.none{font:500 15px/1.3 var(--body);color:var(--muted)}
+  .guide-leg.to{background:color-mix(in srgb,var(--brand) 12%,transparent)}
+  .guide-leg.to .guide-v{color:var(--brand-strong)}
+  .guide-done{min-height:58px;font-size:20px;margin-top:12px}
+  .guide-list{margin:6px 0 0;padding:0;list-style:none}
+  .guide-list li{display:flex;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.3}
+  .guide-list li .k{flex:0 0 24px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+  .guide-list li .sw{width:12px;height:12px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+  .guide-list li .t{flex:1;min-width:0;overflow-wrap:anywhere}
+  .guide-list li.done{color:var(--muted)} .guide-list li.done .t{text-decoration:line-through}
+  .guide-list li.skip .t{font-style:italic;color:var(--muted)}
+  .guide-list li.now{font-weight:600} .guide-list li.now .k{color:var(--brand-strong)}
+  /* Scanning in a sheet: the camera small, the buttons big. */
+  .scan-row{display:flex;gap:8px;margin-top:14px}
+  .scan-row>button{flex:1;min-height:48px}
+  .scan-cam{margin-top:8px;border-radius:12px;overflow:hidden;background:#000}
+  .scan-cam video{width:100%;display:block;aspect-ratio:16/9;object-fit:cover}
+  .scan-manual{display:flex;gap:8px;margin-top:8px}
+  .scan-manual input{flex:1;min-width:0}
+  .scan-manual button{width:auto;padding:0 16px}
+  /* A place offered for the new spool: a chip to take it, nothing more. */
+  .sug{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:8px;font-size:13px;color:var(--muted)}
+  .sug .chip{margin:0;min-height:36px;display:inline-flex;align-items:center;cursor:pointer;
+    border-color:color-mix(in srgb,var(--brand) 50%,transparent);color:var(--brand-strong)}
   @media (prefers-reduced-motion:reduce){
+    .guide-bar>span{transition:none}
     .vf-scanline{animation:none;top:50%}
     .spool .wind{transition:none}
   }
@@ -377,6 +460,11 @@
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
   <symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-asc" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-desc" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+  <symbol id="i-steps" viewBox="0 0 24 24"><path d="M3 20h5v-5h5v-5h5V5h3"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 20h2M20 14v2"/></symbol>
 </svg>
 <header>
   <div class="bar">
@@ -542,8 +630,11 @@
       </div>
       <div class="row">
         <div><label for="quantity">{{ t('form.quantity') }}</label><input id="quantity" inputmode="numeric" value="1"></div>
-        <div><label for="storage_location">{{ t('form.storage_location') }}</label><div class="combo"><input id="storage_location" placeholder="{{ t('combo.placeholder') }}"><span class="combo-chev"></span><ul id="storage_location-list" class="combo-list" hidden></ul></div></div>
+        <div><label for="storage_location">{{ t('form.storage_location') }}</label><div class="combo"><input id="storage_location" placeholder="{{ t('form.optional_placeholder') }}"><span class="combo-chev"></span><ul id="storage_location-list" class="combo-list" hidden></ul></div></div>
       </div>
+      <!-- A place the shelf sort would give the spool: offered, never asked for. -->
+      <div id="locSuggest" class="sug hidden" aria-live="polite"></div>
+      <div class="hint">{{ t('plan.intake_hint_form') }}</div>
       <label for="category">{{ t('form.category') }}</label>
       <input id="category" placeholder="{{ t('form.optional_placeholder') }}">
     </div>
@@ -668,12 +759,29 @@
       <ul id="invSearch-list" class="combo-list" hidden></ul>
     </div>
     <div class="hint">{{ t('inv.search_hint') }}</div>
+    <div id="invSort"></div>
+    <details id="stockBox" class="bm" style="margin-top:14px">
+      <summary style="font-weight:600;font-size:14px">{{ t('sort.all') }} <span id="stockCount" class="muted"></span></summary>
+      <div class="hint" style="margin-top:4px">{{ t('sort.all_hint') }}</div>
+      <div id="stockList" style="margin-top:4px"></div>
+      <button id="stockCsv" type="button" class="btn-secondary with-ico" style="margin-top:12px"><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg><span>{{ t('sort.csv') }}</span></button>
+    </details>
+    <details id="statsBox" class="bm" style="margin-top:10px">
+      <summary style="font-weight:600;font-size:14px">{{ t('sort.stats') }} <span id="statsTotal" class="muted"></span></summary>
+      <div class="seg" role="group" aria-label="{{ t('sort.stats_by') }}">
+        <button type="button" data-by="material" aria-pressed="true">{{ t('sort.k_material') }}</button>
+        <button type="button" data-by="brand" aria-pressed="false">{{ t('sort.k_brand') }}</button>
+        <button type="button" data-by="location" aria-pressed="false">{{ t('sort.k_location') }}</button>
+      </div>
+      <div id="statsList" style="margin-top:6px"></div>
+    </details>
     <details id="reorderBox" class="bm" style="margin-top:14px">
       <summary style="font-weight:600;font-size:14px">{{ t('inv.reorder') }} <span id="reorderCount" class="muted"></span></summary>
       <div class="row" style="align-items:flex-end">
         <div style="flex:0 0 130px"><label for="reorderMax">{{ t('inv.reorder_below') }}</label><input id="reorderMax" inputmode="numeric" value="200"></div>
         <div class="hint" style="margin-bottom:12px">{{ t('inv.reorder_hint') }}</div>
       </div>
+      <div id="reoSort"></div>
       <div id="reorderList"></div>
       <!-- A message through BamBuddy's channels when a kind runs out. -->
       <label class="check" style="display:flex;gap:10px;align-items:center;margin-top:14px">
@@ -702,6 +810,32 @@
     <div id="locSummary" class="hint" style="margin-top:0" role="status"></div>
     <div id="locStats" class="loc-stats"></div>
     <div id="locView"></div>
+    <button id="sortScanOpen" type="button" class="btn-secondary with-ico" style="margin-top:14px"><svg class="ico" aria-hidden="true"><use href="#i-qr"/></svg><span>{{ t('guide.free_title') }}</span></button>
+    <!-- A shelf sorted: where each spool goes, most staying put, and the
+         steps to get there, one at a time or booked at once. -->
+    <details id="planBox" class="bm" style="margin-top:14px">
+      <summary style="font-weight:600;font-size:14px;min-height:44px;display:flex;align-items:center">{{ t('plan.title') }}</summary>
+      <div class="hint" style="margin-top:0">{{ t('plan.hint') }}</div>
+      <div id="planResume" class="plan-note info hidden"></div>
+      <div class="row" style="align-items:flex-end">
+        <div><label for="planPlaces">{{ t('plan.places') }}</label><select id="planPlaces"></select></div>
+        <div style="flex:0 0 116px"><label for="planCap">{{ t('plan.capacity') }}</label><input id="planCap" inputmode="numeric" autocomplete="off"></div>
+      </div>
+      <div class="hint">{{ t('plan.capacity_hint') }}</div>
+      <div id="planSort"></div>
+      <label class="loc-check"><input id="planElsewhere" type="checkbox"><span>{{ t('plan.elsewhere') }}</span></label>
+      <label class="loc-check"><input id="planBreak" type="checkbox"><span>{{ t('plan.break') }}</span></label>
+      <div class="hint">{{ t('plan.intake_hint') }}</div>
+      <div id="planSummary" class="hint" role="status" aria-live="polite" style="margin-top:12px;font-size:13.5px;color:var(--text)"></div>
+      <div id="planNote" class="plan-note hidden"></div>
+      <button id="planGuide" type="button" class="btn-primary with-ico hidden" style="margin-top:12px;min-height:52px"><svg class="ico" aria-hidden="true"><use href="#i-steps"/></svg><span></span></button>
+      <label id="planOnlyBox" class="loc-check hidden"><input id="planOnlyMoves" type="checkbox"><span>{{ t('plan.only_moves') }}</span></label>
+      <div id="planView"></div>
+      <button id="planApply" type="button" class="btn-secondary hidden" style="margin-top:12px"></button>
+      <div id="planApplyHint" class="hint hidden">{{ t('plan.apply_hint') }}</div>
+      <div id="planResult" class="hint" role="status"></div>
+      <button id="planLabels" type="button" class="btn-secondary with-ico hidden" style="margin-top:8px"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span></span></button>
+    </details>
     <details id="locBulk" class="bm" style="margin-top:14px">
       <summary style="font-weight:600;font-size:14px;min-height:44px;display:flex;align-items:center">{{ t('loc.create_title') }}</summary>
       <div class="hint" style="margin-top:0">{{ t('loc.create_hint') }}</div>
@@ -753,8 +887,56 @@
       <button id="locSheetClose" type="button" class="icon-btn loc-ib" aria-label="{{ t('spool.close') }}"><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div id="locSheetSub" class="hint" style="margin-top:0"></div>
+    <div id="locSheetSort" class="hidden"></div>
     <div id="locSheetSpools" style="margin-top:8px"></div>
     <div id="locSheetActions"></div>
+  </dialog>
+
+  <!-- Re-sorting a shelf, one spool at a time: take it from here, put it
+       there. "Done" writes the new place at once. -->
+  <dialog id="guideSheet" class="sheet" aria-labelledby="guideTitle">
+    <div class="form-head" style="margin-bottom:8px">
+      <h2 id="guideTitle" class="card-title grow" style="margin:0"></h2>
+      <button id="guideClose" type="button" class="icon-btn loc-ib" aria-label="{{ t('spool.close') }}"><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="guide-bar" aria-hidden="true"><span id="guideBar"></span></div>
+    <div id="guideMeta" class="hint"></div>
+    <div id="guideNow">
+      <div id="guideStep"></div>
+      <div id="guideHint" class="hint" role="status" aria-live="polite"></div>
+      <button id="guideDone" type="button" class="btn-primary guide-done">{{ t('guide.done') }}</button>
+      <div class="two">
+        <button id="guideBack" type="button" class="btn-secondary">{{ t('guide.back') }}</button>
+        <button id="guideSkip" type="button" class="btn-secondary">{{ t('guide.skip') }}</button>
+      </div>
+      <div class="hint">{{ t('guide.back_hint') }}</div>
+      <div id="guideScan"></div>
+      <label id="guideLabelBox" class="loc-check hidden"><input id="guideLabelEach" type="checkbox"><span>{{ t('guide.label_each') }}</span></label>
+    </div>
+    <div id="guideEnd" class="hidden">
+      <div id="guideEndText" class="plan-note info"></div>
+      <button id="guideLabels" type="button" class="btn-primary with-ico hidden" style="margin-top:12px"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span></span></button>
+      <button id="guideRedo" type="button" class="btn-secondary hidden" style="margin-top:10px"></button>
+      <button id="guideReplan" type="button" class="btn-secondary" style="margin-top:10px">{{ t('guide.replan') }}</button>
+    </div>
+    <details id="guideListBox" class="bm" style="margin-top:14px">
+      <summary style="font-weight:600;font-size:14px">{{ t('guide.list') }} <span id="guideCount" class="muted"></span></summary>
+      <ol id="guideList" class="guide-list"></ol>
+    </details>
+  </dialog>
+
+  <!-- Any spool: scan it, see where it goes, put it there. -->
+  <dialog id="sortScanSheet" class="sheet" aria-labelledby="sortScanTitle">
+    <div class="form-head" style="margin-bottom:4px">
+      <h2 id="sortScanTitle" class="card-title grow" style="margin:0">{{ t('guide.free_title') }}</h2>
+      <button id="sortScanClose" type="button" class="icon-btn loc-ib" aria-label="{{ t('spool.close') }}"><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="hint" style="margin-top:0">{{ t('guide.free_hint') }}</div>
+    <div id="sortScanCard"></div>
+    <div id="sortScanHint" class="hint" role="status" aria-live="polite"></div>
+    <div id="sortScanActs"></div>
+    <div id="sortScanBar"></div>
+    <button id="sortScanLabels" type="button" class="btn-secondary with-ico hidden" style="margin-top:12px"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span></span></button>
   </dialog>
 
   <!-- A spool's label: Bambuddy's own template, shown here dot for dot as
@@ -799,6 +981,23 @@
         <div id="labelFields" class="fieldgrid"></div>
       </div>
     </details>
+    <!-- Two on one: half size, twice on the roll's label, cut apart along a
+         dashed line (small holders on a shelf edge). -->
+    <div id="labelTwoUpBox" class="lay-two">
+      <label class="loc-check"><input id="labelTwoUp" type="checkbox"><span>{{ t('label.twoup') }}</span></label>
+      <select id="labelTwoUpDir" aria-label="{{ t('label.twoup') }}">
+        <option value="stack">{{ t('label.twoup_stack') }}</option>
+        <option value="side">{{ t('label.twoup_side') }}</option>
+      </select>
+    </div>
+    <div id="labelTwoUpMore" class="hidden">
+      <div id="labelTwoUpFor" class="hint" style="margin-top:2px"></div>
+      <label class="loc-check" style="margin-top:4px"><input id="labelTwoUpCut" type="checkbox"><span>{{ t('label.twoup_cut') }}</span></label>
+      <select id="labelTwoUpOdd" aria-label="{{ t('label.twoup_odd_twice') }}" style="margin-top:6px;min-height:44px">
+        <option value="twice">{{ t('label.twoup_odd_twice') }}</option>
+        <option value="empty">{{ t('label.twoup_odd_empty') }}</option>
+      </select>
+    </div>
     <button id="labelPreviewBtn" type="button" class="btn-secondary" style="margin-top:14px">{{ t('label.preview') }}</button>
     <div id="labelBox" class="hidden" style="margin-top:14px">
       <canvas id="labelCanvas" width="400" height="240"></canvas>
@@ -1588,6 +1787,7 @@ function fillForm(d){
   applyFields(f);
   showSpoolman(d.spoolman);
   dupSoon();
+  suggestSoon();
   // A product name a database or the shop gave stands in the title field
   // too, ready to be changed and filled again.
   if(d.title && d.source !== 'none' && d.source !== 'amazon') $('paste_title').value = d.title;
@@ -2030,17 +2230,105 @@ function nfcOffer(ids){
   }
 }
 
+// ── Sorting ──
+// Each spool comes with its sort keys from the server (spool_sort.py): the
+// page only compares them, so a list sorts the same here as there. A spool
+// without the value comes last either way; ties go to the next key, then
+// to the spool's number.
+const SORT_KEYS = ['material', 'color', 'brand', 'remaining', 'location', 'id', 'added'];
+const SORT_HEADED = ['material', 'color', 'brand', 'location'];
+function sortCmp(a, b){
+  if(Array.isArray(a) && Array.isArray(b)){
+    for(let i = 0; i < Math.min(a.length, b.length); i++){ const c = sortCmp(a[i], b[i]); if(c) return c; }
+    return (a.length > b.length) - (a.length < b.length);
+  }
+  if(typeof a === typeof b) return a < b ? -1 : a > b ? 1 : 0;
+  return typeof a < typeof b ? -1 : 1;
+}
+function sortKeyOf(s, key){ const v = s.sort ? s.sort[key] : undefined; return v === undefined ? null : v; }
+function spoolCompare(order){
+  return (x, y) => {
+    for(const o of order){
+      const a = sortKeyOf(x, o.key), b = sortKeyOf(y, o.key);
+      if(a == null && b == null) continue;
+      if(a == null) return 1;
+      if(b == null) return -1;
+      const c = sortCmp(a, b);
+      if(c) return o.desc ? -c : c;
+    }
+    return (x.id || 0) - (y.id || 0);
+  };
+}
+function sortSpools(list, order){ return [...list].sort(spoolCompare(order)); }
+// The heading a spool falls under when `key` sorts first.
+function sortHeading(s, key){
+  if(key === 'color') return s.color_family ? {id: s.color_family, label: t('sort.fam_' + s.color_family)}
+                                            : {id: '', label: t('sort.fam_none')};
+  const k = sortKeyOf(s, key);
+  if(k == null) return {id: '', label: key === 'location' ? t('loc.unassigned') : t('sort.missing')};
+  const label = key === 'material' ? [s.material, s.subtype].filter(Boolean).join(' ') : key === 'brand' ? s.brand : s.storage_location;
+  return {id: JSON.stringify(k), label: String(label || '').trim() || '—'};
+}
+function sortClean(v){
+  const out = [];
+  for(const o of Array.isArray(v) ? v : [])
+    if(o && SORT_KEYS.includes(o.key) && !out.some(x => x.key === o.key)) out.push({key: o.key, desc: !!o.desc});
+  return out.slice(0, 2);
+}
+function sortParam(order){ return order.map(o => o.key + (o.desc ? ':desc' : '')).join(','); }
+// Two rows: a key and its direction, then an optional second key. The
+// choice stays in this browser, one per list.
+function sortPicker(box, store, dflt, onChange){
+  let order = sortClean(lsGet(store, null));
+  if(!order.length) order = sortClean(dflt);
+  box.classList.add('sortpick');
+  box.setAttribute('role', 'group'); box.setAttribute('aria-label', t('sort.title'));
+  const rows = [0, 1].map(i => {
+    const lbl = document.createElement('span'); lbl.className = 'sp-lbl'; lbl.textContent = t(i ? 'sort.then' : 'sort.by');
+    const sel = document.createElement('select'); sel.setAttribute('aria-label', t('sort.title') + ' ' + (i + 1));
+    if(i) sel.add(new Option(t('sort.none'), ''));
+    for(const k of SORT_KEYS) sel.add(new Option(t('sort.k_' + k), k));
+    const dir = document.createElement('button'); dir.type = 'button'; dir.className = 'sp-dir';
+    dir.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-asc"/></svg>';
+    box.append(lbl, sel, dir);
+    return {sel, dir};
+  });
+  function draw(){
+    rows.forEach((r, i) => {
+      const o = order[i], desc = !!(o && o.desc), name = t(desc ? 'sort.desc' : 'sort.asc');
+      r.sel.value = o ? o.key : '';
+      r.dir.disabled = !o;
+      r.dir.querySelector('use').setAttribute('href', desc ? '#i-desc' : '#i-asc');
+      r.dir.setAttribute('aria-label', name); r.dir.title = name;
+    });
+    for(const opt of rows[1].sel.options) opt.disabled = !!opt.value && opt.value === order[0].key;
+  }
+  function set(next){ order = sortClean(next); lsSet(store, order); draw(); onChange(order); }
+  rows[0].sel.onchange = () => {
+    const k = rows[0].sel.value;
+    set([{key: k, desc: false}].concat(order[1] && order[1].key !== k ? [order[1]] : []));
+  };
+  rows[1].sel.onchange = () => { const k = rows[1].sel.value; set(k ? [order[0], {key: k, desc: false}] : [order[0]]); };
+  rows.forEach((r, i) => { r.dir.onclick = () => { if(order[i]) set(order.map((o, j) => j === i ? {key: o.key, desc: !o.desc} : o)); }; });
+  draw();
+  return {get order(){ return order; }};
+}
+// The stock card's order: the search, the whole list.
+const invSort = sortPicker($('invSort'), 'f2b.sortInv', [{key: 'material'}, {key: 'color'}],
+                           () => { if($('stockBox').open) stockRender(); });
+
 // ── The user's spools ──
 // One compact list from the active inventory (archived ones left out), kept
 // half a minute: the search, the duplicate hint, a tag, labels by location
 // and the reorder list all read it.
-let INV = null, invAt = 0;
+let INV = null, invAt = 0, invErr = null;
 async function inventoryList(fresh){
   if(INV && !fresh && Date.now() - invAt < 30000) return INV;
   try{
     const d = await (await fetch('/api/inventory' + (fresh ? '?fresh=1' : ''))).json();
-    if(d.ok){ INV = d.spools || []; invAt = Date.now(); }
-  }catch(e){}
+    if(d.ok){ INV = d.spools || []; invAt = Date.now(); invErr = null; }
+    else invErr = d.error || 'failed';
+  }catch(e){ invErr = 'unreachable'; }
   return INV || [];
 }
 function invForget(){ INV = null; }
@@ -2065,6 +2353,21 @@ function swatchItem(li, it){
   if(it.sub){ const s = document.createElement('span'); s.className = 'sub'; s.textContent = it.sub; li.appendChild(s); }
 }
 
+// A spool as a row to tap: colour, number and kind (and a line below), what is left.
+function spoolRow(s, sub){
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'loc-sp';
+  const sw = document.createElement('span'); sw.className = 'sw';
+  sw.style.background = spoolHex(s) || 'transparent';
+  if(!spoolHex(s)) sw.style.boxShadow = 'inset 0 0 0 1.5px var(--muted)';
+  const main = document.createElement('span'); main.className = 'main'; main.textContent = '#' + s.id + '  ' + spoolTitle(s);
+  if(sub){ const x = document.createElement('span'); x.className = 'sub'; x.textContent = sub; main.appendChild(x); }
+  const left = document.createElement('span'); left.className = 'left'; left.textContent = s.remaining != null ? s.remaining + ' g' : '';
+  b.append(sw, main, left);
+  return b;
+}
+function hintEl(text, err){ const d = document.createElement('div'); d.className = 'hint' + (err ? ' err' : ''); d.textContent = text; return d; }
+function kgText(g){ return (g / 1000).toLocaleString(I18N_LANG, {minimumFractionDigits: 1, maximumFractionDigits: 1}); }
+
 async function openSpoolByTag(uid){
   $('tagOpenHint').textContent = t('spool.loading', {id: uid});
   const want = uid.replace(/[\s:\-]/g, '').toUpperCase();
@@ -2088,7 +2391,7 @@ makeCombo('invSearch', {
       if(below != null && !(s.remaining != null && s.remaining < below)) return false;
       const hay = comboNorm([spoolTitle(s), s.storage_location, s.tag_uid, s.material_number, '#' + s.id].join(' '));
       return words.every(w => hay.includes(w));
-    }).sort((a, b) => (a.remaining ?? 1e9) - (b.remaining ?? 1e9)).slice(0, 40);
+    }).sort(spoolCompare(invSort.order)).slice(0, 40);
     return hits.length ? hits.map(s => ({id: s.id, label: '#' + s.id + '  ' + spoolTitle(s), sub: spoolSub(s), color: spoolHex(s)}))
                        : [{empty: true, label: t('inv.none')}];
   },
@@ -2096,10 +2399,99 @@ makeCombo('invSearch', {
   onPick: it => { $('invSearch').value = ''; $('invSearch').blur(); openSpool(it.id); },
 });
 
+// All spools, sorted as chosen above, with a heading per material, colour,
+// maker or location when that sorts first.
+async function stockRender(){
+  const box = $('stockList');
+  const all = await inventoryList();
+  $('stockCount').textContent = INV ? '(' + all.length + ')' : '';
+  box.innerHTML = '';
+  if(!INV && invErr){ box.appendChild(hintEl(t('sort.read_failed', {error: invErr}), true)); return; }
+  if(!all.length){ box.appendChild(hintEl(t('sort.empty'))); return; }
+  const order = invSort.order, head = SORT_HEADED.includes(order[0].key) ? order[0].key : null;
+  let group = null, count = 0, n = null;
+  for(const s of sortSpools(all, order)){
+    if(head){
+      const h = sortHeading(s, head);
+      if(!group || group.id !== h.id){
+        group = h; count = 0;
+        const el = document.createElement('div'); el.className = 'grp-head';
+        if(head === 'color'){
+          const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = spoolHex(s) || 'transparent';
+          if(!spoolHex(s)) sw.style.boxShadow = 'inset 0 0 0 1.5px var(--muted)';
+          el.appendChild(sw);
+        }
+        const name = document.createElement('span'); name.textContent = h.label;
+        n = document.createElement('span'); n.className = 'n';
+        el.append(name, n); box.appendChild(el);
+      }
+      n.textContent = tn('loc.count', ++count);
+    }
+    const row = spoolRow(s, [s.storage_location || t('loc.unassigned'), s.added].filter(Boolean).join(' · '));
+    row.onclick = () => openSpool(s.id);
+    box.appendChild(row);
+  }
+}
+$('stockBox').addEventListener('toggle', () => { if($('stockBox').open) stockRender(); });
+// The same list as a table, in the same order; with semicolons and decimal
+// commas where the language writes 1,5.
+$('stockCsv').onclick = async () => {
+  const comma = (1.5).toLocaleString(I18N_LANG).includes(',');
+  try{
+    const r = await fetch('/api/inventory.csv?sort=' + encodeURIComponent(sortParam(invSort.order)) + (comma ? '&sep=%3B' : ''));
+    if(!r.ok){ let e = r.status; try{ e = (await r.json()).error || e; }catch(x){} throw new Error(e); }
+    const blob = await r.blob();
+    const name = ((r.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/) || [])[1] || 'filament-stock.csv';
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  }catch(e){ toast(t('sort.csv_failed', {error: e && e.message || e}), false); }
+};
+// What is in stock, by material, maker or location: spools and kilograms left.
+let statsBy = lsGet('f2b.statsBy', 'material');
+if(!['material', 'brand', 'location'].includes(statsBy)) statsBy = 'material';
+async function statsRender(){
+  const all = await inventoryList();
+  document.querySelectorAll('#statsBox .seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.by === statsBy)));
+  const total = all.reduce((a, s) => a + (s.remaining || 0), 0);
+  $('statsTotal').textContent = INV ? '(' + t('sort.stats_total', {n: all.length, kg: kgText(total)}) + ')' : '';
+  const box = $('statsList'); box.innerHTML = '';
+  if(!INV && invErr){ box.appendChild(hintEl(t('sort.read_failed', {error: invErr}), true)); return; }
+  if(!all.length){ box.appendChild(hintEl(t('sort.empty'))); return; }
+  const groups = new Map();
+  for(const s of all){
+    const h = sortHeading(s, statsBy);
+    const g = groups.get(h.id) || {label: h.label, n: 0, g: 0};
+    g.n++; g.g += s.remaining || 0;
+    groups.set(h.id, g);
+  }
+  const list = [...groups.values()].sort((a, b) => b.g - a.g || b.n - a.n || a.label.localeCompare(b.label));
+  const max = Math.max(1, ...list.map(g => g.g));
+  for(const g of list){
+    const row = document.createElement('div'); row.className = 'stat-row';
+    const top = document.createElement('div'); top.className = 'stat-top';
+    const name = document.createElement('span'); name.className = 'stat-name'; name.textContent = g.label;
+    const num = document.createElement('span'); num.className = 'stat-num'; num.textContent = tn('loc.count', g.n) + ' · ' + kgText(g.g) + ' kg';
+    top.append(name, num);
+    const bar = document.createElement('div'); bar.className = 'stat-bar';
+    const fill = document.createElement('span'); fill.style.width = Math.max(2, Math.round(100 * g.g / max)) + '%';
+    bar.appendChild(fill);
+    row.append(top, bar);
+    box.appendChild(row);
+  }
+}
+document.querySelectorAll('#statsBox .seg button').forEach(b => {
+  b.onclick = () => { statsBy = b.dataset.by; lsSet('f2b.statsBy', statsBy); statsRender(); };
+});
+$('statsBox').addEventListener('toggle', () => { if($('statsBox').open) statsRender(); });
+
 // What runs low: one line per kind (maker, material, subtype, colour) with
 // spools under the threshold, what is left of them, the last price paid
 // and a search for buying more.
 function reorderMax(){ return Math.max(1, parseInt($('reorderMax').value, 10) || 200); }
+// Lowest first unless chosen otherwise; a kind sorts by its first spool, by
+// what is left of all of them together.
+const reoSort = sortPicker($('reoSort'), 'f2b.sortReo', [{key: 'remaining'}], () => reorderRender());
 try{ const v = localStorage.getItem('f2b.reorderMax'); if(v) $('reorderMax').value = v; }catch(e){}
 async function reorderRender(){
   const max = reorderMax();
@@ -2112,7 +2504,8 @@ async function reorderRender(){
     g.spools.push(s); g.left += s.remaining;
     groups.set(key, g);
   }
-  const list = [...groups.values()].sort((a, b) => a.left - b.left);
+  const list = sortSpools([...groups.values()].map(g => Object.assign(g, {id: g.first.id,
+    sort: Object.assign({}, g.first.sort, {remaining: g.left})})), reoSort.order);
   $('reorderCount').textContent = list.length ? '(' + list.length + ')' : '';
   const box = $('reorderList'); box.innerHTML = '';
   if(!list.length){ const d = document.createElement('div'); d.className = 'hint'; d.textContent = t('inv.reorder_none', {max}); box.appendChild(d); return; }
@@ -2598,6 +2991,10 @@ const LOC_DOTS = 8;
 const LOC_JSON = {'Content-Type': 'application/json'};
 const locKey = n => String(n || '').trim().toLowerCase();
 const locClosed = new Set(lsGet('f2b.locClosed', []));
+// A place's spools in the sheet, and the dots on the tiles, in this order.
+let locSheetItem = null;
+const locSort = sortPicker($('locSheetSort'), 'f2b.sortLoc', [{key: 'material'}, {key: 'color'}],
+                           () => { if(locSheetItem) locSheetList(); if(LOC) locRender(); });
 function locErr(d){
   if(!d) return t('loc.err_unreachable');
   if(d.error === 'forbidden') return t('loc.err_forbidden', {perm: t('loc.perm_' + (d.permission || 'manage_inventory'))});
@@ -2637,6 +3034,8 @@ async function locLoad(fresh){
   locSyncOptions();
   locRender();
   locPreviewSoon();
+  planFillPlaces();
+  if($('planBox').open) planSoon();
 }
 function locDot(s){
   const dot = document.createElement('span');
@@ -2654,7 +3053,7 @@ function locTile(name, spools, count, cls, onClick){
   c.textContent = count ? tn('loc.count', count) : t('loc.empty');
   const dots = document.createElement('span'); dots.className = 'loc-dots'; dots.setAttribute('aria-hidden', 'true');
   const shown = spools.length > LOC_DOTS ? LOC_DOTS - 1 : spools.length;
-  for(const s of spools.slice(0, shown)) dots.appendChild(locDot(s));
+  for(const s of sortSpools(spools, locSort.order).slice(0, shown)) dots.appendChild(locDot(s));
   if(spools.length > shown){
     const more = document.createElement('span'); more.className = 'loc-more'; more.textContent = '+' + (spools.length - shown);
     dots.appendChild(more);
@@ -2712,11 +3111,17 @@ function locRender(){
     const box = locGroupBox('g:' + k, k || t('loc.others'), list.length);
     box.appendChild(grid);
     if(k){
+      const acts = document.createElement('div'); acts.className = 'loc-acts';
+      const sort = document.createElement('button');
+      sort.type = 'button'; sort.className = 'btn-quiet loc-act';
+      sort.textContent = t('plan.open');
+      sort.onclick = () => planOpenFor('g:' + locKey(k));
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'btn-quiet loc-act';
       b.textContent = t('loc.group_labels', {n: list.length});
       b.onclick = () => labelForLocations(list.map(l => l.name));
-      box.appendChild(b);
+      acts.append(sort, b);
+      box.appendChild(acts);
     }
     view.appendChild(box);
   }
@@ -2738,6 +3143,15 @@ function locRender(){
 
 // One place in the sheet.
 function locSheetClose(){ const s = $('locSheet'); if(s.open) s.close(); }
+$('locSheet').addEventListener('close', () => { locSheetItem = null; });
+function locSheetList(){
+  const list = $('locSheetSpools'); list.innerHTML = '';
+  for(const s of sortSpools(locSheetItem.spools, locSort.order)){
+    const b = spoolRow(s);
+    b.onclick = () => { locSheetClose(); openSpool(s.id); };
+    list.appendChild(b);
+  }
+}
 $('locSheetClose').onclick = locSheetClose;
 // A tap beside the sheet closes it.
 $('locSheet').addEventListener('click', e => {
@@ -2749,17 +3163,9 @@ function locOpen(kind, item){
   const count = kind === 'loc' ? locCount(item) : item.spools.length;
   $('locSheetSub').textContent = [count ? tn('loc.count', count) : t('loc.nothing_here'),
     kind === 'unknown' ? t('loc.unknown_one') : kind === 'none' ? t('loc.unassigned_hint') : ''].filter(Boolean).join(' · ');
-  const list = $('locSheetSpools'); list.innerHTML = '';
-  for(const s of [...item.spools].sort((a, b) => a.id - b.id)){
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'loc-sp';
-    const sw = document.createElement('span'); sw.className = 'sw';
-    sw.style.background = spoolHex(s) || 'transparent';
-    const main = document.createElement('span'); main.className = 'main'; main.textContent = '#' + s.id + '  ' + spoolTitle(s);
-    const left = document.createElement('span'); left.className = 'left'; left.textContent = s.remaining != null ? s.remaining + ' g' : '';
-    b.append(sw, main, left);
-    b.onclick = () => { locSheetClose(); openSpool(s.id); };
-    list.appendChild(b);
-  }
+  locSheetItem = item;
+  $('locSheetSort').classList.toggle('hidden', item.spools.length < 2);
+  locSheetList();
   const act = $('locSheetActions'); act.innerHTML = '';
   if(kind === 'unknown'){
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-primary'; b.style.marginTop = '14px';
@@ -2925,6 +3331,664 @@ if('IntersectionObserver' in window){
   io.observe($('locCard'));
 }else locLoad();
 
+// ── Sorting a shelf ──
+// The places of a group (or all of them), how many spools a place takes
+// and the order: the server works out where each spool goes, keeping as
+// many where they are as the order allows, and the steps to get there.
+// Spools without a location are always part of it: new spools wait there
+// for their place.
+let planData = null, planBody = null, planSeq = 0, planTimer = null;
+const planCaps = lsGet('f2b.planCap', {});
+const planSort = sortPicker($('planSort'), 'f2b.sortPlan', [{key: 'material'}, {key: 'color'}], () => planSoon());
+$('planElsewhere').checked = !!lsGet('f2b.planElsewhere', false);
+$('planBreak').checked = !!lsGet('f2b.planBreak', false);
+$('planOnlyMoves').checked = !!lsGet('f2b.planOnly', false);
+function planGroups(){
+  if(!LOC) return [];
+  const groups = new Map();
+  for(const l of LOC.locations){
+    if(!l.group) continue;
+    const k = 'g:' + locKey(l.group);
+    if(!groups.has(k)) groups.set(k, {value: k, name: l.group, names: []});
+    groups.get(k).names.push(l.name);
+  }
+  const out = [...groups.values()].map(g => Object.assign(g, {label: t('plan.group_opt', {name: g.name, n: g.names.length})}));
+  if(LOC.locations.length) out.push({value: 'all', label: t('plan.all_places', {n: LOC.locations.length}), names: LOC.locations.map(l => l.name)});
+  return out;
+}
+function planFillPlaces(){
+  const sel = $('planPlaces'), want = lsGet('f2b.planGroup', '') || sel.value;
+  sel.innerHTML = '';
+  for(const g of planGroups()) sel.add(new Option(g.label, g.value));
+  if([...sel.options].some(o => o.value === want)) sel.value = want;
+  $('planCap').value = planCaps[sel.value] || '';
+}
+function planNames(){ const g = planGroups().find(x => x.value === $('planPlaces').value); return g ? g.names : []; }
+function planRequest(){
+  const body = {places: planNames(), sort: planSort.order, include_elsewhere: $('planElsewhere').checked,
+                break_on_group: $('planBreak').checked};
+  const cap = planCaps[$('planPlaces').value];
+  if(cap) body.capacity = cap;
+  return body;
+}
+function planErr(d){
+  if(d && d.error === 'capacity') return t('plan.err_capacity', {max: d.max || 999});
+  if(d && d.error === 'places') return t('plan.err_places');
+  if(d && d.error === 'too_many') return t('plan.err_too_many', {max: d.max});
+  return locErr(d);
+}
+function planSoon(){ clearTimeout(planTimer); planTimer = setTimeout(planLoad, 250); }
+function planClear(msg){
+  planData = null;
+  ['planGuide', 'planApply', 'planApplyHint', 'planOnlyBox', 'planNote'].forEach(id => $(id).classList.add('hidden'));
+  $('planView').innerHTML = '';
+  $('planSummary').textContent = msg || '';
+}
+async function planLoad(fresh){
+  if(!$('planBox').open) return;
+  guideResumeOffer();
+  if(!LOC){ planClear(t('loc.loading')); locLoad(); return; }
+  const body = planRequest();
+  if(!body.places.length){ planClear(t('plan.need_locations')); return; }
+  const my = ++planSeq;
+  $('planSummary').classList.remove('err');
+  $('planSummary').textContent = t('plan.loading');
+  const d = await locCall('/api/locations/plan', 'POST', fresh ? Object.assign({fresh: true}, body) : body);
+  if(my !== planSeq) return;
+  if(!d || !d.ok){ planClear(planErr(d)); $('planSummary').classList.add('err'); return; }
+  planBody = body; planData = d;
+  $('planCap').placeholder = String(d.capacity);
+  planRender();
+}
+function planRow(s, overflow){
+  const row = document.createElement('div'); row.className = 'plan-sp' + (s.move ? ' move' : '');
+  const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = spoolHex(s) || 'transparent';
+  if(!spoolHex(s)) sw.style.boxShadow = 'inset 0 0 0 1.5px var(--muted)';
+  const main = document.createElement('span'); main.className = 'main'; main.textContent = '#' + s.id + '  ' + spoolTitle(s);
+  const mv = document.createElement('span'); mv.className = 'mv';
+  if(overflow) mv.textContent = s.to === '' ? t('plan.to_table') : s.from ? t('plan.stays_at', {name: s.from}) : t('plan.stays_none');
+  else mv.textContent = !s.move ? t('plan.stays') : s.from ? t('plan.from', {name: s.from}) : t('plan.from_none');
+  row.append(sw, main, mv);
+  return row;
+}
+function planBoxEl(title, count, full){
+  const box = document.createElement('div'); box.className = 'plan-place';
+  const head = document.createElement('div'); head.className = 'plan-head' + (full ? ' full' : '');
+  const name = document.createElement('span'); name.textContent = title;
+  const n = document.createElement('span'); n.className = 'n'; n.textContent = count;
+  head.append(name, n); box.appendChild(head);
+  return box;
+}
+function planRender(){
+  const d = planData; if(!d) return;
+  const only = $('planOnlyMoves').checked, moves = d.moves.length, steps = d.steps.length;
+  $('planSummary').classList.remove('err');
+  $('planSummary').textContent = d.spools
+    ? t('plan.summary', {n: d.spools, p: d.places.length, cap: d.capacity}) + ' · ' + (moves ? tn('plan.moves', moves) : t('plan.no_moves'))
+    : t('plan.nothing');
+  $('planNote').classList.toggle('hidden', !d.overflow.length);
+  $('planNote').textContent = d.overflow.length
+    ? t('plan.overflow', {n: d.spools, slots: d.slots, p: d.places.length, cap: d.capacity, over: d.overflow.length}) : '';
+  $('planGuide').classList.toggle('hidden', !steps);
+  $('planGuide').querySelector('span').textContent = tn('guide.start', steps);
+  ['planOnlyBox', 'planApply', 'planApplyHint'].forEach(id => $(id).classList.toggle('hidden', !moves));
+  $('planApply').textContent = tn('plan.apply', moves);
+  const view = $('planView'); view.innerHTML = '';
+  for(const p of d.places){
+    const rows = only ? p.spools.filter(s => s.move) : p.spools;
+    if(only && !rows.length) continue;
+    const box = planBoxEl(p.name, p.spools.length + ' / ' + d.capacity, p.spools.length >= d.capacity);
+    if(!p.spools.length){ const e = document.createElement('div'); e.className = 'plan-sp empty'; e.textContent = t('plan.empty_place'); box.appendChild(e); }
+    for(const s of rows) box.appendChild(planRow(s, false));
+    view.appendChild(box);
+  }
+  const over = only ? d.overflow.filter(s => s.move) : d.overflow;
+  if(over.length){
+    const box = planBoxEl(t('plan.overflow_title'), String(over.length), true);
+    for(const s of over) box.appendChild(planRow(s, true));
+    view.appendChild(box);
+  }
+}
+$('planPlaces').onchange = () => {
+  lsSet('f2b.planGroup', $('planPlaces').value);
+  $('planCap').value = planCaps[$('planPlaces').value] || '';
+  planLoad();
+};
+// Typed, a place's capacity stays for that group; empty, the server's guess
+// shows greyed.
+$('planCap').addEventListener('input', () => {
+  const v = parseInt($('planCap').value, 10), g = $('planPlaces').value;
+  if(v >= 1 && v <= 999) planCaps[g] = v; else delete planCaps[g];
+  lsSet('f2b.planCap', planCaps);
+  planSoon();
+});
+['planElsewhere', 'planBreak'].forEach(id => $(id).addEventListener('change', () => { lsSet('f2b.' + id, $(id).checked); planLoad(); }));
+$('planOnlyMoves').addEventListener('change', () => { lsSet('f2b.planOnly', $('planOnlyMoves').checked); planRender(); });
+$('planBox').addEventListener('toggle', () => { if($('planBox').open){ planFillPlaces(); planLoad(); } });
+function planOpenFor(value){
+  lsSet('f2b.planGroup', value);
+  if($('planBox').open){ planFillPlaces(); planLoad(); } else $('planBox').open = true;
+  $('planBox').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+$('planGuide').onclick = () => { if(planData && planData.steps.length) guideStart(planData, planBody, null); };
+
+// The labels carry the location (when the layout shows it): after moving,
+// offered for the moved spools, never printed by themselves.
+function labelShowsLocation(){
+  if(labelCfg.template === LABEL_OWN) return (labelCfg.layout || []).some(x => x.f === 'location' && x.on);
+  return (labelCfg.fields || []).includes('location');
+}
+function labelsButton(btn, ids){
+  ids = [...new Set(ids)];
+  btn.classList.toggle('hidden', !ids.length || !labelShowsLocation());
+  btn.querySelector('span').textContent = t('guide.labels', {n: ids.length});
+  btn.onclick = () => {
+    const sheet = btn.closest('dialog');
+    if(sheet && sheet.open) sheet.close();
+    labelOffer(ids);
+    $('labelCard').scrollIntoView({behavior: 'smooth', block: 'start'});
+  };
+}
+
+// Everything at once, only in BamBuddy: for spools that already lie as planned.
+$('planApply').onclick = async () => {
+  if(!planData || !planData.moves.length) return;
+  const moves = planData.moves.slice();
+  if(!confirm(tn('plan.apply_confirm', moves.length))) return;
+  $('planApply').disabled = true;
+  $('planResult').classList.remove('err');
+  $('planResult').textContent = t('plan.applying', {n: moves.length});
+  $('planLabels').classList.add('hidden');
+  const d = await locCall('/api/locations/apply', 'POST', {moves});
+  $('planApply').disabled = false;
+  const res = d && d.results || [];
+  const count = st => res.filter(r => r.status === st).length;
+  let text;
+  if(!d || !d.results) text = planErr(d);
+  else{
+    const parts = [t('plan.res_moved', {n: count('moved')})];
+    if(count('changed')) parts.push(t('plan.res_changed', {n: count('changed')}));
+    const failed = count('error') + count('not_found'), first = res.find(r => r.status === 'error');
+    if(failed) parts.push(t('plan.res_failed', {n: failed}) + (first ? ' (#' + first.id + ': ' + first.error + ')' : ''));
+    text = parts.join(', ') + (d.error ? ' · ' + planErr(d) : '');
+  }
+  $('planResult').textContent = text;
+  $('planResult').classList.toggle('err', !(d && d.ok));
+  toast(text, !!(d && d.ok));
+  labelsButton($('planLabels'), res.filter(r => r.status === 'moved').map(r => r.id));
+  invForget();
+  await locLoad(true);
+};
+
+// ── Re-sorting, one spool at a time ──
+// The plan's steps in a sheet: take this spool from here, put it there.
+// "Done" writes the spool's new place at once, so the inventory matches the
+// shelf even when the guide is left half-way; "Back" undoes the last step
+// there too; "Skip" leaves one for later. A scanned spool label or tag
+// checks the spool (or brings its step forward when there is room), a
+// scanned compartment label finishes the step. What was done stays in this
+// browser; coming back, the steps are worked out again from the stock as it
+// is now, which leaves out what was done. A step whose spool is no longer
+// where the step says does the same.
+let guide = null;
+const GUIDE_STORE = 'f2b.guide';
+function guideForget(){ try{ localStorage.removeItem(GUIDE_STORE); }catch(e){} }
+function guideDoneCount(){ return guide.steps.filter(s => s.state === 'done').length; }
+function guideAt(){ return guide.steps.findIndex(s => s.state === 'todo'); }
+function guideSave(){
+  if(!guide) return;
+  lsSet(GUIDE_STORE, {body: guide.body, done: guide.doneBefore + guideDoneCount(), moved: guide.moved,
+                      prefer: guide.prefer, open: guide.steps.some(s => s.state !== 'done'), at: Date.now()});
+}
+// How full each place is now, from the plan; kept up to date as steps are done.
+function guideOccOf(plan){
+  const occ = {};
+  for(const s of plan.places.flatMap(p => p.spools).concat(plan.overflow))
+    if(s.from) occ[locKey(s.from)] = (occ[locKey(s.from)] || 0) + 1;
+  return occ;
+}
+function guideStart(plan, body, before){
+  const b = Object.assign({}, body, {capacity: plan.capacity});
+  delete b.fresh; delete b.prefer;
+  guide = {body: b, cap: plan.capacity, occ: guideOccOf(plan), picked: false, history: [], queued: [],
+           steps: plan.steps.map(s => Object.assign({}, s, {state: 'todo'})),
+           doneBefore: before ? before.done || 0 : 0, moved: before ? (before.moved || []).slice() : [],
+           prefer: before ? (before.prefer || []).slice() : []};
+  guideSave();
+  inventoryList();      // for a tag held to the phone
+  guideDraw('');
+  const sheet = $('guideSheet');
+  if(!sheet.open){ if(sheet.showModal) sheet.showModal(); else sheet.setAttribute('open', ''); }
+}
+function guidePlace(kind, name){
+  return kind === 'place' || kind === 'other' ? name : kind === 'table' ? t('guide.table') : t('guide.none');
+}
+function guideHint(msg, err){ $('guideHint').textContent = msg || ''; $('guideHint').classList.toggle('err', !!err); }
+// The spool, where from and where to, large.
+function stepCard(sp, id, from, to, picked, toNote){
+  const box = document.createElement('div'); box.className = 'guide-card';
+  const head = document.createElement('div'); head.className = 'guide-sp';
+  const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = spoolHex(sp) || 'transparent';
+  if(!spoolHex(sp)) sw.style.boxShadow = 'inset 0 0 0 1.5px var(--muted)';
+  const txt = document.createElement('div'); txt.style.minWidth = '0';
+  const name = document.createElement('div'); name.className = 'guide-name';
+  name.textContent = '#' + id + '  ' + ([sp.brand, sp.material, sp.subtype].filter(Boolean).join(' ') || '—');
+  const sub = document.createElement('div'); sub.className = 'guide-sub';
+  sub.textContent = [sp.color_name, sp.remaining != null ? sp.remaining + ' g' : ''].filter(Boolean).join(' · ');
+  txt.append(name, sub); head.append(sw, txt);
+  if(picked){ const p = document.createElement('span'); p.className = 'guide-pick'; p.textContent = '✓'; p.setAttribute('aria-hidden', 'true'); head.appendChild(p); }
+  const leg = (cls, key, value, note) => {
+    const r = document.createElement('div'); r.className = 'guide-leg' + cls;
+    const k = document.createElement('span'); k.className = 'guide-k'; k.textContent = key;
+    const v = document.createElement('span'); v.className = 'guide-v' + (value ? '' : ' none'); v.textContent = value || note || '';
+    if(value && note){ const sm = document.createElement('small'); sm.textContent = note; v.appendChild(sm); }
+    r.append(k, v); return r;
+  };
+  box.append(head, leg('', t('guide.from'), from), leg(' to', t('guide.to'), to, toNote));
+  return box;
+}
+function guideDraw(msg, err){
+  const g = guide, at = guideAt(), total = g.steps.length, past = g.steps.filter(s => s.state !== 'todo').length;
+  const end = at < 0;
+  $('guideTitle').textContent = end ? t('guide.title') : t('guide.step_of', {n: past + 1, total});
+  const all = g.doneBefore + total;
+  $('guideBar').style.width = (all ? Math.round(100 * (g.doneBefore + past) / all) : 100) + '%';
+  $('guideMeta').textContent = g.doneBefore ? t('guide.done_before', {n: g.doneBefore}) : '';
+  $('guideNow').classList.toggle('hidden', end);
+  $('guideEnd').classList.toggle('hidden', !end);
+  $('guideBack').disabled = !g.history.length;
+  $('guideLabelBox').classList.toggle('hidden', !navigator.bluetooth || !labelShowsLocation());
+  $('guideStep').innerHTML = '';
+  if(!end){
+    const st = g.steps[at];
+    $('guideStep').appendChild(stepCard(st.spool || {}, st.id, guidePlace(st.from_kind, st.from), guidePlace(st.to_kind, st.to), g.picked));
+    const why = st.buffer ? t('guide.buffer_hint') : st.from_kind === 'table' ? t('guide.from_table_hint')
+              : st.to_kind === 'table' ? t('guide.out_hint') : '';
+    guideHint(msg || why, msg && err);
+  }else{
+    const skipped = g.steps.filter(s => s.state === 'skip').length;
+    $('guideEndText').textContent = total ? t('guide.finished', {done: g.doneBefore + guideDoneCount(), skipped}) : t('guide.all_done');
+    $('guideRedo').classList.toggle('hidden', !skipped);
+    $('guideRedo').textContent = t('guide.redo_skipped', {n: skipped});
+    labelsButton($('guideLabels'), g.moved);
+  }
+  const ol = $('guideList'); ol.innerHTML = '';
+  $('guideCount').textContent = '(' + total + ')';
+  g.steps.forEach((s, i) => {
+    const li = document.createElement('li'); li.className = s.state === 'todo' ? (i === at ? 'now' : '') : s.state;
+    const k = document.createElement('span'); k.className = 'k'; k.textContent = (i + 1) + '.';
+    const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = spoolHex(s.spool || {}) || 'transparent';
+    const tx = document.createElement('span'); tx.className = 't';
+    tx.textContent = '#' + s.id + ' ' + (s.spool ? s.spool.material || '' : '') + ': ' + guidePlace(s.from_kind, s.from) + ' → ' + guidePlace(s.to_kind, s.to);
+    li.append(k, sw, tx); ol.appendChild(li);
+  });
+}
+// A step done (dir 1) or undone (-1): how full the places are, which spools
+// wait on the table, which moved (for their labels).
+function guideModel(st, dir){
+  const g = guide;
+  if(st.from_kind === 'place') g.occ[locKey(st.from)] = (g.occ[locKey(st.from)] || 0) - dir;
+  if(st.to_kind === 'place') g.occ[locKey(st.to)] = (g.occ[locKey(st.to)] || 0) + dir;
+  const pre = new Set(g.prefer), mv = new Set(g.moved);
+  if(st.buffer){ if(dir > 0) pre.add(st.id); else pre.delete(st.id); }
+  if(st.from_kind === 'table'){ if(dir > 0) pre.delete(st.id); else pre.add(st.id); }
+  if(!st.buffer){ if(dir > 0) mv.add(st.id); else mv.delete(st.id); }
+  g.prefer = [...pre]; g.moved = [...mv];
+}
+// The first step still to do that takes a spool out of `place`.
+function guideFreeing(place, but){
+  return guide.steps.findIndex(s => s !== but && s.state !== 'done' && s.from_kind === 'place' && locKey(s.from) === locKey(place));
+}
+function guideFull(st){ return st.to_kind === 'place' && (guide.occ[locKey(st.to)] || 0) >= guide.cap; }
+// One spool's location changed: {id, from, to} → the server's answer for it.
+async function guideWrite(move){
+  const d = await locCall('/api/locations/apply', 'POST', {moves: [move]});
+  return {d, r: d && d.results && d.results[0]};
+}
+async function guideDone(){
+  const g = guide; if(!g) return;
+  const at = guideAt(); if(at < 0) return;
+  const st = g.steps[at];
+  if(guideFull(st)){
+    const j = guideFreeing(st.to, st);
+    if(j >= 0){ guideDraw(t('guide.full', {place: st.to, n: j + 1}), true); return; }
+  }
+  $('guideDone').disabled = true; guideHint(t('guide.saving'));
+  const {d, r} = await guideWrite({id: st.id, from: st.from, to: st.to});
+  $('guideDone').disabled = false;
+  if(r && r.status === 'moved'){
+    st.state = 'done'; g.history.push(st); guideModel(st, 1); g.picked = false;
+    invForget(); guideSave();
+    if(navigator.vibrate) navigator.vibrate(40);
+    guideDraw(!st.buffer && $('guideLabelEach').checked && labelShowsLocation() ? guideLabelNow(st.id) : '');
+    return;
+  }
+  if(r && (r.status === 'changed' || r.status === 'not_found')){ await guideReplan(true); return; }
+  guideHint(t('guide.failed', {error: r ? (r.error || r.status) : planErr(d)}), true);
+}
+// A label right after its step, when the printer is connected already;
+// else it waits for the button at the end (the first print connects).
+function guideLabelNow(id){
+  if(!labelPrinter || !navigator.bluetooth){
+    if(!guide.queued.includes(id)) guide.queued.push(id);
+    return t('guide.label_queued', {id});
+  }
+  labelLocs = null; $('labelSpool').value = id;
+  labelPreview().then(() => { if(labelJob && labelJob.fits) labelPrint(); }).catch(() => {});
+  return '';
+}
+async function guideBack(){
+  const g = guide, st = g && g.history[g.history.length - 1];
+  if(!st) return;
+  if(st.state === 'done'){
+    $('guideBack').disabled = true; guideHint(t('guide.saving'));
+    const {d, r} = await guideWrite({id: st.id, from: st.to, to: st.from});
+    $('guideBack').disabled = false;
+    if(!(r && r.status === 'moved')){
+      if(r && (r.status === 'changed' || r.status === 'not_found')){ await guideReplan(true); return; }
+      guideHint(t('guide.failed', {error: r ? (r.error || r.status) : planErr(d)}), true);
+      return;
+    }
+    guideModel(st, -1); invForget();
+  }
+  g.history.pop(); st.state = 'todo';
+  const i = g.steps.indexOf(st); g.steps.splice(i, 1);
+  const a = guideAt(); g.steps.splice(a < 0 ? g.steps.length : Math.min(a, i), 0, st);
+  g.picked = false; guideSave(); guideDraw('');
+}
+function guideSkip(){
+  const g = guide, at = guideAt(); if(at < 0) return;
+  const st = g.steps[at]; st.state = 'skip'; g.history.push(st);
+  g.picked = false; guideSave(); guideDraw('');
+}
+// The steps again, from the stock as it is now (what was done is left out).
+async function guideReplan(changed){
+  const g = guide;
+  guideHint(t('plan.loading'));
+  const before = {done: g.doneBefore + guideDoneCount(), moved: g.moved, prefer: g.prefer};
+  const d = await locCall('/api/locations/plan', 'POST', Object.assign({}, g.body, {fresh: true, prefer: g.prefer}));
+  if(!d || !d.ok){ guideHint(planErr(d), true); return; }
+  guideStart(d, g.body, before);
+  if(changed){ guideHint(t('guide.changed')); toast(t('guide.changed'), 'info'); }
+  if($('planBox').open) planSoon();
+}
+// A scan in the guide: the spool in hand, or the compartment it goes into.
+function guideOnScan(w){
+  const g = guide; if(!g) return;
+  const at = guideAt(); if(at < 0) return;
+  const st = g.steps[at];
+  if(w.spool){
+    if(w.spool === st.id){ g.picked = true; guideDraw(t('guide.scan_ok', {id: st.id})); return; }
+    const other = g.steps.find(s => s.state !== 'done' && s.id === w.spool);
+    if(!other){ guideDraw(t('guide.scan_not_in_plan', {id: w.spool}), true); return; }
+    if(guideFull(other)){
+      const j = guideFreeing(other.to, other);
+      if(j >= 0){ guideDraw(t('guide.scan_wait', {id: w.spool, place: other.to, n: j + 1}), true); return; }
+    }
+    other.state = 'todo';
+    g.steps.splice(g.steps.indexOf(other), 1);
+    const a = guideAt(); g.steps.splice(a < 0 ? g.steps.length : a, 0, other);
+    g.picked = true; guideSave(); guideDraw(t('guide.scan_jump', {id: w.spool}));
+    return;
+  }
+  if(w.place){
+    if(st.to_kind === 'place' && locKey(w.place) === locKey(st.to)){ g.picked = true; guideDone(); return; }
+    guideDraw(t('guide.wrong_place', {place: w.place, target: guidePlace(st.to_kind, st.to)}), true);
+  }
+}
+$('guideDone').onclick = guideDone;
+$('guideBack').onclick = guideBack;
+$('guideSkip').onclick = guideSkip;
+$('guideRedo').onclick = () => { guide.steps.forEach(s => { if(s.state === 'skip') s.state = 'todo'; }); guideSave(); guideDraw(''); };
+$('guideReplan').onclick = () => guideReplan(false);
+$('guideClose').onclick = () => $('guideSheet').close();
+$('guideLabelEach').checked = !!lsGet('f2b.guideLabelEach', false);
+$('guideLabelEach').addEventListener('change', () => lsSet('f2b.guideLabelEach', $('guideLabelEach').checked));
+$('guideSheet').addEventListener('close', () => {
+  guideScan.stop(); guideSave();
+  if(LOC){ invForget(); locLoad(true); }
+  guideResumeOffer();
+});
+// Left half-way (closed, or the page reloaded): offered to go on.
+function guideResumeOffer(){
+  const s = lsGet(GUIDE_STORE, null), box = $('planResume');
+  const show = !!(s && s.open && s.body && Array.isArray(s.body.places) && !$('guideSheet').open);
+  box.classList.toggle('hidden', !show);
+  box.innerHTML = '';
+  if(!show) return;
+  const go = document.createElement('button'); go.type = 'button'; go.className = 'btn-primary';
+  go.textContent = t('guide.resume', {n: s.done || 0});
+  const drop = document.createElement('button'); drop.type = 'button'; drop.className = 'btn-quiet';
+  drop.style.cssText = 'display:block;margin:6px auto 0'; drop.textContent = t('guide.discard');
+  go.onclick = async () => {
+    go.disabled = true;
+    const d = await locCall('/api/locations/plan', 'POST', Object.assign({}, s.body, {fresh: true, prefer: s.prefer || []}));
+    go.disabled = false;
+    if(!d || !d.ok){ toast(planErr(d), false); return; }
+    guideStart(d, s.body, s);
+    box.classList.add('hidden');
+  };
+  drop.onclick = () => { guideForget(); box.classList.add('hidden'); };
+  box.append(go, drop);
+}
+
+// ── Scanning in a sheet ──
+// The camera for the QR codes on spool labels (BamBuddy's, Spoolman's, the
+// page's own) and compartment labels (the place's name), the phone's NFC
+// for a spool's tag (Android only), and a field for "#12" or a
+// compartment's name. Each read is {spool: id} or {place: name}.
+async function scanWhat(text){
+  const s = String(text || '').trim();
+  if(s.startsWith('nfc:')){
+    // A tag is known by the spool it is linked to: the stock is read (again) for it.
+    const uid = s.slice(4), find = list => list.find(x => String(x.tag_uid || '').replace(/[\s:\-]/g, '').toUpperCase() === uid);
+    const sp = find(await inventoryList()) || find(await inventoryList(true));
+    return sp ? {spool: sp.id} : {error: t('inv.tag_unknown', {uid})};
+  }
+  const id = spoolIdFromCode(s);
+  if(id) return {spool: id};
+  const loc = LOC && LOC.locations.find(l => locKey(l.name) === locKey(s));
+  if(loc) return {place: loc.name};
+  if(/^\d{1,7}$/.test(s)) return {spool: parseInt(s, 10)};
+  return {error: t('guide.scan_unknown', {text: s.slice(0, 60)})};
+}
+function scanBar(box, onWhat, say){
+  box.innerHTML = '';
+  const row = document.createElement('div'); row.className = 'scan-row';
+  const btn = (icon, text) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-secondary with-ico';
+    b.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#' + icon + '"/></svg>';
+    const sp = document.createElement('span'); sp.textContent = text; b.appendChild(sp);
+    return b;
+  };
+  const cam = btn('i-qr', t('guide.scan_code')), nfc = btn('i-nfc', t('guide.scan_nfc'));
+  if(!('NDEFReader' in window)) nfc.classList.add('hidden');
+  row.append(cam, nfc);
+  const wrap = document.createElement('div'); wrap.className = 'scan-cam hidden';
+  const video = document.createElement('video'); video.muted = true; video.setAttribute('playsinline', '');
+  wrap.appendChild(video);
+  const form = document.createElement('form'); form.className = 'scan-manual';
+  const input = document.createElement('input'); input.autocomplete = 'off'; input.enterKeyHint = 'go';
+  input.placeholder = t('guide.scan_manual'); input.setAttribute('aria-label', t('guide.scan_manual'));
+  const go = document.createElement('button'); go.type = 'submit'; go.className = 'btn-secondary'; go.textContent = '→';
+  go.setAttribute('aria-label', t('guide.scan_manual'));
+  form.append(input, go);
+  const tip = document.createElement('div'); tip.className = 'hint'; tip.textContent = t('guide.scan_hint');
+  box.append(row, wrap, form, tip);
+  let rd = null, ctrl = null, last = '', lastAt = 0;
+  async function handle(text){
+    const now = Date.now();
+    if(text === last && now - lastAt < 2500) return;     // the camera reads a code many times a second
+    last = text; lastAt = now;
+    const w = await scanWhat(text);
+    if(w.error){ say(w.error, true); return; }
+    if(navigator.vibrate) navigator.vibrate(60);
+    onWhat(w);
+  }
+  function camStop(){
+    try{ rd && rd.reset && rd.reset(); }catch(e){}
+    rd = null; wrap.classList.add('hidden'); cam.querySelector('span').textContent = t('guide.scan_code');
+  }
+  cam.onclick = async () => {
+    if(rd){ camStop(); return; }
+    if(!window.ZXingBrowser){ say(t('scan.scanner_lib_failed'), true); return; }
+    if(!navigator.mediaDevices || !window.isSecureContext){ say(t('scan.camera_needs_https'), true); return; }
+    stopScan();
+    rd = new ZXingBrowser.BrowserMultiFormatReader();
+    if(ZXingBrowser.BarcodeFormat) rd.possibleFormats = [ZXingBrowser.BarcodeFormat.QR_CODE];
+    wrap.classList.remove('hidden'); cam.querySelector('span').textContent = t('scan.stop_camera');
+    try{ await rd.decodeFromVideoDevice(undefined, video, res => { if(res) handle(res.getText()); }); }
+    catch(e){ camStop(); say(t('scan.camera_error', {error: e}), true); }
+  };
+  function nfcOff(){
+    if(ctrl){ try{ ctrl.abort(); }catch(e){} }
+    ctrl = null; nfc.querySelector('span').textContent = t('guide.scan_nfc');
+  }
+  nfc.onclick = async () => {
+    if(ctrl){ nfcOff(); return; }
+    nfcStop();
+    const my = ctrl = new AbortController();
+    nfc.querySelector('span').textContent = t('guide.scan_nfc_stop');
+    try{
+      const ndef = new NDEFReader();
+      ndef.onreading = ev => {
+        if(ctrl !== my) return;
+        const uid = (ev.serialNumber || '').replace(/:/g, '').toUpperCase();
+        if(uid) handle('nfc:' + uid); else say(t('form.nfc_no_uid'), true);
+      };
+      ndef.onreadingerror = () => { if(ctrl === my) say(t('inv.tag_unknown_hint'), true); };
+      await ndef.scan({signal: my.signal});
+      if(ctrl === my) say(t('form.nfc_waiting'));
+    }catch(err){
+      if(ctrl !== my) return;
+      nfcOff();
+      say(err && err.name === 'NotAllowedError' ? t('form.nfc_denied') : t('form.nfc_failed', {error: err && err.message || err}), true);
+    }
+  };
+  form.onsubmit = e => { e.preventDefault(); const v = input.value.trim(); if(!v) return; last = ''; handle(v); input.value = ''; };
+  return {stop(){ camStop(); nfcOff(); }, handle};
+}
+const guideScan = scanBar($('guideScan'), guideOnScan, (m, err) => guideHint(m, err));
+
+// ── Any spool: scan it, see where it goes, put it there ──
+// The plan's place for it when there is a plan, else the place the sort
+// would give it; then the compartment scanned (or "Put here") writes it.
+// That is also how new spools without a place get put away.
+let sortScanSp = null, sortScanTarget = null;
+const sortScanMoved = [];
+function sortScanHint(m, err){ $('sortScanHint').textContent = m || ''; $('sortScanHint').classList.toggle('err', !!err); }
+const sortScanBar = scanBar($('sortScanBar'), sortScanOn, sortScanHint);
+function suggestBody(sp){
+  const caps = {}; let dflt = null;
+  for(const [k, v] of Object.entries(planCaps)){ if(k === 'all') dflt = v; else if(k.startsWith('g:')) caps[k.slice(2)] = v; }
+  return {spool: {id: sp.id || null, material: sp.material, subtype: sp.subtype, brand: sp.brand, rgba: sp.rgba,
+                  color_name: sp.color_name}, sort: planSort.order, caps, default_cap: dflt};
+}
+function sortScanDraw(other){
+  const card = $('sortScanCard'), acts = $('sortScanActs');
+  card.innerHTML = ''; acts.innerHTML = '';
+  const sp = sortScanSp; if(!sp) return;
+  const tg = sortScanTarget;
+  card.appendChild(stepCard(sp, sp.id, sp.storage_location || t('guide.none'), tg ? tg.name : '', false,
+                            tg ? tg.why : t('guide.free_none')));
+  if(tg){
+    const put = document.createElement('button'); put.type = 'button'; put.className = 'btn-primary guide-done';
+    put.textContent = t('guide.free_put');
+    put.onclick = () => sortScanPut(tg.name);
+    acts.appendChild(put);
+  }
+  if(other){
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-secondary'; b.style.marginTop = '10px';
+    b.textContent = t('guide.free_put_other', {place: other});
+    b.onclick = () => sortScanPut(other);
+    acts.appendChild(b);
+  }
+}
+async function sortScanOn(w){
+  if(w.spool){
+    let sp = (await inventoryList()).find(s => s.id === w.spool);
+    if(!sp) sp = (await inventoryList(true)).find(s => s.id === w.spool);
+    if(!sp){ sortScanHint(t('spool.not_found', {id: w.spool}), true); return; }
+    sortScanSp = sp; sortScanTarget = null; sortScanHint(''); sortScanDraw();
+    const inPlan = planData && planData.places.flatMap(p => p.spools).find(s => s.id === sp.id);
+    if(inPlan) sortScanTarget = {name: inPlan.to, why: t('guide.free_plan')};
+    else{
+      const d = await locCall('/api/locations/suggest', 'POST', suggestBody(sp));
+      if(sortScanSp !== sp) return;
+      if(d && d.ok && d.suggestion) sortScanTarget = {name: d.suggestion.name, why: t('guide.free_suggest')};
+    }
+    sortScanDraw();
+    if(sortScanTarget && locKey(sp.storage_location) === locKey(sortScanTarget.name))
+      sortScanHint(t('guide.free_already', {id: sp.id, place: sortScanTarget.name}));
+    return;
+  }
+  if(w.place){
+    if(!sortScanSp){ sortScanHint(t('guide.scan_hint'), true); return; }
+    if(sortScanTarget && locKey(w.place) !== locKey(sortScanTarget.name)){
+      sortScanHint(t('guide.wrong_place', {place: w.place, target: sortScanTarget.name}), true);
+      sortScanDraw(w.place);
+      return;
+    }
+    sortScanPut(w.place);
+  }
+}
+async function sortScanPut(place){
+  const sp = sortScanSp; if(!sp) return;
+  if(locKey(sp.storage_location) === locKey(place)){ sortScanHint(t('guide.free_already', {id: sp.id, place})); return; }
+  const {d, r} = await guideWrite({id: sp.id, from: sp.storage_location || '', to: place});
+  if(!(r && r.status === 'moved')){
+    const why = r ? (r.status === 'changed' ? t('guide.free_where', {place: r.now || t('guide.none')}) : r.error || r.status) : planErr(d);
+    sortScanHint(t('guide.failed', {error: why}), true);
+    if(r && r.status === 'changed') invForget();
+    return;
+  }
+  sp.storage_location = place; invForget();
+  if(!sortScanMoved.includes(sp.id)) sortScanMoved.push(sp.id);
+  toast(t('guide.free_done', {id: sp.id, place}) + ' ✓');
+  sortScanHint(t('guide.free_done', {id: sp.id, place}));
+  sortScanSp = null; sortScanTarget = null; sortScanDraw();
+  labelsButton($('sortScanLabels'), sortScanMoved);
+}
+$('sortScanOpen').onclick = async () => {
+  sortScanSp = null; sortScanTarget = null; sortScanDraw(); sortScanHint('');
+  const sheet = $('sortScanSheet');
+  if(sheet.showModal) sheet.showModal(); else sheet.setAttribute('open', '');
+  await inventoryList(true);
+  if(!LOC) locLoad();
+};
+$('sortScanClose').onclick = () => $('sortScanSheet').close();
+$('sortScanSheet').addEventListener('close', () => { sortScanBar.stop(); if(sortScanMoved.length && LOC) locLoad(true); });
+
+// ── A place for the spool on the form ──
+// Where the shelf sort would put it, with room: offered as a chip to take
+// with one tap. Left empty, the spool waits under "No location" until the
+// shelf is sorted; nothing asks for one.
+let suggestTimer = null, suggestSeq = 0;
+function suggestSoon(){ clearTimeout(suggestTimer); suggestTimer = setTimeout(suggestPlace, 400); }
+async function suggestPlace(){
+  const box = $('locSuggest'), material = $('material').value.trim();
+  const my = ++suggestSeq;
+  if(!material || $('storage_location').value.trim() || $('form').classList.contains('hidden')){ box.classList.add('hidden'); return; }
+  const body = suggestBody({material, subtype: $('subtype').value.trim(), brand: $('brand').value.trim(),
+                            color_name: $('color_name').value.trim(), rgba: colorInputToRgba($('color_picker').value)});
+  const d = await locCall('/api/locations/suggest', 'POST', body);
+  if(my !== suggestSeq) return;
+  const s = d && d.ok && d.suggestion;
+  box.innerHTML = '';
+  box.classList.toggle('hidden', !s);
+  if(!s) return;
+  const chip = document.createElement('button'); chip.type = 'button'; chip.className = 'chip';
+  chip.textContent = t('plan.suggest', {name: s.name});
+  chip.onclick = () => { setSelect('storage_location', s.name); box.classList.add('hidden'); };
+  const what = [material, s.family ? t('sort.fam_' + s.family) : ''].filter(Boolean).join(' ');
+  const parts = [s.same ? t('plan.suggest_same', {n: s.same, what}) : t('plan.suggest_near', {what: spoolTitle(s.neighbor)})];
+  if(s.free != null) parts.push(tn('plan.suggest_free', s.free));
+  const txt = document.createElement('span'); txt.textContent = parts.join(', ');
+  box.append(chip, txt);
+}
+['material', 'subtype', 'brand', 'color_name', 'storage_location'].forEach(id => $(id).addEventListener('change', suggestSoon));
+$('color_picker').addEventListener('change', suggestSoon);
+
 // ── Spool label ──
 // Bambuddy draws the label (its templates, at the printer's 203 dpi); here
 // it is placed on the loaded roll, turned into the dots the head prints and
@@ -2986,6 +4050,27 @@ for(const it of LABEL_LAYOUT_DEFAULT) if(!labelCfg.layout.some(x => x.f === it.f
 labelCfg.layout = labelCfg.layout.filter(x => LABEL_SIZE_DOTS[x.size] && LABEL_LAYOUT_DEFAULT.some(d => d.f === x.f));
 labelCfg.qr = Object.assign({pos: 'right', size: 'm'}, labelCfg.qr || {});
 if(!['top', 'spread', 'last_bottom'].includes(labelCfg.flow)) labelCfg.flow = 'last_bottom';
+// Two on one ("2 auf 1"), for spool and for location labels, as label_render.py
+// keeps it: stacked or side by side, the cut line, an odd last one twice or
+// with its half empty. Missing (set up before) is off.
+const LABEL_TWOUP_DEFAULT = {spool: {on: false, dir: 'side', cut: true, odd: 'twice'},
+                             loc: {on: false, dir: 'stack', cut: true, odd: 'twice'}};
+function labelTwoupClean(v){
+  const out = {};
+  for(const k of ['spool', 'loc']){
+    const d = LABEL_TWOUP_DEFAULT[k], it = v && typeof v === 'object' && v[k] && typeof v[k] === 'object' ? v[k] : {};
+    out[k] = {on: 'on' in it ? !!it.on : d.on, dir: ['stack', 'side'].includes(it.dir) ? it.dir : d.dir,
+              cut: 'cut' in it ? !!it.cut : d.cut, odd: ['twice', 'empty'].includes(it.odd) ? it.odd : d.odd};
+  }
+  return out;
+}
+labelCfg.twoup = labelTwoupClean(labelCfg.twoup);
+// A QR module at least 3 dots (0.375 mm): thinner ones smear on the head and
+// a phone no longer reads them. Each half keeps 4 dots more by the cut.
+const LABEL_MIN_QR_DOTS = 3, LABEL_CUT_PAD = 4;
+// The lines a half keeps when not all fit, the first ones longest.
+const LABEL_KEEP = ['material', 'brand', 'name', 'location', 'spool_id', 'hex', 'temps', 'weight', 'profile',
+                    'material_number', 'added', 'note'];
 let labelLast = null, labelDemoSeq = 0;   // the spool previewed last, for the layout editor
 let labelJob = null;      // the previewed label as the printer takes it
 let labelPng = null;      // Bambuddy's image, for sharing
@@ -2998,7 +4083,8 @@ function labelHint(msg, err){ $('labelHint').textContent = msg||''; $('labelHint
 let labelSyncTimer = null;
 function labelSyncUp(){
   fetch('/api/label-layout', {method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({layout: labelCfg.layout, qr: labelCfg.qr, flow: labelCfg.flow, w: labelCfg.w, l: labelCfg.l})})
+    body: JSON.stringify({layout: labelCfg.layout, qr: labelCfg.qr, flow: labelCfg.flow, w: labelCfg.w, l: labelCfg.l,
+                          twoup: labelCfg.twoup})})
     .catch(() => {});
 }
 function labelSave(){
@@ -3035,7 +4121,9 @@ function labelSave(){
   fetch('/api/label-layout').then(r => r.json()).then(d => {
     if(!d || !d.ok) return;
     if(d.saved && !hadOwn){
-      Object.assign(labelCfg, {layout: d.layout.layout, qr: d.layout.qr, flow: d.layout.flow, w: d.layout.w, l: d.layout.l});
+      Object.assign(labelCfg, {layout: d.layout.layout, qr: d.layout.qr, flow: d.layout.flow, w: d.layout.w, l: d.layout.l,
+                               twoup: labelTwoupClean(d.layout.twoup)});
+      labelTwoUpSync();
       lsSet('f2b.label', labelCfg);
       $('labelW').value = labelCfg.w; $('labelL').value = labelCfg.l;
       $('labelQrPos').value = labelCfg.qr.pos; $('labelQrSize').value = labelCfg.qr.size; $('labelFlow').value = labelCfg.flow;
@@ -3049,7 +4137,7 @@ function labelSave(){
     $('labelW').value = labelCfg.w; $('labelL').value = labelCfg.l;
     labelSave(); labelDemoDraw(); labelRefresh();
   };
-  $('labelSpool').oninput = () => { labelLocs = null; labelJob = null; $('labelBox').classList.add('hidden'); labelHint(''); };
+  $('labelSpool').oninput = () => { labelLocs = null; labelJob = null; $('labelBox').classList.add('hidden'); labelHint(''); labelTwoUpSync(); };
   $('labelSpool').onkeydown = (e) => { if(e.key === 'Enter'){ e.preventDefault(); labelPreview(); } };
   $('labelPreviewBtn').onclick = () => labelPreview();
   $('labelPrintBtn').onclick = () => labelPrint();
@@ -3059,6 +4147,40 @@ function labelSave(){
 
 // A shown preview follows the settings; nothing is fetched before one is asked for.
 function labelRefresh(){ if(!$('labelBox').classList.contains('hidden')) labelPreview(); }
+
+// Two on one: the switch shows the setting of what is being labelled,
+// locations or spools (spools only in the own layout: BamBuddy's templates
+// come as images of their own size).
+function labelTwoUpKind(){ return labelLocs ? 'loc' : 'spool'; }
+function labelTwoUpUsable(kind){ return kind === 'loc' || labelCfg.template === LABEL_OWN; }
+function labelTwoUpSync(){
+  const kind = labelTwoUpKind(), tu = labelCfg.twoup[kind], usable = labelTwoUpUsable(kind);
+  $('labelTwoUpBox').classList.toggle('hidden', !usable);
+  $('labelTwoUp').checked = tu.on; $('labelTwoUpDir').value = tu.dir; $('labelTwoUpDir').disabled = !tu.on;
+  $('labelTwoUpCut').checked = tu.cut; $('labelTwoUpOdd').value = tu.odd;
+  $('labelTwoUpMore').classList.toggle('hidden', !usable || !tu.on);
+  $('labelTwoUpFor').textContent = t(kind === 'loc' ? 'label.twoup_for_loc' : 'label.twoup_for_spool');
+}
+function labelTwoUpSet(key, value){
+  labelCfg.twoup[labelTwoUpKind()][key] = value;
+  labelSave(); labelTwoUpSync(); labelRefresh();
+}
+$('labelTwoUp').onchange = () => labelTwoUpSet('on', $('labelTwoUp').checked);
+$('labelTwoUpDir').onchange = () => labelTwoUpSet('dir', $('labelTwoUpDir').value);
+$('labelTwoUpCut').onchange = () => labelTwoUpSet('cut', $('labelTwoUpCut').checked);
+$('labelTwoUpOdd').onchange = () => labelTwoUpSet('odd', $('labelTwoUpOdd').value);
+labelTwoUpSync();
+// Labels two to a roll label, in order; an odd last one twice or beside an empty half.
+function labelPairs(items, odd){
+  const out = [];
+  for(let i = 0; i + 1 < items.length; i += 2) out.push([items[i], items[i + 1]]);
+  if(items.length % 2) out.push([items[items.length - 1], odd === 'twice' ? items[items.length - 1] : null]);
+  return out;
+}
+function labelItemName(it){
+  if(it && it.pair) return it.pair.filter(x => x != null).map(x => x.loc || '#' + x).join(' + ');
+  return it && it.loc ? it.loc : '#' + it;
+}
 
 // After spools were added: their ids, one tap from a preview. Never printed by itself.
 function labelOffer(ids){
@@ -3077,6 +4199,7 @@ function labelOffer(ids){
   // All of them at once: the preview shows the first, Print prints each.
   labelLocs = null;
   $('labelSpool').value = ids.join(', ');
+  labelTwoUpSync();
   labelPreview();
 }
 
@@ -3093,12 +4216,28 @@ function labelIds(){
   return out;
 }
 // One spool's label, drawn and turned into the printer's dots: {raster, png}
-// or {error}. The canvas shows it as it is built.
-async function labelBuild(id){
+// or {error}. The canvas shows it as it is built (or `out`, a canvas of its own).
+async function labelBuild(id, out){
+  if(id && id.pair){
+    const parts = [];
+    for(const x of id.pair){
+      if(x == null || id.kind === 'loc'){ parts.push(x); continue; }
+      const d = await (await fetch('/api/spool/' + x)).json().catch(() => ({}));
+      if(!d.ok){
+        let msg = t('label.err_' + (d.error || 'failed'), {id: x});
+        if(msg.startsWith('label.')) msg = t('label.err_failed');
+        return {error: msg};
+      }
+      parts.push({sp: d.spool, qr: d.qr});
+    }
+    const {cv, noQr} = await labelTwoUpDraw(id.kind, parts);
+    const png = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+    return {raster: labelRaster(cv, labelItemName(id), out), png, noQr};
+  }
   if(id && id.loc){
     const cv = await locLabelDraw(id.loc);
     const png = await new Promise(ok => cv.toBlob(ok, 'image/png'));
-    return {raster: labelRaster(cv, id.loc), png};
+    return {raster: labelRaster(cv, id.loc, out), png};
   }
   if(labelCfg.template === LABEL_OWN){
     const d = await (await fetch('/api/spool/' + id)).json().catch(() => ({}));
@@ -3111,7 +4250,7 @@ async function labelBuild(id){
     labelDemoDraw();
     const cv = await labelDrawOwn(d.spool, d.qr);
     const png = await new Promise(ok => cv.toBlob(ok, 'image/png'));
-    return {raster: labelRaster(cv, id), png};
+    return {raster: labelRaster(cv, id, out), png};
   }
   const r = await fetch('/api/label', {method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({spool_id: id, template: labelCfg.template, fields: labelCfg.fields})});
@@ -3123,24 +4262,37 @@ async function labelBuild(id){
     return {error: msg};
   }
   const blob = await r.blob();
-  return {raster: labelRaster(await labelImage(blob), id), png: blob};
+  return {raster: labelRaster(await labelImage(blob), id, out), png: blob};
 }
 async function labelPreview(){
   const ids = labelLocs || labelIds();
   if(!ids.length){ labelHint(t('label.need_id'), true); $('labelSpool').focus(); return; }
+  // Two on one: the labels in pairs, each pair one roll label.
+  const kind = labelTwoUpKind(), tu = labelCfg.twoup[kind], two = tu.on && labelTwoUpUsable(kind);
+  const items = two ? labelPairs(ids, tu.odd).map(pair => ({pair, kind})) : ids;
   const seq = ++labelSeq;
   labelHint(t('label.loading'));
   $('labelPreviewBtn').disabled = true;
   try{
-    const b = await labelBuild(ids[0]);
+    // Built aside and shown only while it is still the one asked for: a
+    // slower earlier preview must not paint over a newer one.
+    const off = document.createElement('canvas');
+    const b = await labelBuild(items[0], off);
     if(seq !== labelSeq) return;
+    if(!b.error){
+      const cv = $('labelCanvas'); cv.width = off.width; cv.height = off.height;
+      cv.getContext('2d').drawImage(off, 0, 0);
+    }
     if(b.error){ labelJob = null; labelBatch = []; $('labelBox').classList.add('hidden'); labelHint(b.error, true); return; }
-    labelPng = b.png; labelJob = b.raster; labelBatch = ids;
+    labelPng = b.png; labelJob = b.raster; labelBatch = items;
     $('labelBox').classList.remove('hidden');
     $('labelPrintBtn').disabled = !labelJob.fits;
     if(!labelJob.fits){
       const [w, h] = LABEL_SIZES[labelCfg.template];
       labelHint(t('label.too_big', {tpl: w + ' × ' + h, w: labelCfg.w, l: labelCfg.l}), true);
+    }else if(two){
+      labelHint((ids.length === 1 && tu.odd === 'twice' ? t('label.twoup_single') : t('label.twoup_batch', {n: ids.length, k: items.length}))
+                + (b.noQr ? ' ' + t('label.twoup_noqr') : ''));
     }else if(labelLocs && ids.length > 1) labelHint(t('loc.label_batch', {n: ids.length, name: ids[0].loc}));
     else if(ids.length > 1) labelHint(t('label.batch_ready', {n: ids.length, id: ids[0]}));
     else if(!navigator.bluetooth) labelHint(t('label.no_bt'));
@@ -3210,59 +4362,125 @@ function labelText(sp, f){
   }
   return '';
 }
+// The margins a label keeps: wider at the sides where the roll is wider
+// than the head, which loses its edges.
+function labelMargins(cfg){
+  const W = cfg.w * DOTS_PER_MM, M = 8;
+  return {M, MX: M + Math.max(0, Math.ceil((W - TSPL_HEAD_DOTS) / 2))};
+}
 async function labelDrawOwn(sp, qrUrl, cfg = labelCfg){
   await labelFonts();
-  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM, M = 8, GAP = 6;
-  // A roll wider than the head loses its edges: the sides keep their margin
-  // inside what is printed.
-  const MX = M + Math.max(0, Math.ceil((W - TSPL_HEAD_DOTS) / 2));
+  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM, {M, MX} = labelMargins(cfg);
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
   g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = '#000'; g.textBaseline = 'top';
+  await labelDrawOwnInto(g, sp, qrUrl, cfg, {x: 0, y: 0, w: W, h: H, ml: MX, mt: M, mr: MX, mb: M}, false);
+  return cv;
+}
+// One spool's label into the region b ({x, y, w, h} and the margins ml, mt,
+// mr, mb it keeps): {qr: drawn, lines: kept}. A half lets the QR code take
+// more of the width (error correction L, a version smaller), leaves it out
+// rather than print it finer than LABEL_MIN_QR_DOTS, and drops the lines
+// least needed when even the smallest size does not fit.
+async function labelDrawOwnInto(g, sp, qrUrl, cfg, b, half){
+  const GAP = 6, W = b.w, H = b.h, iw = W - b.ml - b.mr, ih = H - b.mt - b.mb;
   // The QR code: whole dots per module, 3 at least, a 2 module quiet zone.
   let qrW = 0;
   const qrLeft = cfg.qr.pos === 'left';
   if(cfg.qr.pos !== 'off' && qrUrl){
     try{
       if(!window.qrcode) await loadScript(QR_LIB);
-      const q = qrcode(0, 'M'); q.addData(qrUrl); q.make();
-      const share = {s: 0.3, m: 0.42, l: 0.55}[cfg.qr.size] || 0.42;
-      const n = q.getModuleCount(), box = Math.min(H - 2*M, Math.floor((W - 2*MX) * share));
-      const px = Math.max(3, Math.floor(box / (n + 4)));
-      qrW = (n + 4) * px;
-      const x0 = qrLeft ? MX : W - MX - qrW, y0 = Math.floor((H - qrW) / 2);
-      g.fillStyle = '#fff'; g.fillRect(x0, y0, qrW, qrW); g.fillStyle = '#000';
-      for(let r = 0; r < n; r++) for(let c = 0; c < n; c++)
-        if(q.isDark(r, c)) g.fillRect(x0 + (c + 2)*px, y0 + (r + 2)*px, px, px);
+      const q = qrcode(0, half ? 'L' : 'M'); q.addData(qrUrl); q.make();
+      const share = {s: 0.3, m: 0.42, l: 0.55}[cfg.qr.size] || 0.42, n = q.getModuleCount();
+      const px = half ? labelQrModule(n, Math.min(ih, Math.floor(iw * Math.max(share, 0.6))))
+                      : Math.max(LABEL_MIN_QR_DOTS, Math.floor(Math.min(ih, Math.floor(iw * share)) / (n + 4)));
+      if(px){
+        qrW = (n + 4) * px;
+        const x0 = b.x + (qrLeft ? b.ml : W - b.mr - qrW), y0 = b.y + b.mt + Math.floor((ih - qrW) / 2);
+        g.fillStyle = '#fff'; g.fillRect(x0, y0, qrW, qrW); g.fillStyle = '#000';
+        for(let r = 0; r < n; r++) for(let c = 0; c < n; c++)
+          if(q.isDark(r, c)) g.fillRect(x0 + (c + 2)*px, y0 + (r + 2)*px, px, px);
+      }
     }catch(e){ qrW = 0; }
   }
-  const TX = qrLeft && qrW ? MX + qrW + GAP : MX;
-  const TW = W - 2*MX - (qrW ? qrW + GAP : 0);
-  const rows = cfg.layout.filter(it => it.on).map(it => Object.assign({text: labelText(sp, it.f)}, it)).filter(r => r.text);
+  const TX = b.x + b.ml + (qrLeft && qrW ? qrW + GAP : 0);
+  const TW = iw - (qrW ? qrW + GAP : 0);
+  let rows = cfg.layout.filter(it => it.on).map(it => Object.assign({text: labelText(sp, it.f)}, it)).filter(r => r.text);
   // Each line in its size; when they do not fit the height, all smaller
-  // alike, down to 12 dots.
-  const pad = r => r.inv ? 8 : 3;
-  let sizes = rows.map(r => LABEL_SIZE_DOTS[r.size]);
-  const room = H - 2*M, need = () => sizes.reduce((a, z, i) => a + z + pad(rows[i]), 0);
-  if(need() > room){
-    const k = room / need();
-    sizes = sizes.map(z => Math.max(12, Math.floor(z * k)));
+  // alike, down to 12 dots; in a half then the least needed lines go.
+  const pad = r => r.inv ? 8 : 3, room = ih;
+  const rank = r => { const i = LABEL_KEEP.indexOf(r.f); return i < 0 ? LABEL_KEEP.length : i; };
+  let sizes;
+  for(;;){
+    sizes = rows.map(r => LABEL_SIZE_DOTS[r.size]);
+    const need = sizes.reduce((a, z, i) => a + z + pad(rows[i]), 0);
+    if(need > room) sizes = sizes.map(z => Math.max(12, Math.floor(z * room / need)));
+    if(!half || rows.length <= 1 || sizes.reduce((a, z, i) => a + z + pad(rows[i]), 0) <= room) break;
+    const worst = rows.reduce((w, r) => rank(r) > rank(w) ? r : w);
+    rows = rows.filter(r => r !== worst);
   }
   const heights = sizes.map((z, i) => z + pad(rows[i]));
   const total = heights.reduce((a, h) => a + h, 0), spare = Math.max(0, room - total);
-  let y = M;
+  const bottom = b.y + H - b.mb, kept = [];
+  let y = b.y + b.mt;
   rows.forEach((r, i) => {
-    if(cfg.flow === 'last_bottom' && i === rows.length - 1 && rows.length > 1) y = Math.max(y, H - M - heights[i]);
-    if(y + sizes[i] > H - M + 1) return;
+    if(cfg.flow === 'last_bottom' && i === rows.length - 1 && rows.length > 1) y = Math.max(y, bottom - heights[i]);
+    if(y + sizes[i] > bottom + 1) return;
     g.font = (r.bold ? '700 ' : '600 ') + sizes[i] + 'px ' + LABEL_FONT;
     if(r.inv){
       g.fillRect(TX, y, TW, heights[i] - 2); g.fillStyle = '#fff';
       g.fillText(labelFit(g, r.text, TW - 12), TX + 6, y + 3);
       g.fillStyle = '#000';
     }else g.fillText(labelFit(g, r.text, TW), TX, y + 1);
+    kept.push(r.f);
     y += heights[i] + (cfg.flow === 'spread' && rows.length > 1 ? spare / (rows.length - 1) : 0);
   });
-  return cv;
+  return {qr: !!qrW, lines: kept};
+}
+
+// ── Two on one ──
+// The roll's label split in the middle: stacked (cut across) or side by
+// side (cut down), each half a whole small label with its margin, and more
+// of it by the cut; a dashed line two dots thick marks the cut.
+function labelHalves(cfg, dir){
+  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM, {M, MX} = labelMargins(cfg), C = M + LABEL_CUT_PAD;
+  if(dir === 'stack'){
+    const top = Math.floor(H / 2);
+    return [{x: 0, y: 0, w: W, h: top, ml: MX, mt: M, mr: MX, mb: C},
+            {x: 0, y: top, w: W, h: H - top, ml: MX, mt: C, mr: MX, mb: M}];
+  }
+  const left = Math.floor(W / 2);
+  return [{x: 0, y: 0, w: left, h: H, ml: MX, mt: M, mr: C, mb: M},
+          {x: left, y: 0, w: W - left, h: H, ml: C, mt: M, mr: MX, mb: M}];
+}
+function labelCut(g, cfg, dir){
+  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM;
+  g.fillStyle = '#000';
+  if(dir === 'stack'){ const y = Math.floor(H / 2) - 1; for(let x = 0; x < W; x += 14) g.fillRect(x, y, Math.min(8, W - x), 2); }
+  else{ const x = Math.floor(W / 2) - 1; for(let y = 0; y < H; y += 14) g.fillRect(x, y, 2, Math.min(8, H - y)); }
+}
+// Dots per QR module in a square of `box` dots: 0 when finer than the head prints readably.
+function labelQrModule(n, box){ const px = n > 0 ? Math.floor(box / (n + 4)) : 0; return px >= LABEL_MIN_QR_DOTS ? px : 0; }
+// A pair on one roll label: [{sp, qr}] for spools or [{loc}] for places,
+// null for an empty half. {cv, noQr}: noQr when a half lost its QR code.
+async function labelTwoUpDraw(kind, pair, cfg = labelCfg){
+  await labelFonts();
+  const tu = cfg.twoup[kind], W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = '#000'; g.textBaseline = 'top';
+  const halves = labelHalves(cfg, tu.dir);
+  let noQr = false;
+  for(let i = 0; i < 2; i++){
+    const it = pair[i];
+    if(!it) continue;
+    const info = kind === 'loc' ? await locLabelDrawInto(g, it.loc, cfg, halves[i], true)
+                                : await labelDrawOwnInto(g, it.sp, it.qr, cfg, halves[i], true);
+    if(!info.qr && (kind === 'loc' || (cfg.qr.pos !== 'off' && it.qr))) noQr = true;
+    g.fillStyle = '#000';
+  }
+  if(tu.cut) labelCut(g, cfg, tu.dir);
+  return {cv, noQr};
 }
 
 // A storage location's label: the name as large as it fits (in two lines
@@ -3274,50 +4492,63 @@ function labelForLocations(names){
   $('labelSpool').value = '';
   $('labelChips').innerHTML = '';
   labelJob = null;
+  labelTwoUpSync();
   $('labelCard').scrollIntoView({behavior: 'smooth', block: 'start'});
   labelPreview();
 }
 async function locLabelDraw(name, cfg = labelCfg){
   await labelFonts();
-  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM, M = 8, GAP = 10;
-  const MX = M + Math.max(0, Math.ceil((W - TSPL_HEAD_DOTS) / 2));
+  const W = cfg.w * DOTS_PER_MM, H = cfg.l * DOTS_PER_MM, {M, MX} = labelMargins(cfg);
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
   g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = '#000'; g.textBaseline = 'top';
+  await locLabelDrawInto(g, name, cfg, {x: 0, y: 0, w: W, h: H, ml: MX, mt: M, mr: MX, mb: M}, false);
+  return cv;
+}
+// A place's label into the region b: {qr: drawn}. A half has no room for
+// the "Storage location" heading, only the name, and a QR code no finer
+// than the head prints readably.
+async function locLabelDrawInto(g, name, cfg, b, half){
+  const GAP = 10, W = b.w, H = b.h, iw = W - b.ml - b.mr, ih = H - b.mt - b.mb;
   let qrW = 0;
   const qrLeft = cfg.qr.pos === 'left';
   try{
     if(!window.qrcode) await loadScript(QR_LIB);
-    const q = qrcode(0, 'M');
+    const q = qrcode(0, half ? 'L' : 'M');
     // As UTF-8 bytes: "Küche" scans as "Küche".
     q.addData(String.fromCharCode(...new TextEncoder().encode(name)), 'Byte'); q.make();
-    const n = q.getModuleCount(), box = Math.min(H - 2*M, Math.floor((W - 2*MX) * 0.45));
-    const px = Math.max(3, Math.floor(box / (n + 4)));
-    qrW = (n + 4) * px;
-    const x0 = qrLeft ? MX : W - MX - qrW, y0 = Math.floor((H - qrW) / 2);
-    for(let r = 0; r < n; r++) for(let c = 0; c < n; c++)
-      if(q.isDark(r, c)) g.fillRect(x0 + (c + 2)*px, y0 + (r + 2)*px, px, px);
+    const n = q.getModuleCount(), box = Math.min(ih, Math.floor(iw * (half ? 0.6 : 0.45)));
+    const px = half ? labelQrModule(n, box) : Math.max(LABEL_MIN_QR_DOTS, Math.floor(box / (n + 4)));
+    if(px){
+      qrW = (n + 4) * px;
+      const x0 = b.x + (qrLeft ? b.ml : W - b.mr - qrW), y0 = b.y + b.mt + Math.floor((ih - qrW) / 2);
+      for(let r = 0; r < n; r++) for(let c = 0; c < n; c++)
+        if(q.isDark(r, c)) g.fillRect(x0 + (c + 2)*px, y0 + (r + 2)*px, px, px);
+    }
   }catch(e){ qrW = 0; }
-  const TX = qrLeft && qrW ? MX + qrW + GAP : MX, TW = W - 2*MX - (qrW ? qrW + GAP : 0);
-  const cap = Math.max(12, Math.round(H * 0.09));
-  g.font = '600 ' + cap + 'px ' + LABEL_FONT;
-  g.fillText(labelFit(g, t('form.storage_location'), TW), TX, M);
+  const TX = b.x + b.ml + (qrLeft && qrW ? qrW + GAP : 0), TW = iw - (qrW ? qrW + GAP : 0);
+  const cap = half ? 0 : Math.max(12, Math.round(H * 0.09));
+  if(cap){
+    g.font = '600 ' + cap + 'px ' + LABEL_FONT;
+    g.fillText(labelFit(g, t('form.storage_location'), TW), TX, b.y + b.mt);
+  }
   // The largest size the name fits at, on one line or split in two at a space.
-  const room = H - 2*M - cap - 6, words = name.split(/\s+/);
+  const room = ih - (cap ? cap + 6 : 0), words = name.split(/\s+/);
   let best = {size: 0, lines: [name]};
   for(let size = Math.min(room, 120); size >= 14 && !best.size; size -= 2){
     g.font = '700 ' + size + 'px ' + LABEL_FONT;
     if(g.measureText(name).width <= TW){ best = {size, lines: [name]}; break; }
     if(size * 2.1 <= room) for(let i = 1; i < words.length; i++){
-      const a = words.slice(0, i).join(' '), b = words.slice(i).join(' ');
-      if(g.measureText(a).width <= TW && g.measureText(b).width <= TW){ best = {size, lines: [a, b]}; break; }
+      const a = words.slice(0, i).join(' '), c = words.slice(i).join(' ');
+      if(g.measureText(a).width <= TW && g.measureText(c).width <= TW){ best = {size, lines: [a, c]}; break; }
     }
   }
   if(!best.size) best = {size: 14, lines: [name]};
   g.font = '700 ' + best.size + 'px ' + LABEL_FONT;
-  const lh = Math.round(best.size * 1.05), top = M + cap + 6 + Math.max(0, Math.floor((room - lh * best.lines.length) / 2));
+  const lh = Math.round(best.size * 1.05);
+  const top = b.y + b.mt + (cap ? cap + 6 : 0) + Math.max(0, Math.floor((room - lh * best.lines.length) / 2));
   best.lines.forEach((line, i) => g.fillText(labelFit(g, line, TW), TX, top + i * lh));
-  return cv;
+  return {qr: !!qrW};
 }
 
 // ── The layout editor ──
@@ -3340,6 +4571,7 @@ async function labelDemoDraw(){
 }
 function labelTplShow(){
   const own = labelCfg.template === LABEL_OWN;
+  labelTwoUpSync();
   $('labelOwnBox').classList.toggle('hidden', !own);
   $('labelFieldsBox').classList.toggle('hidden', own);
   // After the page's script has run: the label's fonts and QR are set up by then.
@@ -3415,9 +4647,9 @@ function labelImage(blob){
 // The label in the middle of the roll, in black and white dots, drawn into
 // the preview; and the rows the head prints, a 0 bit for a black dot as
 // TSPL's BITMAP wants them.
-function labelRaster(img, id){
+function labelRaster(img, id, out){
   const W = labelCfg.w * DOTS_PER_MM, H = labelCfg.l * DOTS_PER_MM;
-  const cv = $('labelCanvas'); cv.width = W; cv.height = H;
+  const cv = out || $('labelCanvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d', {willReadFrequently:true});
   g.imageSmoothingEnabled = false;
   g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
@@ -3469,7 +4701,7 @@ async function labelPrint(){
       if(i > 0){
         labelHint(t('label.preparing', {i: i + 1, n: ids.length}));
         const b = await labelBuild(ids[i]);
-        if(b.error || !b.raster.fits){ skipped.push(ids[i].loc || '#' + ids[i]); continue; }
+        if(b.error || !b.raster.fits){ skipped.push(labelItemName(ids[i])); continue; }
         r = b.raster;
       }
       const job = r.job;
