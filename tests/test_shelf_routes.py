@@ -99,20 +99,30 @@ class TestPlanRoute:
         with patch("requests.get", side_effect=_get()):
             d = client.post("/api/locations/plan", json={"places": ["regal a-10", "Regal A-2", "Regal A-1", "Nowhere"],
                                                          "capacity": 2, "sort": "material,color"}).get_json()
-        assert d["ok"] and d["capacity"] == 2 and d["spools"] == 4
+        # The spool without a location (5) is placed too.
+        assert d["ok"] and d["capacity"] == 2 and d["spools"] == 5
         assert [(p["name"], p["id"], [s["id"] for s in p["spools"]]) for p in d["places"]] == \
-            [("Regal A-1", 11, [4, 2]), ("Regal A-2", 12, [3, 1]), ("Regal A-10", 13, [])]
-        assert {m["id"] for m in d["moves"]} == {1, 2, 3}
+            [("Regal A-1", 11, [4]), ("Regal A-2", 12, [2, 3]), ("Regal A-10", 13, [5, 1])]
+        assert {m["id"]: (m["from"], m["to"]) for m in d["moves"]} == \
+            {3: ("Regal A-10", "Regal A-2"), 5: ("", "Regal A-10"), 1: ("Regal A-1", "Regal A-10")}
         assert d["order"] == [["material", False], ["color", False]]
+        # The steps, each with room where it puts a spool.
+        assert [(st["n"], st["id"], st["from"], st["to"]) for st in d["steps"]] == \
+            [(1, 1, "Regal A-1", "Regal A-10"), (2, 3, "Regal A-10", "Regal A-2"), (3, 5, "", "Regal A-10")]
+        assert d["steps"][2]["from_kind"] == "none" and d["steps"][2]["spool"]["material"] == "PLA"
 
-    def test_default_order_capacity_and_unassigned(self, client):
+    def test_default_order_capacity_and_options(self, client):
         with patch("requests.get", side_effect=_get()):
-            d = client.post("/api/locations/plan", json={"places": ["Regal A-1", "Regal A-2"],
-                                                         "include_unassigned": True}).get_json()
+            d = client.post("/api/locations/plan", json={"places": ["Regal A-1", "Regal A-2"]}).get_json()
+            alone = client.post("/api/locations/plan", json={"places": ["Regal A-1", "Regal A-2"],
+                                                             "include_unassigned": False}).get_json()
+            wide = client.post("/api/locations/plan", json={"places": ["Regal A-1", "Regal A-2"], "capacity": 3,
+                                                            "include_elsewhere": True, "prefer": [3, "x"]}).get_json()
         # Four spools (one without a place), two places: two to a place.
         assert d["capacity"] == 2 and d["order"] == [["material", False], ["color", False]]
         assert [[s["id"] for s in p["spools"]] for p in d["places"]] == [[4, 2], [5, 1]]
-        assert {m["id"]: m["from"] for m in d["moves"]} == {2: "Regal A-2", 5: "", 1: "Regal A-1"}
+        assert alone["spools"] == 3
+        assert wide["spools"] == 5 and {s["id"] for p in wide["places"] for s in p["spools"]} == {1, 2, 3, 4, 5}
 
     def test_bad_requests(self, client):
         with patch("requests.get", side_effect=_get()):
@@ -151,6 +161,18 @@ class TestApplyRoute:
         assert p.call_args_list[0].kwargs["json"] == {"storage_location": "Regal A-1"}
         assert p.call_args.kwargs["headers"]["X-API-Key"] == "key"
 
+    def test_one_step_at_a_time_and_onto_the_table(self, client):
+        with patch("requests.get", side_effect=_get()), patch("requests.patch", return_value=_resp(200)) as p:
+            d = client.post("/api/locations/apply", json={"moves": [{"id": 4, "from": "Regal A-1", "to": ""}]})
+        assert d.get_json()["results"] == [{"id": 4, "status": "moved", "to": ""}]
+        assert p.call_args.kwargs["json"] == {"storage_location": ""}
+
+    def test_a_step_done_twice_changes_nothing(self, client):
+        with patch("requests.get", side_effect=_get()), patch("requests.patch") as p:
+            d = client.post("/api/locations/apply", json={"moves": [{"id": 2, "from": "Regal A-1", "to": "Regal A-2"}]})
+        assert d.get_json()["results"] == [{"id": 2, "status": "moved", "to": "Regal A-2"}]
+        p.assert_not_called()
+
     def test_spoolman_spools_moved_in_spoolman(self, client):
         app_module.save_settings({"inventory_mode": "spoolman"})
         with patch("requests.get", side_effect=_get(spools_path="/api/v1/spoolman/inventory/spools")), \
@@ -159,7 +181,7 @@ class TestApplyRoute:
         assert d["moved"] == 1 and p.call_args.args[0] == "http://bb/api/v1/spoolman/inventory/spools/2"
 
     def test_changed_meanwhile_gone_and_failed(self, client):
-        moves = [{"id": 2, "from": "Regal A-1", "to": "Regal A-2"}, {"id": 99, "from": "", "to": "A"},
+        moves = [{"id": 2, "from": "Regal A-1", "to": "Regal A-10"}, {"id": 99, "from": "", "to": "A"},
                  {"id": 3, "from": "regal a-10", "to": "Regal A-2"}]
         with patch("requests.get", side_effect=_get()), \
                 patch("requests.patch", return_value=_resp(500, {"detail": "boom"})) as p:
@@ -186,8 +208,59 @@ class TestApplyRoute:
         with patch("requests.patch") as p:
             assert client.post("/api/locations/apply", json={"moves": []}).status_code == 400
             assert client.post("/api/locations/apply", json={"moves": [{"id": "x", "to": "A"}]}).status_code == 400
-            assert client.post("/api/locations/apply", json={"moves": [{"id": 1, "to": " "}]}).status_code == 400
+            assert client.post("/api/locations/apply", json={"moves": [{"id": 0, "to": "A"}]}).status_code == 400
+            assert client.post("/api/locations/apply", json={"moves": [{"id": 1, "to": "x" * 256}]}).status_code == 400
             assert client.post("/api/locations/apply", json={"moves": [{"id": True, "to": "A"}]}).status_code == 400
             r = client.post("/api/locations/apply", json={"moves": [{"id": 1, "to": "A"}] * 501})
             assert r.status_code == 400 and r.get_json()["error"] == "too_many"
         p.assert_not_called()
+
+
+class TestIntakeWithoutPlace:
+    """A new spool comes in without a compartment: it gets one when the shelf
+    is sorted, so the barcode's memory does not hand out the last one's."""
+
+    def test_location_not_remembered_for_the_barcode(self, client, monkeypatch, tmp_path):
+        monkeypatch.setattr(app_module, "CACHE_FILE", tmp_path / "cache.json")
+        with patch("requests.get", return_value=_resp(200, {"spoolman_enabled": False})), \
+                patch("requests.post", return_value=_resp(201, {"id": 8})) as post, \
+                patch.object(app_module, "_external_all_codes", return_value=None):
+            client.post("/api/spool", json={"barcode": "4006381333931", "quantity": 1,
+                                            "fields": {"material": "PLA", "brand": "Sunlu",
+                                                       "storage_location": "Regal A-03"}})
+        # Given on purpose, this spool gets it; the next one with the code does not.
+        assert post.call_args.kwargs["json"]["storage_location"] == "Regal A-03"
+        remembered = app_module.load_cache()["4006381333931"]
+        assert remembered["brand"] == "Sunlu" and "storage_location" not in remembered
+
+    def test_old_memory_with_a_location_left_out(self, client, monkeypatch, tmp_path):
+        monkeypatch.setattr(app_module, "CACHE_FILE", tmp_path / "cache.json")
+        app_module.save_cache({"4006381333931": {"material": "PLA", "brand": "Sunlu", "storage_location": "Regal A-03"}})
+        with patch("requests.get", return_value=_resp(404)):
+            d = client.get("/api/lookup?barcode=4006381333931").get_json()
+        assert d["source"] == "cache" and d["fields"]["brand"] == "Sunlu"
+        assert "storage_location" not in d["fields"]
+
+
+class TestSuggestRoute:
+    def test_suggestion_with_room(self, client):
+        spool = {"material": "PLA", "rgba": "0000EEFF"}
+        with patch("requests.get", side_effect=_get()):
+            roomy = client.post("/api/locations/suggest", json={"spool": spool, "default_cap": 3}).get_json()
+            tight = client.post("/api/locations/suggest", json={"spool": spool, "caps": {"Regal A": 2}}).get_json()
+        # Next to the blue PLA in A-1 while it has room ...
+        s = roomy["suggestion"]
+        assert (s["name"], s["same"], s["free"], s["family"], s["neighbor"]["id"]) == ("Regal A-1", 1, 1, "blue", 1)
+        # ... else by the red PLA, the next one in sort order (the shelf's capacity by its group).
+        s = tight["suggestion"]
+        assert (s["name"], s["same"], s["free"], s["neighbor"]["id"]) == ("Regal A-10", 0, 1, 3)
+
+    def test_no_material_no_suggestion(self, client):
+        with patch("requests.get") as g:
+            assert client.post("/api/locations/suggest", json={"spool": {}}).get_json() == {"ok": True, "suggestion": None}
+        g.assert_not_called()
+
+    def test_refused_names_read_status(self, client):
+        with patch("requests.get", return_value=_resp(403)):
+            r = client.post("/api/locations/suggest", json={"spool": {"material": "PLA"}})
+        assert r.status_code == 403 and r.get_json()["permission"] == "read_status"

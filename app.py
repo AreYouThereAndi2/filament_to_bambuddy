@@ -1129,6 +1129,9 @@ def lookup():
         cache_hit = cache.get(barcode)
     if cache_hit is not None:
         log.info("lookup %s: cache hit", barcode)
+        # Entries from before kept the last spool's location: a new spool
+        # comes in without one (it gets its place when the shelf is sorted).
+        cache_hit = {k: v for k, v in cache_hit.items() if k != "storage_location"}
         fields, enriched = _enrich(cache_hit)
         fields, spoolman = _lookup_link(fields, None, code)
         return jsonify(barcode=code, source="cache", fields=fields, title=None, linked_codes=[],
@@ -1579,8 +1582,11 @@ def add_spool():
     # resolves instantly as "remembered" instead of re-querying OFD/SpoolmanDB.
     if created and barcode:
         cache = load_cache()
+        # Not the storage location: that belongs to the one spool, like the
+        # tag. A new spool waits without one until the shelf is sorted.
         remembered = {k: v for k, v in fields.items()
-                      if k in ALLOWED_SPOOL_FIELDS or k in ("diameter_mm", "bed_temp_min", "bed_temp_max")}
+                      if (k in ALLOWED_SPOOL_FIELDS and k != "storage_location")
+                      or k in ("diameter_mm", "bed_temp_min", "bed_temp_max")}
         code, kind = _classify_code(barcode)
         cache[code] = remembered
         try:
@@ -2219,9 +2225,11 @@ MAX_MOVES = 500
 @app.post("/api/locations/plan")
 def locations_plan():
     """{"places": [names], "capacity": 4 (or none), "sort": "material,color",
-    "include_unassigned": false, "break_on_group": false}: the plan, nothing
-    changed. Places BamBuddy does not have are left out; their spelling is
-    BamBuddy's."""
+    "include_elsewhere": false, "break_on_group": false, "prefer": [ids]}:
+    the plan and its steps, nothing changed. Spools without a location are
+    candidates too (new spools wait there for their place) unless
+    "include_unassigned" is false. Places BamBuddy does not have are left
+    out; their spelling is BamBuddy's."""
     import locations
     if not BAMBUDDY_API_KEY:
         return jsonify(ok=False, error="no_key"), 400
@@ -2251,19 +2259,65 @@ def locations_plan():
     if spools is None:
         return jsonify(ok=False, error=stock_error or "failed"), 502
     order = spool_sort.parse_sort(body.get("sort"), default=_PLAN_ORDER)
+    prefer = [i for i in body.get("prefer") or [] if isinstance(i, int) and not isinstance(i, bool)][:MAX_MOVES]
     plan = spool_sort.shelf_plan(spools, [str(loc["name"]).strip() for loc in picked.values()], capacity, order,
-                                 include_unassigned=bool(body.get("include_unassigned")),
-                                 break_on_group=bool(body.get("break_on_group")))
+                                 include_unassigned=body.get("include_unassigned") is not False,
+                                 include_elsewhere=bool(body.get("include_elsewhere")),
+                                 break_on_group=bool(body.get("break_on_group")), prefer=prefer)
     for place in plan["places"]:
         place["id"] = picked[locations.name_key(place["name"])].get("id")
     return jsonify(ok=True, **plan)
 
 
+@app.post("/api/locations/suggest")
+def locations_suggest():
+    """{"spool": {material, subtype, brand, rgba, color_name}, "sort": ...,
+    "caps": {place or group name: spools it takes}, "default_cap": n}: a
+    place the new spool would sort into, with room (see
+    spool_sort.suggest_place), or null. Only a suggestion: a spool may be
+    added without a place."""
+    import locations
+    if not BAMBUDDY_API_KEY:
+        return jsonify(ok=False, error="no_key"), 400
+    body = request.get_json(force=True, silent=True) or {}
+    new = body.get("spool") if isinstance(body.get("spool"), dict) else {}
+    new = {k: new.get(k) for k in ("material", "subtype", "brand", "rgba", "color_name")}
+    if not str(new.get("material") or "").strip():
+        return jsonify(ok=True, suggestion=None)
+    caps = {}
+    for k, v in (body.get("caps") if isinstance(body.get("caps"), dict) else {}).items():
+        try:
+            caps[locations.name_key(k)] = max(1, min(spool_sort.MAX_CAPACITY, int(v)))
+        except (TypeError, ValueError):
+            continue
+    try:
+        default_cap = max(1, min(spool_sort.MAX_CAPACITY, int(body.get("default_cap"))))
+    except (TypeError, ValueError):
+        default_cap = None
+
+    def capacity_of(name):
+        return caps.get(locations.name_key(name)) or caps.get(locations.name_key(locations.group_of(name))) \
+            or default_cap
+    locs, refusal = _locations_read()
+    if refusal:
+        return refusal
+    spools, error, _ = _read_inventory()
+    if spools is None:
+        return jsonify(ok=False, error=error or "failed"), 502
+    order = spool_sort.parse_sort(body.get("sort"), default=_PLAN_ORDER)
+    found = spool_sort.suggest_place(new, spools, [loc["name"] for loc in locs], order, capacity_of)
+    if found:
+        found["family"] = spool_sort.color_family(new.get("rgba"), new.get("color_name"))
+    return jsonify(ok=True, suggestion=found)
+
+
 @app.post("/api/locations/apply")
 def locations_apply():
-    """{"moves": [{"id", "from", "to"}]}, as the plan gave them: each spool's
-    location set to "to". A spool that is no longer at "from" is left as it
-    is ("changed"), one that is gone is "not_found". Stops at a refusal."""
+    """{"moves": [{"id", "from", "to"}]}, as the plan or one of its steps
+    gave them: each spool's location set to "to" ("" takes it off the shelf,
+    onto the table). A spool that is no longer at "from" is left as it is
+    ("changed", with where it is "now"), one that is gone is "not_found".
+    Stops at a refusal."""
     import locations
     if not BAMBUDDY_API_KEY:
         return jsonify(ok=False, error="no_key"), 400
@@ -2280,7 +2334,7 @@ def locations_apply():
         except (TypeError, ValueError):
             spool_id = 0
         to = str(m.get("to") or "").strip() if isinstance(m, dict) else ""
-        if spool_id < 1 or not to or len(to) > 255:
+        if spool_id < 1 or len(to) > 255:
             return jsonify(ok=False, error="moves"), 400
         moves.append((spool_id, str(m.get("from") or "").strip(), to))
     spools, error, _ = _read_inventory(fresh=True)
@@ -2294,9 +2348,12 @@ def locations_apply():
             results.append({"id": spool_id, "status": "not_found"})
             continue
         if locations.name_key(now[spool_id]) != locations.name_key(was):
-            results.append({"id": spool_id, "status": "changed", "now": now[spool_id]})
+            # Already where it should go (a step done twice): nothing to do.
+            status = "moved" if locations.name_key(now[spool_id]) == locations.name_key(to) else "changed"
+            results.append({"id": spool_id, "status": status, "to": to} if status == "moved"
+                           else {"id": spool_id, "status": "changed", "now": now[spool_id]})
             continue
-        r, problem = _bambuddy_send("patch", f"{base}/spools/{spool_id}", {"storage_location": to[:255]})
+        r, problem = _bambuddy_send("patch", f"{base}/spools/{spool_id}", {"storage_location": to})
         if r is None:
             _inventory_forget()
             return jsonify(ok=False, error=problem, results=results), 502
