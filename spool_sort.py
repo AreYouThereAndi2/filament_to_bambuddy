@@ -38,6 +38,8 @@ import unicodedata
 from collections import deque
 from functools import cmp_to_key
 
+from locations import group_of
+
 KEYS = ("material", "color", "brand", "remaining", "location", "id", "added")
 MAX_KEYS = 3
 MAX_CAPACITY = 999
@@ -447,12 +449,15 @@ def shelf_plan(spools: list, places: list, capacity: int | None = None, order=No
 # shelf is sorted. It is where the sort would put it: by the spool next to
 # it in sort order, in a place that has room.
 def suggest_place(new: dict, spools: list, places: list, order=None, capacity_of=None) -> dict | None:
-    """{"name", "same", "free", "neighbor"} or None: the place of the
-    stored spool nearest to `new` in `order` (before or after it, the
-    nearer first) that has room. `capacity_of(name)` gives a place's
-    capacity, None when unknown (then any place has room and "free" is
-    None). "same" counts the spools there of the same material and colour
-    family, "neighbor" is the spool it would sit next to."""
+    """{"name", "same", "free", "neighbor"} or None: where `new` sorts in.
+    First the places from the one of the stored spool just before it in
+    `order` to the one of the spool just after it, in the natural order of
+    the names (an empty place between them included), the first with room;
+    else the place of the nearest stored spool, before or after, that has
+    room. `capacity_of(name)` gives a place's capacity, None when unknown
+    (then any place has room and "free" is None). "same" counts the spools
+    there of the same material and colour family, "neighbor" is the spool
+    it would sit next to."""
     known = {_place_key(p): str(p).strip() for p in places or [] if str(p or "").strip()}
     shelved = [s for s in spools or [] if isinstance(s, dict) and _place_key(s.get("storage_location")) in known]
     if not shelved:
@@ -465,25 +470,38 @@ def suggest_place(new: dict, spools: list, places: list, order=None, capacity_of
     row = sort_spools(shelved + [probe], order or [("material", False), ("color", False)],
                       tiebreak=lambda s: (s is probe, _number_or_none(s.get("id")) or 0))
     at = next(i for i, s in enumerate(row) if s is probe)
+    mine = sort_keys(probe)
+    family = color_family(probe.get("rgba"), probe.get("color_name"))
 
     def room(k):
         cap = capacity_of(known[k]) if capacity_of else None
         return None if not cap else cap - count.get(k, 0)
+
+    def answer(k, neighbour):
+        same = sum(1 for s in shelved if _place_key(s.get("storage_location")) == k
+                   and sort_keys(s)["material"] == mine["material"]
+                   and color_family(s.get("rgba"), s.get("color_name")) == family)
+        return {"name": known[k], "same": same, "free": room(k),
+                "neighbor": {f: neighbour.get(f) for f in _SPOOL_FIELDS}}
+
+    def has_room(k):
+        free = room(k)
+        return free is None or free > 0
+    # Between its two neighbours, on one shelf sorted in name order.
+    if 0 < at < len(row) - 1:
+        before, after = row[at - 1], row[at + 1]
+        shelf = group_of(known[_place_key(before.get("storage_location"))])
+        names = sorted((k for k in known if group_of(known[k]) == shelf), key=lambda k: natural(known[k]))
+        i, j = (names.index(k) if k in names else -1 for k in (_place_key(before.get("storage_location")),
+                                                               _place_key(after.get("storage_location"))))
+        if 0 <= i <= j:
+            for k in names[i:j + 1]:
+                if has_room(k):
+                    return answer(k, after if k == names[j] and k != names[i] else before)
     for d in range(1, len(row)):
         for j in (at - d, at + d):
-            if not 0 <= j < len(row):
-                continue
-            k = _place_key(row[j].get("storage_location"))
-            free = room(k)
-            if free is not None and free <= 0:
-                continue
-            mine = sort_keys(probe)
-            same = sum(1 for s in shelved if _place_key(s.get("storage_location")) == k
-                       and sort_keys(s)["material"] == mine["material"]
-                       and color_family(s.get("rgba"), s.get("color_name")) == color_family(
-                           probe.get("rgba"), probe.get("color_name")))
-            return {"name": known[k], "same": same, "free": free,
-                    "neighbor": {f: row[j].get(f) for f in _SPOOL_FIELDS}}
+            if 0 <= j < len(row) and has_room(_place_key(row[j].get("storage_location"))):
+                return answer(_place_key(row[j].get("storage_location")), row[j])
     return None
 
 

@@ -237,6 +237,8 @@ Ohne Kamera geht es auch: den Link vom Etikett ins Code-Feld einfügen oder `#12
 Die Karte **Dein Bestand** liest deine Spulen aus dem aktiven Inventar (BamBuddy oder Spoolman dahinter):
 
 - **Spule suchen:** Jedes Wort grenzt ein: Marke, Material, Farbe, Lagerort, Tag, Artikelnummer oder `#12`. `<200` zeigt nur Spulen mit weniger als 200 g. Ein Tipp öffnet die Spule.
+- **Sortieren:** nach Material, Farbe, Marke, Restmenge, Lagerort, Spulennummer oder Datum, in zwei Stufen („erst Material, dann Farbe“), jeweils auf- oder absteigend. Farbe geht nach dem Farbton (Rot, Orange, Gelb, Grün, Blau, Lila, Pink, dann Weiß über Grau bis Schwarz, dann Transparent), Material nach Familie (PLA, PLA+, PLA Silk stehen zusammen). Die Wahl merkt sich das Handy für jede Liste.
+- **Alle Spulen:** der ganze Bestand in dieser Reihenfolge, mit einer Überschrift je Material, Farbfamilie, Marke oder Lagerort; dazu **Als CSV exportieren** (für Excel mit Semikolon) und eine **Statistik** (Spulen und kg je Material, Marke oder Lagerort).
 - **Nachbestellen:** Spulen unter einer Grenze (200 g, änderbar), nach Sorte gruppiert, mit Restmenge, letztem Preis und *Nachkaufen* (Websuche).
 - **Benachrichtigen, wenn eine Sorte knapp wird** (unten in *Nachbestellen*): Alle paar Stunden schaut die App in den Bestand. Liegen alle Spulen einer Sorte (Marke, Material, Linie, Farbe) zusammen unter der Grenze, kommt einmal eine Nachricht über die Kanäle von BamBuddy (Telegram, ntfy, E-Mail …). Erst wenn die Sorte wieder über der Grenze war, z. B. nach einer neuen Spule, meldet sie sich erneut. Dafür braucht es zwei Dinge in BamBuddy:
   1. Der API-Schlüssel braucht **Benachrichtigungen senden**.
@@ -272,11 +274,25 @@ Die Namen erscheinen, bevor etwas angelegt wird; was BamBuddy schon hat, ist dur
 
 Zum Lesen braucht der API-Schlüssel **Read Status** („Status lesen“), zum Anlegen, Umbenennen und Löschen **Manage Inventory** („Bestand verwalten“). Fehlt eines, sagt die Karte, welches.
 
+### Regal einsortieren
+
+Neue Spulen brauchen beim Anlegen **kein Fach**: Der Lagerort ist freiwillig, die Spule wartet unter *Ohne Lagerort*. Das Formular schlägt ein Fach vor („Vorschlag: Regal A-03 – dort liegen schon 3× PLA Rot, 1 Platz frei“), ein Tipp übernimmt es; ignorieren geht genauso.
+
+**Regal einsortieren** (in der Karte *Lagerorte*, oder *Einsortieren* bei einer Gruppe wie „Regal A“):
+
+1. Lagerorte wählen, **Spulen pro Fach** eintragen (leer: gleichmäßig verteilt) und die Sortierung (z. B. Material, dann Farbe).
+2. Der Plan zeigt je Fach, welche Spulen hineinkommen; was umzieht, ist markiert, mit dem bisherigen Platz. Er hält die Reihenfolge über die Fächer (A-2 vor A-10) und lässt so viele Spulen liegen, wie es geht. Spulen ohne Lagerort kommen immer mit dazu, Spulen aus anderen Lagerorten auf Wunsch. Passt nicht alles, sagt er es: Spulen aus dem Regal kommen auf die Ablage, neue warten weiter.
+3. **Schritt für Schritt umräumen:** immer eine Spule – „Nimm #12 aus Regal A-05, nach Regal A-02“. Ein Fach bekommt erst eine Spule, wenn darin Platz ist; sind alle Ziele voll (A↔B), kommt eine Spule kurz auf die **Ablage** und später an ihren Platz. **Erledigt** trägt den Lagerort sofort in BamBuddy (bzw. Spoolman) ein, **Zurück** nimmt das zurück, **Überspringen** lässt einen Schritt aus. Wird die Seite zwischendurch geschlossen, bietet sie **Fortsetzen** an.
+4. **Mit Scannen:** Den QR-Code auf dem Spulen-Etikett scannen oder den NFC-Tag ans Handy halten – die App prüft, ob es die richtige Spule ist (eine andere aus dem Plan zieht sie vor, wenn ihr Fach Platz hat). Dann das Etikett des Fachs scannen: der Schritt ist erledigt; ein falsches Fach meldet sie.
+5. Am Ende: **Etiketten der umgezogenen Spulen drucken**, wenn das Etikett den Lagerort zeigt. Der NFC-Tag bleibt, wie er ist (er enthält keinen Lagerort) und wird nie gesperrt.
+
+Liegen die Spulen schon richtig, bucht **… Spulen auf einmal umbuchen** alles in einem Rutsch um. **Scannen & einsortieren** räumt einzelne Spulen weg: Spule scannen, die App zeigt das Ziel, Fach scannen oder **Hier abgelegt** tippen.
+
 ## Mit der SpoolmanScale verbinden
 
 In der Weboberfläche der Waage → Einstellungen → Barcode-Scanner → **filament_to_bambuddy-Adresse**: `http://<server-ip>:8088`. Scannt die Waage dann einen Code, den keine Spule kennt, fragt sie die App und bietet an, die Spule anzulegen, mit oder ohne den gefundenen Preis.
 
-- **Angelegt wird die Spule von der App**, genau wie vom Handy: Sie kommt auf dein Spoolman-Filament und bekommt die Druckprofile für jedes Druckermodell. Lagerort und Preis kommen aus dem Speicher, und der Code wird gemerkt. Ist die App nicht erreichbar, legt die Waage die Spule selbst über BamBuddy an.
+- **Angelegt wird die Spule von der App**, genau wie vom Handy: Sie kommt auf dein Spoolman-Filament und bekommt die Druckprofile für jedes Druckermodell. Der Preis kommt aus dem Speicher, und der Code wird gemerkt; einen Lagerort bekommt die Spule erst beim Einsortieren. Ist die App nicht erreichbar, legt die Waage die Spule selbst über BamBuddy an.
 - **Etiketten von der Waage** kommen im selben Layout, das du am Handy unter *Etikettenrolle und Zeilen* angeordnet hast. Die App merkt sich die Anordnung (`/data/label_layout.json`) und zeichnet das Etikett für die Waage. Ein neues Handy übernimmt sie von dort.
 
 ## Fehlersuche

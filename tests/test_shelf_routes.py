@@ -255,6 +255,17 @@ class TestSuggestRoute:
         s = tight["suggestion"]
         assert (s["name"], s["same"], s["free"], s["neighbor"]["id"]) == ("Regal A-10", 0, 1, 3)
 
+    def test_a_stored_spool_is_not_its_own_neighbour(self, client):
+        # Spool 1 (blue PLA, in A-1) scanned to put it away: its neighbour is
+        # the red PLA in A-10. Without its id it would find itself in A-1.
+        spool = {"id": 1, "material": "PLA", "rgba": "0000FFFF"}
+        with patch("requests.get", side_effect=_get()):
+            mine = client.post("/api/locations/suggest", json={"spool": spool, "default_cap": 3}).get_json()
+            anon = client.post("/api/locations/suggest", json={"spool": dict(spool, id=None),
+                                                               "default_cap": 3}).get_json()
+        assert (mine["suggestion"]["name"], mine["suggestion"]["neighbor"]["id"]) == ("Regal A-10", 3)
+        assert (anon["suggestion"]["name"], anon["suggestion"]["neighbor"]["id"]) == ("Regal A-1", 1)
+
     def test_no_material_no_suggestion(self, client):
         with patch("requests.get") as g:
             assert client.post("/api/locations/suggest", json={"spool": {}}).get_json() == {"ok": True, "suggestion": None}

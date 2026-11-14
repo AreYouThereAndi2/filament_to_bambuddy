@@ -2271,7 +2271,7 @@ def locations_plan():
 
 @app.post("/api/locations/suggest")
 def locations_suggest():
-    """{"spool": {material, subtype, brand, rgba, color_name}, "sort": ...,
+    """{"spool": {id, material, subtype, brand, rgba, color_name}, "sort": ...,
     "caps": {place or group name: spools it takes}, "default_cap": n}: a
     place the new spool would sort into, with room (see
     spool_sort.suggest_place), or null. Only a suggestion: a spool may be
@@ -2281,6 +2281,8 @@ def locations_suggest():
         return jsonify(ok=False, error="no_key"), 400
     body = request.get_json(force=True, silent=True) or {}
     new = body.get("spool") if isinstance(body.get("spool"), dict) else {}
+    # A spool already stored (scanned to put it away) is not its own neighbour.
+    itself = new.get("id") if isinstance(new.get("id"), int) else None
     new = {k: new.get(k) for k in ("material", "subtype", "brand", "rgba", "color_name")}
     if not str(new.get("material") or "").strip():
         return jsonify(ok=True, suggestion=None)
@@ -2305,7 +2307,8 @@ def locations_suggest():
     if spools is None:
         return jsonify(ok=False, error=error or "failed"), 502
     order = spool_sort.parse_sort(body.get("sort"), default=_PLAN_ORDER)
-    found = spool_sort.suggest_place(new, spools, [loc["name"] for loc in locs], order, capacity_of)
+    others = [sp for sp in spools if sp.get("id") != itself]
+    found = spool_sort.suggest_place(new, others, [loc["name"] for loc in locs], order, capacity_of)
     if found:
         found["family"] = spool_sort.color_family(new.get("rgba"), new.get("color_name"))
     return jsonify(ok=True, suggestion=found)

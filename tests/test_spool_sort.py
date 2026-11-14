@@ -385,6 +385,18 @@ class TestSuggestPlace:
         got = ss.suggest_place({"material": "PETG", "rgba": "FF0000FF"}, list(self.STOCK), ["A1", "A2", "A3"])
         assert got["name"] == "A3" and got["same"] == 1 and got["free"] is None
 
+    def test_an_empty_place_between_its_neighbours(self):
+        # A1 and A3 full; the new PLA sorts between them: the empty A2 fits.
+        stock = _shelf((1, "ABS", RED, "A1"), (2, "PETG", RED, "A1"), (3, "PLA", GREEN, "A3"), (4, "PLA", BLUE, "A3"))
+        got = ss.suggest_place({"material": "PETG", "rgba": "00FF00FF"}, stock, ["A3", "A2", "A1"], MAT_COL,
+                               lambda name: 2)
+        assert (got["name"], got["free"], got["same"], got["neighbor"]["id"]) == ("A2", 2, 0, 2)
+        # Only on one shelf: the cellar sorts between the names, not between the spools.
+        stock = _shelf((1, "ABS", RED, "Drybox 1"), (3, "PLA", GREEN, "Regal 3"))
+        places = ["Drybox 1", "Drybox 2", "Keller", "Regal 3"]
+        assert ss.suggest_place({"material": "PETG"}, stock, places, MAT_COL, lambda name: 1) is None
+        assert ss.suggest_place({"material": "PETG"}, stock, places, MAT_COL, lambda name: 2)["name"] == "Drybox 1"
+
     def test_nothing_stored_or_all_full(self):
         assert ss.suggest_place({"material": "PLA"}, _shelf((5, "ABS", RED, "")), ["A1"]) is None
         assert ss.suggest_place({"material": "PLA"}, list(self.STOCK), ["A1", "A2", "A3"], MAT_COL,
