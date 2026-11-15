@@ -47,7 +47,7 @@
     --mark-flange:#d5dbe0; --mark-wind:#00c64d; --mark-bar:#008a35;
     --display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
     --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    --r-card:18px; --r-ctl:11px;
+    --r-card:18px; --r-ctl:11px; --wrap:1240px; --tabbar-h:64px;
     color-scheme:dark;
   }
   /* The light set twice: once chosen on the page, once from the system when
@@ -80,9 +80,9 @@
   #ptrIcon{font-size:18px;display:inline-block;transition:transform .15s}
   @keyframes ptrspin{to{transform:rotate(360deg)}}
 
-  header{position:sticky;top:0;z-index:5;background:var(--bg);
-    padding:calc(12px + env(safe-area-inset-top)) 16px 10px}
-  .bar{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:10px}
+  header{position:sticky;top:0;z-index:6;background:var(--bg);
+    padding:calc(10px + env(safe-area-inset-top)) 16px 8px}
+  .bar{max-width:var(--wrap);margin:0 auto;display:flex;align-items:center;gap:10px;min-height:44px}
   header h1{font:700 22px/1 var(--display);letter-spacing:.1px;margin:0;flex:1;min-width:0;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   header h1 .to{color:var(--muted);font-weight:500;margin:0 .12em}
@@ -90,11 +90,11 @@
   .mark{width:38px;height:38px;flex:0 0 auto;margin:-6px 0 -6px -4px}
   .mark .flange{fill:var(--mark-flange)} .mark .wind{fill:var(--mark-wind)}
   .mark .code{fill:var(--mark-bar)} .mark .strand{fill:none;stroke:var(--mark-wind);stroke-width:3.4;stroke-linecap:round}
-  .icon-btn{width:40px;height:40px;padding:0;flex:0 0 auto;display:grid;place-items:center;border-radius:12px;
+  .icon-btn{width:44px;height:44px;padding:0;flex:0 0 auto;display:grid;place-items:center;border-radius:12px;
     background:var(--raised);border:1px solid var(--line);color:var(--text)}
   .icon-btn:active{background:var(--line)}
   .icon-btn svg{width:20px;height:20px}
-  .status{max-width:560px;margin:8px auto 0;display:flex;align-items:flex-start;gap:8px;
+  .status{max-width:var(--wrap);margin:6px auto 0;display:flex;align-items:flex-start;gap:8px;
     color:var(--muted);font-size:12.5px;line-height:1.35;cursor:pointer}
   /* Two lines until tapped: a long error should not push the page down. */
   .status #health{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -107,7 +107,7 @@
   .btn-secondary.with-ico{display:flex}
   .btn-secondary.with-ico span{text-align:left}
 
-  main{padding:6px 16px calc(40px + env(safe-area-inset-bottom));max-width:560px;margin:0 auto}
+  main{padding:2px 16px calc(var(--tabbar-h) + 28px + env(safe-area-inset-bottom));max-width:560px;margin:0 auto;min-width:0}
   .card{background:var(--surface);border-radius:var(--r-card);padding:18px;margin-bottom:14px;
     border:1px solid var(--card-border);box-shadow:var(--card-shadow)}
   .card-title{font:600 19px/1.2 var(--display);margin:0 0 12px}
@@ -138,8 +138,9 @@
 
   /* Scan: the page's first job. A large raised tile with the barcode glyph. */
   .scan-btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;
-    min-height:76px;font-size:21px;background:var(--raised);color:var(--text);border:1px solid var(--line)}
-  .scan-btn svg{width:34px;height:24px;flex:0 0 auto;color:var(--brand-strong)}
+    min-height:76px;font-size:21px;background:var(--brand);color:var(--on-brand);border:none}
+  .scan-btn:active{background:var(--brand-strong)}
+  .scan-btn svg{width:34px;height:24px;flex:0 0 auto;color:currentColor}
   .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:14px 0 10px}
   .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
   #video{width:100%;border-radius:14px;background:#000;aspect-ratio:4/3;object-fit:cover;display:block}
@@ -187,11 +188,11 @@
   .two{display:flex;gap:10px;margin-top:10px}
   .two>*{flex:1}
   .swatch{height:46px;border-radius:var(--r-ctl);border:1px solid var(--line);width:100%;padding:3px;background:var(--inset)}
-  .submit-bar{position:sticky;bottom:0;margin:18px -18px 0;padding:14px 18px calc(12px + env(safe-area-inset-bottom));z-index:4;
+  .submit-bar{position:sticky;bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom));margin:18px -18px 0;padding:14px 18px 12px;z-index:4;
     background:linear-gradient(to bottom,transparent,var(--surface) 38%)}
   .submit-bar .btn-primary{min-height:54px;font-size:19px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 
-  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+  .toast{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom));transform:translateX(-50%);
     padding:12px 18px;border-radius:12px;font:600 15px/1.3 var(--display);max-width:90%;text-align:center;
     box-shadow:0 6px 24px rgba(0,0,0,.4);z-index:20}
   .toast.ok{background:var(--brand);color:var(--on-brand)}
@@ -244,15 +245,8 @@
   #whyText{font:13px/1.45 ui-monospace,Menlo,monospace}
   details>summary{list-style-position:inside}
 
-  footer{max-width:560px;margin:0 auto;text-align:center;color:var(--muted);font-size:12px;
-    padding:0 16px calc(18px + env(safe-area-inset-bottom))}
-  footer .tools{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-  footer .tools .btn-quiet{text-decoration:none;padding:8px 12px;border:1px solid var(--line);border-radius:999px;
-    color:var(--muted);font:600 13.5px/1 var(--display)}
-  footer .tools .btn-quiet:active{background:var(--raised)}
-
-  footer .inv{max-width:320px;margin:10px auto 12px;text-align:left}
-  footer .inv label{text-align:left}
+  .tools{display:grid;gap:10px}
+  .version{text-align:center;color:var(--muted);font-size:12px;margin:18px 0 0}
   /* Where spools go, as one light: the details fold out on a tap. */
   .smstat{margin-top:10px;border-radius:12px;background:var(--surface);border:1px solid var(--card-border);
     box-shadow:var(--card-shadow);text-align:left}
@@ -335,8 +329,10 @@
   /* The bulk form: a three-way switch, and the names it will make. */
   .seg{display:flex;gap:4px;padding:4px;margin-top:12px;border-radius:calc(var(--r-ctl) + 4px);background:var(--inset);
     border:1px solid var(--line)}
-  .seg button{flex:1;min-height:44px;padding:8px 6px;background:none;color:var(--muted);font-size:16px}
-  .seg button[aria-pressed=true]{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .seg button{flex:1;min-width:0;min-height:44px;padding:8px 6px;background:none;color:var(--muted);font-size:16px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .seg button[aria-pressed=true],.seg button[aria-selected=true],.seg button[aria-checked=true]{background:var(--surface);color:var(--text);
+    box-shadow:0 1px 3px rgba(0,0,0,.25),inset 0 -2px 0 var(--brand)}
   .loc-check{display:flex;gap:10px;align-items:center;min-height:44px;margin:8px 0 0;color:var(--text);font:500 14.5px/1.3 var(--body)}
   .loc-check input{width:22px;height:22px;margin:0;flex:0 0 auto;accent-color:var(--brand)}
   .loc-preview{margin-top:10px}
@@ -437,7 +433,145 @@
   .sug{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:8px;font-size:13px;color:var(--muted)}
   .sug .chip{margin:0;min-height:36px;display:inline-flex;align-items:center;cursor:pointer;
     border-color:color-mix(in srgb,var(--brand) 50%,transparent);color:var(--brand-strong)}
+  /* ── Navigation: five places. On a phone a bar under the thumb, on a wide
+     screen a rail on the left. One job a place, one green button a place. ── */
+  html,body{overflow-x:clip}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:7;background:var(--surface);
+    border-top:1px solid var(--line);padding:0 4px env(safe-area-inset-bottom);box-shadow:0 -6px 18px rgba(0,0,0,.12)}
+  .tabbar [role=tablist]{display:flex;max-width:560px;margin:0 auto}
+  .tabbar button{flex:1;min-width:0;height:var(--tabbar-h);padding:6px 2px 4px;background:none;border-radius:0;color:var(--muted);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;letter-spacing:.1px}
+  .tb-ico{display:grid;place-items:center;width:56px;height:30px;border-radius:999px;transition:background-color .18s}
+  .tb-ico .ico{width:24px;height:24px}
+  .tb-lbl{font:600 12.5px/1.1 var(--display);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tabbar button[aria-selected=true]{color:var(--text)}
+  .tabbar button[aria-selected=true] .tb-ico{background:color-mix(in srgb,var(--brand) 22%,transparent);color:var(--brand-strong)}
+  .tabbar button:focus-visible{outline-offset:-4px;border-radius:12px}
+  .tab{outline:none}
+  .tab[hidden],.pane[hidden]{display:none !important}
+  /* A place's title, and what acts on all of it at the right. */
+  .tab-head{display:flex;align-items:center;gap:8px;min-height:48px;margin:2px 0 10px}
+  .tab-title{font:700 26px/1.05 var(--display);margin:0;flex:1;min-width:0;letter-spacing:.1px;
+    overflow-wrap:anywhere}
+  .tab-head .seg{margin:0}
+  .seg-sm{flex:0 0 auto;padding:3px}
+  .seg-sm button{flex:0 0 auto;min-height:40px;padding:6px 12px;font-size:15px}
+  /* Taps of 44 px also on the small one: the hit area grows, not the look. */
+  .seg-sm button{position:relative}
+  .seg-sm button::before{content:"";position:absolute;inset:-2px 0}
+  .seg-nav{margin:0 0 12px;background:var(--inset)}
+  .seg .n{color:var(--muted);font:500 13px/1 var(--body);margin-left:2px}
+  .seg button[aria-selected=true] .n{color:var(--muted)}
+  .btn-hero{min-height:56px;font-size:19px}
+  .tab-head.wrap{flex-wrap:wrap;row-gap:12px;margin-bottom:12px}
+  .tab-head.wrap .btn-hero{order:3;flex:1 0 100%}
+  /* Disclosures that stay: one chevron, one height, in both themes. */
+  details.bm>summary{display:flex;align-items:center;gap:8px;min-height:44px;list-style:none;
+    font:600 15px/1.25 var(--display);color:var(--text)}
+  details.bm>summary::-webkit-details-marker{display:none}
+  details.bm>summary::after{content:"";width:7px;height:7px;margin-left:auto;flex:0 0 auto;
+    border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);transition:transform .15s}
+  details.bm[open]>summary::after{transform:rotate(-135deg) translateY(-2px)}
+  details.bm{border-top:1px solid var(--line)}
+  .loc-check{min-height:44px}
+  .lay-tog,.lay-row .icon-btn{width:40px;height:44px}
+  .lay-row select{min-height:44px}
+  /* Nothing yet, or nothing here: one sentence and its icon, the same everywhere. */
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;
+    padding:28px 18px;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r-card);min-height:160px}
+  .empty .ico{width:34px;height:34px;stroke-width:1.4}
+  .empty p{margin:0;max-width:30ch;font-size:14px;line-height:1.45}
+  .empty .btn-secondary{width:auto}
+  /* Loading: grey rows where the rows will be. */
+  .skel{display:block;height:44px;border-radius:10px;margin:8px 0;
+    background:linear-gradient(90deg,var(--inset) 0%,var(--raised) 50%,var(--inset) 100%);background-size:200% 100%;
+    animation:skel 1.2s ease-in-out infinite}
+  .skel.tile{height:88px;border-radius:14px;margin:0}
+  .skel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px;margin-top:10px}
+  @keyframes skel{from{background-position:100% 0}to{background-position:-100% 0}}
+  .err-box{display:flex;flex-direction:column;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;font-size:13.5px;
+    color:var(--text);border:1px solid color-mix(in srgb,var(--danger) 55%,transparent);background:color-mix(in srgb,var(--danger) 9%,transparent)}
+  .err-box .btn-secondary{width:auto;min-height:44px}
+  /* After adding: what comes next. */
+  .done-card{border-color:color-mix(in srgb,var(--brand) 45%,transparent)}
+  .done-check{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;flex:0 0 auto;
+    background:var(--brand);color:var(--on-brand)}
+  .done-check .ico{width:20px;height:20px;stroke-width:2.4}
+  .done-card .two{flex-wrap:wrap}
+  .done-card .two>*{flex:1 1 150px}
+  /* Header: the line about the connection only when it is not fine. */
+  .status.quiet{display:none}
+  .conn{display:flex;align-items:flex-start;gap:8px;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+  .conn .status-dot{margin-top:6px}
+  .inv label{margin-top:16px}
+  .only-wide{display:none !important}
+  /* A spool open on a phone: its record in place of the list, Back returns. */
+  #tab-stock.detail #stockMain{display:none}
+  #tab-stock:not(.detail) #spoolCard{display:none}
+  .lbl-out canvas{max-width:100%}
+  #labelBox{margin-top:16px}
+  .searchbar{margin-bottom:14px}
+  .searchbar input{min-height:50px;background:var(--surface);border-color:var(--line)}
+  .sort-box{border-top:none;margin:-8px 0 4px}
+  .sort-box>summary .n{color:var(--muted);font:500 13px/1.2 var(--body);margin-left:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .sort-box[open]{padding-bottom:6px;border-bottom:1px solid var(--line)}
+  @media (max-width:899.98px){ #spoolCard .form-head #spClose{order:-1;margin-left:-6px} }
+  .lbl-out .hint:empty{display:none}
+
+  @media (min-width:900px){
+    /* The rail: the same buttons, upright, with the content beside them. */
+    :root{--tabbar-h:0px}
+    .shell{display:grid;grid-template-columns:208px minmax(0,1fr);gap:36px;max-width:var(--wrap);margin:0 auto;padding:0 24px}
+    header{padding-left:24px;padding-right:24px}
+    .tabbar{position:sticky;top:76px;align-self:start;background:none;border:none;box-shadow:none;padding:8px 0 0}
+    .tabbar [role=tablist]{flex-direction:column;gap:4px;max-width:none}
+    .tabbar button{flex:0 0 auto;height:48px;flex-direction:row;justify-content:flex-start;gap:10px;padding:0 10px 0 6px;border-radius:12px}
+    .tabbar button:hover{background:var(--raised);color:var(--text)}
+    .tb-ico{width:40px;height:32px}
+    .tb-ico .ico{width:22px;height:22px}
+    .tb-lbl{font-size:17px}
+    .tabbar button[aria-selected=true]{background:var(--surface);box-shadow:var(--card-shadow);border:1px solid var(--card-border)}
+    main{max-width:none;margin:0;padding:4px 0 48px}
+    .tab-narrow{max-width:640px}
+    .tab-title{font-size:30px}
+    .only-wide{display:flex !important}
+    .only-narrow{display:none !important}
+    .toast{bottom:24px}
+    .submit-bar{bottom:0;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+    /* Bestand: the list, and beside it the spool opened from it. */
+    .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:24px;align-items:start}
+    .col-side{position:sticky;top:76px;max-height:calc(100vh - 92px);overflow:auto;border-radius:var(--r-card)}
+    #tab-stock.detail #stockMain{display:block}
+    #tab-stock #spoolCard:not(.hidden){display:block}
+    #tab-stock #spoolCard.hidden + #spoolEmpty{display:flex !important}
+    #tab-stock #spoolCard:not(.hidden) + #spoolEmpty{display:none !important}
+    #spoolEmpty{min-height:320px}
+    /* Regal: more tiles a row; the plan's places side by side. */
+    #tab-shelf{max-width:1040px}
+    .tab-head.wrap .btn-hero{order:0;flex:0 0 auto;width:auto;padding:0 24px;margin:0;min-height:48px;font-size:17px}
+    .loc-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+    #planView{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0 12px}
+    .plan-form{max-width:560px}
+    #locBulk{max-width:640px}
+    /* Etiketten: what to print on the left, the label as printed on the right. */
+    #tab-labels{max-width:1040px}
+    .lbl-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}
+    .lbl-out{position:sticky;top:84px}
+    #labelBox{margin-top:0}
+    #labelBox:not(.hidden) ~ .lbl-ph{display:none !important}
+    .lbl-ph{min-height:220px}
+    #labelSetup{max-width:640px}
+  }
+  @media (min-width:1200px){
+    .cols{grid-template-columns:minmax(0,1fr) minmax(0,480px)}
+  }
+  @media (hover:hover){
+    .seg button:not([aria-selected=true]):not([aria-pressed=true]):not([aria-checked=true]):hover{color:var(--text)}
+  }
   @media (prefers-reduced-motion:reduce){
+    .skel{animation:none}
+    .tb-ico,details.bm>summary::after{transition:none}
     .guide-bar>span{transition:none}
     .vf-scanline{animation:none;top:50%}
     .spool .wind{transition:none}
@@ -468,6 +602,10 @@
   <symbol id="i-desc" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
   <symbol id="i-steps" viewBox="0 0 24 24"><path d="M3 20h5v-5h5v-5h5V5h3"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 8v8M11 8v8M14 8v8M17 8v8"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-qr" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 20h2M20 14v2"/></symbol>
 </svg>
 <header>
@@ -483,13 +621,51 @@
     </svg>
     <h1>{{ t('app.title')|replace('→', '<span class="to">→</span>'|safe) }}</h1>
     {% if auth.mode == 'bambuddy' %}<button id="userBtn" type="button" class="icon-btn" aria-haspopup="true" aria-expanded="false"><span class="user-initial" aria-hidden="true">?</span></button>{% endif %}
-    <button id="themeBtn" type="button" class="icon-btn"><svg class="ico" aria-hidden="true"><use id="themeIcon" href="#i-auto"/></svg></button>
   </div>
-  <div class="status" id="statusLine" role="status"><span id="dot" class="status-dot"></span><span id="health">{{ t('health.checking') }}</span></div>
+  <!-- Only when something is wrong: all well, it is told under Mehr. -->
+  <div class="status quiet" id="statusLine" role="status"><span id="dot" class="status-dot"></span><span id="health">{{ t('health.checking') }}</span></div>
 </header>
 
+<div class="shell">
+<!-- The five places of the app: a bar at the thumb on a phone, a rail on
+     the left on a wide screen. Each is a history entry (#stock …), so the
+     back button goes to the one before. -->
+<nav class="tabbar" aria-label="{{ t('nav.main') }}">
+  <div role="tablist" id="tabList">
+    <button type="button" role="tab" id="tabbtn-add" data-tab="add" aria-controls="tab-add" aria-selected="true"><span class="tb-ico"><svg class="ico" aria-hidden="true"><use href="#i-scan"/></svg></span><span class="tb-lbl">{{ t('nav.add') }}</span></button>
+    <button type="button" role="tab" id="tabbtn-stock" data-tab="stock" aria-controls="tab-stock" aria-selected="false" tabindex="-1"><span class="tb-ico"><svg class="ico" aria-hidden="true"><use href="#i-box"/></svg></span><span class="tb-lbl">{{ t('nav.stock') }}</span></button>
+    <button type="button" role="tab" id="tabbtn-shelf" data-tab="shelf" aria-controls="tab-shelf" aria-selected="false" tabindex="-1"><span class="tb-ico"><svg class="ico" aria-hidden="true"><use href="#i-shelf"/></svg></span><span class="tb-lbl">{{ t('nav.shelf') }}</span></button>
+    <button type="button" role="tab" id="tabbtn-labels" data-tab="labels" aria-controls="tab-labels" aria-selected="false" tabindex="-1"><span class="tb-ico"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg></span><span class="tb-lbl">{{ t('nav.labels') }}</span></button>
+    <button type="button" role="tab" id="tabbtn-more" data-tab="more" aria-controls="tab-more" aria-selected="false" tabindex="-1"><span class="tb-ico"><svg class="ico" aria-hidden="true"><use href="#i-more"/></svg></span><span class="tb-lbl">{{ t('nav.more') }}</span></button>
+  </div>
+</nav>
+
 <main>
-  <!-- Scan -->
+  <!-- ══ Erfassen: a spool in, by its code, its label or by hand; or what
+       an invoice says it cost. ══ -->
+  <section id="tab-add" class="tab tab-narrow" role="tabpanel" aria-labelledby="tabbtn-add" tabindex="-1">
+    <div class="tab-head">
+      <h2 class="tab-title">{{ t('nav.add') }}</h2>
+      <div class="seg seg-nav seg-sm" role="tablist" id="addSeg" aria-label="{{ t('nav.add') }}">
+        <button type="button" role="tab" id="addSeg-spool" data-pane="addSpool" aria-controls="addSpool">{{ t('nav.add_spool') }}</button>
+        <button type="button" role="tab" id="addSeg-invoice" data-pane="addInvoice" aria-controls="addInvoice">{{ t('nav.add_invoice') }}</button>
+      </div>
+    </div>
+    <div id="addSpool" class="pane" role="tabpanel" aria-labelledby="addSeg-spool">
+      <!-- Added: what comes next in the workflow, one tap each. -->
+      <section id="addDone" class="card done-card hidden" aria-labelledby="addDoneTitle">
+        <div class="form-head" style="margin-bottom:4px">
+          <span class="done-check" aria-hidden="true"><svg class="ico"><use href="#i-check"/></svg></span>
+          <h2 id="addDoneTitle" class="card-title grow" style="margin:0" tabindex="-1"></h2>
+          <button id="addDoneClose" type="button" class="icon-btn" aria-label="{{ t('spool.close') }}"><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
+        </div>
+        <div id="addDoneIds" class="hint" style="margin-top:0"></div>
+        <div class="two" style="margin-top:12px">
+          <button id="addDoneLabel" type="button" class="btn-primary with-ico"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span>{{ t('nav.done_label') }}</span></button>
+          <button id="addDoneShelf" type="button" class="btn-secondary with-ico"><svg class="ico" aria-hidden="true"><use href="#i-shelf"/></svg><span>{{ t('nav.done_shelf') }}</span></button>
+        </div>
+        <div class="hint">{{ t('nav.done_next') }}</div>
+      </section>
   <section class="card" aria-label="{{ t('scan.scan_button') }}">
     <button id="startBtn" class="scan-btn">
       <svg viewBox="0 0 34 24" aria-hidden="true" fill="currentColor">
@@ -537,8 +713,6 @@
     <input id="labelPhoto" type="file" accept="image/*" capture="environment" class="hidden">
     <div id="ocrHint" class="hint"></div>
   </section>
-
-  <!-- Details form -->
   <form id="form" class="card hidden">
     <div class="form-head">
       <span class="card-title grow" style="margin:0">{{ t('form.title') }}</span>
@@ -688,13 +862,98 @@
       <button id="submitBtn" type="submit" class="btn-primary">{{ t('form.submit') }}</button>
     </div>
   </form>
+    </div>
+    <div id="addInvoice" class="pane" role="tabpanel" aria-labelledby="addSeg-invoice" hidden>
+  <section class="card" id="ivcCard">
+    <h2 class="card-title with-ico" style="justify-content:flex-start"><svg class="ico" aria-hidden="true"><use href="#i-clip"/></svg><span>{{ t('ivc.title') }}</span></h2>
+    <div class="hint" style="margin-top:0">{{ t('ivc.intro') }} <span id="ivcCount"></span></div>
+    <div class="ivc-picks">
+      <button id="ivcCamera" type="button" class="btn-secondary with-ico ivc-pick"><svg class="ico" aria-hidden="true"><use href="#i-camera"/></svg><span>{{ t('ivc.photo') }}</span></button>
+      <button id="ivcPick" type="button" class="btn-secondary ivc-pick">{{ t('ivc.pick_files') }}</button>
+    </div>
+    <input id="ivcPhoto" type="file" accept="image/*" capture="environment" hidden>
+    <input id="ivcFiles" type="file" accept="application/pdf,image/*" multiple hidden>
+    <div id="ivcOcrNote" class="hint"></div>
+    <div id="ivcHint" class="hint" role="status"></div>
+    <div id="ivcReview"></div>
+    <details id="ivcAmazon" class="bm" style="margin-top:14px">
+      <summary style="font-weight:600;font-size:14px">{{ t('ivc.amazon_title') }}</summary>
+      <ol class="hint">
+        <li>{{ t('ivc.amazon_step1') }}</li>
+        <li>{{ t('ivc.amazon_step2') }}</li>
+        <li>{{ t('ivc.amazon_step3') }}</li>
+      </ol>
+      <div class="hint">{{ t('ivc.amazon_private') }}</div>
+      <button id="ivcAmazonPick" type="button" class="btn-secondary" style="margin-top:10px">{{ t('ivc.amazon_pick') }}</button>
+      <input id="ivcAmazonFile" type="file" accept=".zip,.csv,application/zip,text/csv" hidden>
+      <div id="ivcAmazonHint" class="hint" role="status"></div>
+    </details>
+  </section>
+    </div>
+  </section>
 
-  <!-- A spool that already exists, opened from the QR code on its label:
-       link a tag, move it, correct what is left, print a new label. -->
+  <!-- ══ Bestand: every spool, found by any word; what runs low; one spool's
+       record beside the list on a wide screen, in its place on a phone. ══ -->
+  <section id="tab-stock" class="tab" role="tabpanel" aria-labelledby="tabbtn-stock" tabindex="-1" hidden>
+    <div class="cols">
+      <div id="stockMain" class="col-main">
+        <div class="tab-head">
+          <h2 class="tab-title">{{ t('nav.stock') }}</h2>
+          <button id="invReload" type="button" class="icon-btn" aria-label="{{ t('loc.reload') }}" title="{{ t('loc.reload') }}"><svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg></button>
+          <button id="stockCsv" type="button" class="icon-btn" aria-label="{{ t('sort.csv') }}" title="{{ t('sort.csv') }}"><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg></button>
+        </div>
+        <div id="invCard" class="searchbar">
+          <label for="invSearch" class="sr-only">{{ t('inv.search_label') }}</label>
+          <div class="combo combo-search">
+            <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
+            <input id="invSearch" type="search" enterkeyhint="search" spellcheck="false" placeholder="{{ t('inv.search_placeholder') }}" aria-describedby="invSearchHint">
+            <ul id="invSearch-list" class="combo-list" hidden></ul>
+          </div>
+          <div id="invSearchHint" class="hint">{{ t('inv.search_hint') }}</div>
+        </div>
+        <div class="seg seg-nav" role="tablist" id="stockSeg" aria-label="{{ t('nav.stock') }}">
+          <button type="button" role="tab" id="stockSeg-list" data-pane="stockBox" aria-controls="stockBox">{{ t('nav.stock_list') }} <span id="stockCount" class="n"></span></button>
+          <button type="button" role="tab" id="stockSeg-stats" data-pane="statsBox" aria-controls="statsBox">{{ t('nav.stock_stats') }}</button>
+          <button type="button" role="tab" id="stockSeg-reorder" data-pane="reorderBox" aria-controls="reorderBox">{{ t('nav.stock_reorder') }} <span id="reorderCount" class="n"></span></button>
+        </div>
+        <section id="stockBox" class="card pane" role="tabpanel" aria-labelledby="stockSeg-list">
+          <details class="bm sort-box">
+            <summary>{{ t('nav.sort') }} <span id="invSortNow" class="n"></span></summary>
+            <div id="invSort"></div>
+            <div class="hint">{{ t('sort.all_hint') }}</div>
+          </details>
+          <div id="stockList" style="margin-top:4px"></div>
+        </section>
+        <section id="statsBox" class="card pane" role="tabpanel" aria-labelledby="stockSeg-stats" hidden>
+          <div id="statsTotal" class="hint" style="margin-top:0"></div>
+          <div class="seg" role="group" aria-label="{{ t('sort.stats_by') }}">
+            <button type="button" data-by="material" aria-pressed="true">{{ t('sort.k_material') }}</button>
+            <button type="button" data-by="brand" aria-pressed="false">{{ t('sort.k_brand') }}</button>
+            <button type="button" data-by="location" aria-pressed="false">{{ t('sort.k_location') }}</button>
+          </div>
+          <div id="statsList" style="margin-top:6px"></div>
+        </section>
+        <section id="reorderBox" class="card pane" role="tabpanel" aria-labelledby="stockSeg-reorder" hidden>
+          <div class="row" style="align-items:flex-end">
+            <div style="flex:0 0 130px"><label for="reorderMax" style="margin-top:0">{{ t('inv.reorder_below') }}</label><input id="reorderMax" inputmode="numeric" value="200"></div>
+            <div class="hint" style="margin-bottom:12px">{{ t('inv.reorder_hint') }}</div>
+          </div>
+          <div id="reoSort"></div>
+          <div id="reorderList"></div>
+          <!-- A message through BamBuddy's channels when a kind runs out. -->
+          <label class="loc-check" style="margin-top:14px">
+            <input id="reoAlert" type="checkbox">
+            <span>{{ t('inv.alert') }}</span></label>
+          <div class="hint">{{ t('inv.alert_hint') }}</div>
+          <div id="reoAlertInfo" class="hint"></div>
+          <button id="reoAlertCheck" type="button" class="btn-secondary hidden" style="margin-top:8px">{{ t('inv.alert_check') }}</button>
+        </section>
+      </div>
+      <aside id="stockSide" class="col-side">
   <section id="spoolCard" class="card hidden" aria-labelledby="spTitle">
     <div class="form-head">
       <h2 id="spTitle" class="card-title grow" style="margin:0"></h2>
-      <button id="spClose" type="button" class="icon-btn" aria-label="{{ t('spool.close') }}"><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
+      <button id="spClose" type="button" class="icon-btn" aria-label="{{ t('spool.close') }}"><svg class="ico only-narrow" aria-hidden="true"><use href="#i-back"/></svg><svg class="ico only-wide" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="spool" aria-hidden="true">
       <svg viewBox="0 0 100 100" id="spReel">
@@ -753,111 +1012,50 @@
     <button id="spSave" type="button" class="btn-primary" style="margin-top:10px;min-height:52px">{{ t('spool.save') }}</button>
     <button id="spEmpty" type="button" class="btn-quiet" style="display:block;margin:10px auto 0;color:var(--danger)">{{ t('spool.empty') }}</button>
   </section>
-
-  <!-- The spools in stock: found by any word, and what runs low. -->
-  <section class="card" id="invCard">
-    <h2 class="card-title with-ico" style="justify-content:flex-start"><svg class="ico" aria-hidden="true"><use href="#i-box"/></svg><span>{{ t('inv.title') }}</span></h2>
-    <label for="invSearch" style="margin-top:0">{{ t('inv.search_label') }}</label>
-    <div class="combo combo-search">
-      <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
-      <input id="invSearch" type="search" enterkeyhint="search" spellcheck="false" placeholder="{{ t('inv.search_placeholder') }}">
-      <ul id="invSearch-list" class="combo-list" hidden></ul>
+        <div id="spoolEmpty" class="empty only-wide">
+          <svg class="ico" aria-hidden="true"><use href="#i-box"/></svg>
+          <p>{{ t('nav.detail_empty') }}</p>
+        </div>
+      </aside>
     </div>
-    <div class="hint">{{ t('inv.search_hint') }}</div>
-    <div id="invSort"></div>
-    <details id="stockBox" class="bm" style="margin-top:14px">
-      <summary style="font-weight:600;font-size:14px">{{ t('sort.all') }} <span id="stockCount" class="muted"></span></summary>
-      <div class="hint" style="margin-top:4px">{{ t('sort.all_hint') }}</div>
-      <div id="stockList" style="margin-top:4px"></div>
-      <button id="stockCsv" type="button" class="btn-secondary with-ico" style="margin-top:12px"><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg><span>{{ t('sort.csv') }}</span></button>
-    </details>
-    <details id="statsBox" class="bm" style="margin-top:10px">
-      <summary style="font-weight:600;font-size:14px">{{ t('sort.stats') }} <span id="statsTotal" class="muted"></span></summary>
-      <div class="seg" role="group" aria-label="{{ t('sort.stats_by') }}">
-        <button type="button" data-by="material" aria-pressed="true">{{ t('sort.k_material') }}</button>
-        <button type="button" data-by="brand" aria-pressed="false">{{ t('sort.k_brand') }}</button>
-        <button type="button" data-by="location" aria-pressed="false">{{ t('sort.k_location') }}</button>
-      </div>
-      <div id="statsList" style="margin-top:6px"></div>
-    </details>
-    <details id="reorderBox" class="bm" style="margin-top:14px">
-      <summary style="font-weight:600;font-size:14px">{{ t('inv.reorder') }} <span id="reorderCount" class="muted"></span></summary>
-      <div class="row" style="align-items:flex-end">
-        <div style="flex:0 0 130px"><label for="reorderMax">{{ t('inv.reorder_below') }}</label><input id="reorderMax" inputmode="numeric" value="200"></div>
-        <div class="hint" style="margin-bottom:12px">{{ t('inv.reorder_hint') }}</div>
-      </div>
-      <div id="reoSort"></div>
-      <div id="reorderList"></div>
-      <!-- A message through BamBuddy's channels when a kind runs out. -->
-      <label class="check" style="display:flex;gap:10px;align-items:center;margin-top:14px">
-        <input id="reoAlert" type="checkbox" style="width:22px;height:22px;margin:0;accent-color:var(--brand)">
-        <span>{{ t('inv.alert') }}</span></label>
-      <div class="hint">{{ t('inv.alert_hint') }}</div>
-      <div id="reoAlertInfo" class="hint"></div>
-      <button id="reoAlertCheck" type="button" class="btn-secondary hidden" style="margin-top:8px">{{ t('inv.alert_check') }}</button>
-    </details>
-    <details id="linkBox" class="bm hidden" style="margin-top:10px">
-      <summary style="font-weight:600;font-size:14px">{{ t('profile.link_title') }}</summary>
-      <div class="hint">{{ t('profile.link_hint') }}</div>
-      <button id="linkCheck" type="button" class="btn-secondary" style="margin-top:10px">{{ t('profile.link_check') }}</button>
-      <div id="linkList" class="hint"></div>
-      <button id="linkApply" type="button" class="btn-primary hidden" style="margin-top:10px"></button>
-    </details>
   </section>
 
-  <!-- Invoices: the price of the spools from what was paid (static/invoices.js). -->
-  <section class="card" id="ivcCard">
-    <h2 class="card-title with-ico" style="justify-content:flex-start"><svg class="ico" aria-hidden="true"><use href="#i-clip"/></svg><span>{{ t('ivc.title') }}</span></h2>
-    <div class="hint" style="margin-top:0">{{ t('ivc.intro') }} <span id="ivcCount"></span></div>
-    <div class="ivc-picks">
-      <button id="ivcCamera" type="button" class="btn-secondary with-ico ivc-pick"><svg class="ico" aria-hidden="true"><use href="#i-camera"/></svg><span>{{ t('ivc.photo') }}</span></button>
-      <button id="ivcPick" type="button" class="btn-secondary ivc-pick">{{ t('ivc.pick_files') }}</button>
+  <!-- ══ Regal: where the spools are, BamBuddy's storage locations as tiles;
+       putting one away by scanning it; a shelf sorted; places made from a
+       pattern. ══ -->
+  <section id="tab-shelf" class="tab" role="tabpanel" aria-labelledby="tabbtn-shelf" tabindex="-1" hidden>
+    <div class="tab-head wrap">
+      <h2 class="tab-title">{{ t('nav.shelf') }}</h2>
+      <button id="locReload" type="button" class="icon-btn" aria-label="{{ t('loc.reload') }}" title="{{ t('loc.reload') }}"><svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg></button>
+      <button id="sortScanOpen" type="button" class="btn-primary with-ico btn-hero"><svg class="ico" aria-hidden="true"><use href="#i-qr"/></svg><span>{{ t('guide.free_title') }}</span></button>
     </div>
-    <input id="ivcPhoto" type="file" accept="image/*" capture="environment" hidden>
-    <input id="ivcFiles" type="file" accept="application/pdf,image/*" multiple hidden>
-    <div id="ivcOcrNote" class="hint"></div>
-    <div id="ivcHint" class="hint" role="status"></div>
-    <div id="ivcReview"></div>
-    <details id="ivcAmazon" class="bm" style="margin-top:14px">
-      <summary style="font-weight:600;font-size:14px">{{ t('ivc.amazon_title') }}</summary>
-      <ol class="hint">
-        <li>{{ t('ivc.amazon_step1') }}</li>
-        <li>{{ t('ivc.amazon_step2') }}</li>
-        <li>{{ t('ivc.amazon_step3') }}</li>
-      </ol>
-      <div class="hint">{{ t('ivc.amazon_private') }}</div>
-      <button id="ivcAmazonPick" type="button" class="btn-secondary" style="margin-top:10px">{{ t('ivc.amazon_pick') }}</button>
-      <input id="ivcAmazonFile" type="file" accept=".zip,.csv,application/zip,text/csv" hidden>
-      <div id="ivcAmazonHint" class="hint" role="status"></div>
-    </details>
-  </section>
-
-  <!-- Where the spools are: BamBuddy's storage locations as tiles with the
-       colours stored in each, and many made at once from a pattern. -->
-  <section class="card" id="locCard">
-    <div class="form-head" style="margin-bottom:6px">
-      <h2 class="card-title with-ico grow" style="margin:0;justify-content:flex-start"><svg class="ico" aria-hidden="true"><use href="#i-shelf"/></svg><span>{{ t('loc.title') }}</span></h2>
-      <button id="locReload" type="button" class="icon-btn loc-ib" aria-label="{{ t('loc.reload') }}" title="{{ t('loc.reload') }}"><svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg></button>
+    <div class="seg seg-nav" role="tablist" id="shelfSeg" aria-label="{{ t('nav.shelf') }}">
+      <button type="button" role="tab" id="shelfSeg-places" data-pane="locCard" aria-controls="locCard">{{ t('nav.shelf_places') }}</button>
+      <button type="button" role="tab" id="shelfSeg-plan" data-pane="planBox" aria-controls="planBox">{{ t('nav.shelf_plan') }}</button>
+      <button type="button" role="tab" id="shelfSeg-create" data-pane="locBulk" aria-controls="locBulk">{{ t('nav.shelf_create') }}</button>
     </div>
-    <div id="locSummary" class="hint" style="margin-top:0" role="status"></div>
-    <div id="locStats" class="loc-stats"></div>
-    <div id="locView"></div>
-    <button id="sortScanOpen" type="button" class="btn-secondary with-ico" style="margin-top:14px"><svg class="ico" aria-hidden="true"><use href="#i-qr"/></svg><span>{{ t('guide.free_title') }}</span></button>
+    <section class="card pane" id="locCard" role="tabpanel" aria-labelledby="shelfSeg-places">
+      <div id="locSummary" class="hint" style="margin-top:0" role="status"></div>
+      <div id="locStats" class="loc-stats"></div>
+      <div id="locView"></div>
+    </section>
     <!-- A shelf sorted: where each spool goes, most staying put, and the
          steps to get there, one at a time or booked at once. -->
-    <details id="planBox" class="bm" style="margin-top:14px">
-      <summary style="font-weight:600;font-size:14px;min-height:44px;display:flex;align-items:center">{{ t('plan.title') }}</summary>
+    <section id="planBox" class="card pane" role="tabpanel" aria-labelledby="shelfSeg-plan" hidden>
+      <h3 class="card-title">{{ t('plan.title') }}</h3>
       <div class="hint" style="margin-top:0">{{ t('plan.hint') }}</div>
       <div id="planResume" class="plan-note info hidden"></div>
-      <div class="row" style="align-items:flex-end">
-        <div><label for="planPlaces">{{ t('plan.places') }}</label><select id="planPlaces"></select></div>
-        <div style="flex:0 0 116px"><label for="planCap">{{ t('plan.capacity') }}</label><input id="planCap" inputmode="numeric" autocomplete="off"></div>
+      <div class="plan-form">
+        <div class="row" style="align-items:flex-end">
+          <div><label for="planPlaces">{{ t('plan.places') }}</label><select id="planPlaces"></select></div>
+          <div style="flex:0 0 116px"><label for="planCap">{{ t('plan.capacity') }}</label><input id="planCap" inputmode="numeric" autocomplete="off"></div>
+        </div>
+        <div class="hint">{{ t('plan.capacity_hint') }}</div>
+        <div id="planSort"></div>
+        <label class="loc-check"><input id="planElsewhere" type="checkbox"><span>{{ t('plan.elsewhere') }}</span></label>
+        <label class="loc-check"><input id="planBreak" type="checkbox"><span>{{ t('plan.break') }}</span></label>
+        <div class="hint">{{ t('plan.intake_hint') }}</div>
       </div>
-      <div class="hint">{{ t('plan.capacity_hint') }}</div>
-      <div id="planSort"></div>
-      <label class="loc-check"><input id="planElsewhere" type="checkbox"><span>{{ t('plan.elsewhere') }}</span></label>
-      <label class="loc-check"><input id="planBreak" type="checkbox"><span>{{ t('plan.break') }}</span></label>
-      <div class="hint">{{ t('plan.intake_hint') }}</div>
       <div id="planSummary" class="hint" role="status" aria-live="polite" style="margin-top:12px;font-size:13.5px;color:var(--text)"></div>
       <div id="planNote" class="plan-note hidden"></div>
       <button id="planGuide" type="button" class="btn-primary with-ico hidden" style="margin-top:12px;min-height:52px"><svg class="ico" aria-hidden="true"><use href="#i-steps"/></svg><span></span></button>
@@ -867,9 +1065,9 @@
       <div id="planApplyHint" class="hint hidden">{{ t('plan.apply_hint') }}</div>
       <div id="planResult" class="hint" role="status"></div>
       <button id="planLabels" type="button" class="btn-secondary with-ico hidden" style="margin-top:8px"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span></span></button>
-    </details>
-    <details id="locBulk" class="bm" style="margin-top:14px">
-      <summary style="font-weight:600;font-size:14px;min-height:44px;display:flex;align-items:center">{{ t('loc.create_title') }}</summary>
+    </section>
+    <section id="locBulk" class="card pane" role="tabpanel" aria-labelledby="shelfSeg-create" hidden>
+      <h3 class="card-title">{{ t('loc.create_title') }}</h3>
       <div class="hint" style="margin-top:0">{{ t('loc.create_hint') }}</div>
       <div class="seg" role="group" aria-label="{{ t('loc.create_title') }}">
         <button type="button" data-mode="list" aria-pressed="true">{{ t('loc.mode_list') }}</button>
@@ -909,7 +1107,152 @@
       <button id="locCreate" type="button" class="btn-primary" style="margin-top:12px;min-height:52px" disabled>{{ t('loc.create_none') }}</button>
       <div id="locResult" class="hint" role="status"></div>
       <button id="locResultLabels" type="button" class="btn-secondary with-ico hidden" style="margin-top:8px"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span></span></button>
-    </details>
+    </section>
+  </section>
+
+  <!-- ══ Etiketten: Bambuddy's own template, shown dot for dot as the label
+       printer prints it, and printed only on a tap; the own layout apart. ══ -->
+  <section id="tab-labels" class="tab" role="tabpanel" aria-labelledby="tabbtn-labels" tabindex="-1" hidden>
+    <div class="tab-head">
+      <h2 class="tab-title">{{ t('nav.labels') }}</h2>
+      <div class="seg seg-nav seg-sm" role="tablist" id="labelSeg" aria-label="{{ t('nav.labels') }}">
+        <button type="button" role="tab" id="labelSeg-print" data-pane="labelCard" aria-controls="labelCard">{{ t('nav.label_print') }}</button>
+        <button type="button" role="tab" id="labelSeg-layout" data-pane="labelSetup" aria-controls="labelSetup">{{ t('nav.label_layout') }}</button>
+      </div>
+    </div>
+    <section class="card pane" id="labelCard" role="tabpanel" aria-labelledby="labelSeg-print">
+      <div class="lbl-grid">
+        <div class="lbl-ctl">
+          <div class="row">
+            <div style="flex:0 0 38%"><label for="labelSpool" style="margin-top:0">{{ t('label.spool_id') }}</label><input id="labelSpool" autocomplete="off" placeholder="12, 15, 20-24"></div>
+            <div><label for="labelTpl" style="margin-top:0">{{ t('label.template') }}</label><select id="labelTpl"></select></div>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <div><div class="combo"><input id="labelLoc" placeholder="{{ t('label.by_location') }}" aria-label="{{ t('label.by_location') }}"><span class="combo-chev"></span><ul id="labelLoc-list" class="combo-list" hidden></ul></div></div>
+            <div style="flex:0 0 auto"><button id="labelToday" type="button" class="btn-secondary" style="width:auto;padding:11px 14px;min-height:46px">{{ t('label.today') }}</button></div>
+          </div>
+          <div id="labelChips"></div>
+          <!-- After spools were added: their OpenSpool record onto a sticker each. -->
+          <div id="newNfcBox" class="hidden" style="margin-top:8px">
+            <div id="newNfcBtns"></div>
+            <div class="hint">{{ t('spool.nfc_write_hint') }}</div>
+            <div id="newNfcHint" class="hint"></div>
+          </div>
+          <!-- Two on one: half size, twice on the roll's label, cut apart along a
+               dashed line (small holders on a shelf edge). -->
+          <div id="labelTwoUpBox" class="lay-two">
+            <label class="loc-check"><input id="labelTwoUp" type="checkbox"><span>{{ t('label.twoup') }}</span></label>
+            <select id="labelTwoUpDir" aria-label="{{ t('label.twoup') }}">
+              <option value="stack">{{ t('label.twoup_stack') }}</option>
+              <option value="side">{{ t('label.twoup_side') }}</option>
+            </select>
+          </div>
+          <div id="labelTwoUpMore" class="hidden">
+            <div id="labelTwoUpFor" class="hint" style="margin-top:2px"></div>
+            <label class="loc-check" style="margin-top:4px"><input id="labelTwoUpCut" type="checkbox"><span>{{ t('label.twoup_cut') }}</span></label>
+            <select id="labelTwoUpOdd" aria-label="{{ t('label.twoup_odd_twice') }}" style="margin-top:6px;min-height:44px">
+              <option value="twice">{{ t('label.twoup_odd_twice') }}</option>
+              <option value="empty">{{ t('label.twoup_odd_empty') }}</option>
+            </select>
+          </div>
+          <button id="labelPreviewBtn" type="button" class="btn-primary" style="margin-top:14px">{{ t('label.preview') }}</button>
+        </div>
+        <div class="lbl-out">
+          <div id="labelBox" class="hidden">
+            <canvas id="labelCanvas" width="400" height="240"></canvas>
+            <div class="row" style="margin-top:12px">
+              <div id="labelPrintWrap"><button id="labelPrintBtn" type="button" class="btn-primary">{{ t('label.print') }}</button></div>
+              <div><button id="labelShareBtn" type="button" class="btn-secondary">{{ t('label.share') }}</button></div>
+            </div>
+          </div>
+          <div class="empty lbl-ph only-wide">
+            <svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg>
+            <p>{{ t('nav.label_empty') }}</p>
+          </div>
+          <div id="labelHint" class="hint" role="status"></div>
+        </div>
+      </div>
+    </section>
+    <section class="card pane" id="labelSetup" role="tabpanel" aria-labelledby="labelSeg-layout" hidden>
+      <h3 class="card-title">{{ t('label.settings') }}</h3>
+      <div class="row">
+        <div><label for="labelW" style="margin-top:0">{{ t('label.media_w') }}</label><input id="labelW" inputmode="numeric"></div>
+        <div><label for="labelL" style="margin-top:0">{{ t('label.media_l') }}</label><input id="labelL" inputmode="numeric"></div>
+      </div>
+      <div id="labelOwnBox">
+        <label>{{ t('label.layout') }}</label>
+        <div class="hint" style="margin-top:0">{{ t('label.layout_hint') }}</div>
+        <div class="lay-demo"><canvas id="labelDemo" width="400" height="240"></canvas></div>
+        <div id="labelLayout"></div>
+        <div class="row">
+          <div><label for="labelQrPos">{{ t('label.qr_pos') }}</label><select id="labelQrPos"></select></div>
+          <div><label for="labelQrSize">{{ t('label.qr_size') }}</label><select id="labelQrSize"></select></div>
+        </div>
+        <label for="labelFlow">{{ t('label.flow') }}</label><select id="labelFlow"></select>
+        <button id="labelReset" type="button" class="btn-secondary" style="margin-top:14px">{{ t('label.reset') }}</button>
+      </div>
+      <div id="labelFieldsBox">
+        <label>{{ t('label.lines') }}</label>
+        <div id="labelFields" class="fieldgrid"></div>
+      </div>
+    </section>
+  </section>
+
+  <!-- ══ Mehr: the connection and the inventory written to, how the page
+       looks and speaks, upkeep. ══ -->
+  <section id="tab-more" class="tab tab-narrow" role="tabpanel" aria-labelledby="tabbtn-more" tabindex="-1" hidden>
+    <div class="tab-head"><h2 class="tab-title">{{ t('nav.more') }}</h2></div>
+    <section class="card" aria-labelledby="moreConnTitle">
+      <h3 id="moreConnTitle" class="card-title">{{ t('nav.sec_connection') }}</h3>
+      <div class="conn"><span id="connDot" class="status-dot"></span><span id="connText">{{ t('health.checking') }}</span></div>
+      <!-- Which inventory spools go to: asked of Bambuddy, or set by hand. -->
+      <div class="inv">
+        <label for="invMode">{{ t('settings.inventory') }}</label>
+        <select id="invMode">
+          <option value="auto">{{ t('settings.auto') }}</option>
+          <option value="spoolman">{{ t('settings.spoolman') }}</option>
+          <option value="local">{{ t('settings.local') }}</option>
+        </select>
+        <details id="invStatus" class="smstat hidden">
+          <summary role="status"><span id="smDot" class="status-dot"></span><span id="smTitle" class="smstat-title"></span></summary>
+          <div class="smstat-body">
+            <div id="invHint" class="hint"></div>
+            <div id="smMore" class="hint"></div>
+            <a id="smCheck" href="#" class="hidden">{{ t('settings.sm_check') }}</a>
+          </div>
+        </details>
+      </div>
+    </section>
+    <section class="card" aria-labelledby="moreLookTitle">
+      <h3 id="moreLookTitle" class="card-title">{{ t('nav.sec_display') }}</h3>
+      <label id="themeLbl" style="margin-top:0">{{ t('nav.theme') }}</label>
+      <div id="themeBtn" class="seg" role="radiogroup" aria-labelledby="themeLbl" style="margin-top:0">
+        <button type="button" role="radio" data-mode="auto" aria-checked="true" class="with-ico"><svg class="ico" aria-hidden="true"><use href="#i-auto"/></svg><span>{{ t('nav.theme_auto') }}</span></button>
+        <button type="button" role="radio" data-mode="light" aria-checked="false" class="with-ico"><svg class="ico" aria-hidden="true"><use href="#i-sun"/></svg><span>{{ t('nav.theme_light') }}</span></button>
+        <button type="button" role="radio" data-mode="dark" aria-checked="false" class="with-ico"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg><span>{{ t('nav.theme_dark') }}</span></button>
+      </div>
+      <label for="langPick">{{ t('nav.language') }}</label>
+      {% set lang_names = {'de': 'Deutsch', 'en': 'English', 'es': 'Español', 'fr': 'Français', 'it': 'Italiano', 'ja': '日本語', 'ko': '한국어', 'pt-br': 'Português (Brasil)', 'tr': 'Türkçe', 'zh-cn': '简体中文', 'zh-tw': '繁體中文'} %}
+      <select id="langPick">
+        {% for code in supported_langs %}<option value="{{ code }}"{% if code == lang|lower %} selected{% endif %}>{{ lang_names.get(code, code) }}</option>{% endfor %}
+      </select>
+    </section>
+    <section class="card" aria-labelledby="moreToolsTitle">
+      <h3 id="moreToolsTitle" class="card-title">{{ t('nav.sec_tools') }}</h3>
+      <div class="tools">
+        <button id="refreshDb" type="button" class="btn-secondary with-ico"><svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg><span>{{ t('scan.refresh_db')|bare }}</span></button>
+        <div id="refreshHint" class="hint" style="margin:0"></div>
+        <button id="clearCache" type="button" class="btn-secondary with-ico"><svg class="ico" aria-hidden="true"><use href="#i-trash"/></svg><span>{{ t('scan.clear_cache')|bare }}</span></button>
+      </div>
+      <details id="linkBox" class="bm hidden" style="margin-top:10px">
+        <summary>{{ t('profile.link_title') }}</summary>
+        <div class="hint">{{ t('profile.link_hint') }}</div>
+        <button id="linkCheck" type="button" class="btn-secondary" style="margin-top:10px">{{ t('profile.link_check') }}</button>
+        <div id="linkList" class="hint"></div>
+        <button id="linkApply" type="button" class="btn-primary hidden" style="margin-top:10px"></button>
+      </details>
+    </section>
+    <p class="version">{{ t('app.title') }} {{ version }}</p>
   </section>
 
   <!-- A storage location opened: its spools, rename, delete, label. -->
@@ -970,103 +1313,8 @@
     <div id="sortScanBar"></div>
     <button id="sortScanLabels" type="button" class="btn-secondary with-ico hidden" style="margin-top:12px"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span></span></button>
   </dialog>
-
-  <!-- A spool's label: Bambuddy's own template, shown here dot for dot as
-       the label printer prints it, and printed only on a tap. -->
-  <section class="card" id="labelCard">
-    <h2 class="card-title with-ico" style="justify-content:flex-start"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span>{{ t('label.title')|bare }}</span></h2>
-    <div class="row">
-      <div style="flex:0 0 38%"><label for="labelSpool" style="margin-top:0">{{ t('label.spool_id') }}</label><input id="labelSpool" autocomplete="off" placeholder="12, 15, 20-24"></div>
-      <div><label for="labelTpl" style="margin-top:0">{{ t('label.template') }}</label><select id="labelTpl"></select></div>
-    </div>
-    <div class="row" style="margin-top:8px">
-      <div><div class="combo"><input id="labelLoc" placeholder="{{ t('label.by_location') }}" aria-label="{{ t('label.by_location') }}"><span class="combo-chev"></span><ul id="labelLoc-list" class="combo-list" hidden></ul></div></div>
-      <div style="flex:0 0 auto"><button id="labelToday" type="button" class="btn-secondary" style="width:auto;padding:11px 14px">{{ t('label.today') }}</button></div>
-    </div>
-    <div id="labelChips"></div>
-    <!-- After spools were added: their OpenSpool record onto a sticker each. -->
-    <div id="newNfcBox" class="hidden" style="margin-top:8px">
-      <div id="newNfcBtns"></div>
-      <div class="hint">{{ t('spool.nfc_write_hint') }}</div>
-      <div id="newNfcHint" class="hint"></div>
-    </div>
-    <details class="bm" style="margin-top:12px">
-      <summary style="font-weight:500;font-size:13.5px;color:var(--muted)">{{ t('label.settings') }}</summary>
-      <div class="row">
-        <div><label for="labelW">{{ t('label.media_w') }}</label><input id="labelW" inputmode="numeric"></div>
-        <div><label for="labelL">{{ t('label.media_l') }}</label><input id="labelL" inputmode="numeric"></div>
-      </div>
-      <div id="labelOwnBox">
-        <label>{{ t('label.layout') }}</label>
-        <div class="hint" style="margin-top:0">{{ t('label.layout_hint') }}</div>
-        <div class="lay-demo"><canvas id="labelDemo" width="400" height="240"></canvas></div>
-        <div id="labelLayout"></div>
-        <div class="row">
-          <div><label for="labelQrPos">{{ t('label.qr_pos') }}</label><select id="labelQrPos"></select></div>
-          <div><label for="labelQrSize">{{ t('label.qr_size') }}</label><select id="labelQrSize"></select></div>
-        </div>
-        <label for="labelFlow">{{ t('label.flow') }}</label><select id="labelFlow"></select>
-        <button id="labelReset" type="button" class="btn-quiet" style="margin-top:8px">{{ t('label.reset') }}</button>
-      </div>
-      <div id="labelFieldsBox">
-        <label>{{ t('label.lines') }}</label>
-        <div id="labelFields" class="fieldgrid"></div>
-      </div>
-    </details>
-    <!-- Two on one: half size, twice on the roll's label, cut apart along a
-         dashed line (small holders on a shelf edge). -->
-    <div id="labelTwoUpBox" class="lay-two">
-      <label class="loc-check"><input id="labelTwoUp" type="checkbox"><span>{{ t('label.twoup') }}</span></label>
-      <select id="labelTwoUpDir" aria-label="{{ t('label.twoup') }}">
-        <option value="stack">{{ t('label.twoup_stack') }}</option>
-        <option value="side">{{ t('label.twoup_side') }}</option>
-      </select>
-    </div>
-    <div id="labelTwoUpMore" class="hidden">
-      <div id="labelTwoUpFor" class="hint" style="margin-top:2px"></div>
-      <label class="loc-check" style="margin-top:4px"><input id="labelTwoUpCut" type="checkbox"><span>{{ t('label.twoup_cut') }}</span></label>
-      <select id="labelTwoUpOdd" aria-label="{{ t('label.twoup_odd_twice') }}" style="margin-top:6px;min-height:44px">
-        <option value="twice">{{ t('label.twoup_odd_twice') }}</option>
-        <option value="empty">{{ t('label.twoup_odd_empty') }}</option>
-      </select>
-    </div>
-    <button id="labelPreviewBtn" type="button" class="btn-secondary" style="margin-top:14px">{{ t('label.preview') }}</button>
-    <div id="labelBox" class="hidden" style="margin-top:14px">
-      <canvas id="labelCanvas" width="400" height="240"></canvas>
-      <div class="row" style="margin-top:12px">
-        <div id="labelPrintWrap"><button id="labelPrintBtn" type="button" class="btn-primary">{{ t('label.print') }}</button></div>
-        <div><button id="labelShareBtn" type="button" class="btn-secondary">{{ t('label.share') }}</button></div>
-      </div>
-    </div>
-    <div id="labelHint" class="hint"></div>
-  </section>
 </main>
-
-<footer>
-  <div class="tools">
-    <button id="refreshDb" type="button" class="btn-quiet with-ico"><svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg><span>{{ t('scan.refresh_db')|bare }}</span></button>
-    <a id="clearCache" href="#" class="btn-quiet with-ico" style="color:var(--muted)"><svg class="ico" aria-hidden="true"><use href="#i-trash"/></svg><span>{{ t('scan.clear_cache')|bare }}</span></a>
-  </div>
-  <div id="refreshHint" class="hint" style="margin:0 0 6px"></div>
-  <!-- Which inventory spools go to: asked of Bambuddy, or set by hand. -->
-  <div class="inv">
-    <label for="invMode">{{ t('settings.inventory') }}</label>
-    <select id="invMode">
-      <option value="auto">{{ t('settings.auto') }}</option>
-      <option value="spoolman">{{ t('settings.spoolman') }}</option>
-      <option value="local">{{ t('settings.local') }}</option>
-    </select>
-    <details id="invStatus" class="smstat hidden">
-      <summary role="status"><span id="smDot" class="status-dot"></span><span id="smTitle" class="smstat-title"></span></summary>
-      <div class="smstat-body">
-        <div id="invHint" class="hint"></div>
-        <div id="smMore" class="hint"></div>
-        <a id="smCheck" href="#" class="hidden">{{ t('settings.sm_check') }}</a>
-      </div>
-    </details>
-  </div>
-  {{ t('app.title') }} {{ version }}
-</footer>
+</div>
 
 <script src="https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
 {% if auth.mode == 'bambuddy' %}<script>window.F2B_AUTH = {{ dict(auth, texts=translations.auth)|tojson }};</script>
@@ -1097,6 +1345,133 @@ function tn(key, count, vars){
 
 const $ = id => document.getElementById(id);
 let reader = null, currentBarcode = null;
+
+// ── The five places, and the browser's back button ──
+// A place is shown, the others hidden; each change is a history entry
+// (#stock …), so Android's back goes to the place before. A sheet or a
+// spool's record opened is an entry too, and back closes it. What a place
+// reads (the stock, the storage locations) is read when it is first shown.
+const TABS = ['add', 'stock', 'shelf', 'labels', 'more'];
+let tabNow = null;
+const tabShown = {}, paneShown = {};
+function onTab(tab, fn){ (tabShown[tab] = tabShown[tab] || []).push(fn); }
+function onPane(id, fn){ (paneShown[id] = paneShown[id] || []).push(fn); }
+// Whether a part of a place is on screen: its segment chosen, its place shown.
+function paneOn(id){
+  const p = $(id);
+  if(!p || p.hidden) return false;
+  const tab = p.closest('.tab');
+  return !tab || !tab.hidden;
+}
+function firePane(id){ if(paneOn(id)) (paneShown[id] || []).forEach(f => f()); }
+function tabOf(hash){ const h = String(hash || '').replace('#', ''); return TABS.includes(h) ? h : null; }
+let navBackWait = null, navBackDone = null, navIgnorePop = 0;
+function navUrl(hash){ return location.pathname + location.search + (hash || ''); }
+// Pushed only after a back of our own has landed, or it would be undone by it.
+function navPush(state, hash){
+  const go = () => history.pushState(state, '', navUrl(hash));
+  if(navBackWait) navBackWait.then(go); else go();
+}
+function navBack(){
+  if(navBackWait) return;
+  navIgnorePop++;
+  navBackWait = new Promise(r => { navBackDone = r; });
+  history.back();
+  // A history with nothing before (opened from a link): back does nothing.
+  setTimeout(() => { if(navBackDone){ navIgnorePop = 0; const d = navBackDone; navBackWait = navBackDone = null; d(); } }, 400);
+}
+function showTab(tab, opt = {}){
+  if(!TABS.includes(tab)) tab = 'add';
+  const changed = tab !== tabNow;
+  tabNow = tab;
+  for(const x of TABS){
+    const on = x === tab;
+    $('tab-' + x).hidden = !on;
+    const b = $('tabbtn-' + x);
+    b.setAttribute('aria-selected', String(on));
+    b.tabIndex = on ? 0 : -1;
+  }
+  if(opt.replace) history.replaceState(Object.assign({}, history.state, {tab}), '', navUrl('#' + tab));
+  else if(changed && opt.push !== false) navPush({tab}, '#' + tab);
+  if(!changed && !opt.force) return;
+  if(!opt.keepScroll) window.scrollTo(0, 0);
+  (tabShown[tab] || []).forEach(f => f());
+  $('tab-' + tab).querySelectorAll('.pane').forEach(p => firePane(p.id));
+}
+// Tabs by keyboard: arrows move along, Home and End to the ends.
+function tabKeys(list, buttons, pick){
+  list.addEventListener('keydown', e => {
+    const i = buttons.indexOf(document.activeElement);
+    if(i < 0) return;
+    const vertical = list.getAttribute('aria-orientation') === 'vertical';
+    const next = {ArrowRight: 1, ArrowDown: vertical ? 1 : 0, ArrowLeft: -1, ArrowUp: vertical ? -1 : 0}[e.key];
+    let j = null;
+    if(next) j = (i + next + buttons.length) % buttons.length;
+    else if(e.key === 'Home') j = 0;
+    else if(e.key === 'End') j = buttons.length - 1;
+    if(j === null) return;
+    e.preventDefault();
+    buttons[j].focus();
+    pick(buttons[j]);
+  });
+}
+(function(){
+  const buttons = TABS.map(x => $('tabbtn-' + x));
+  buttons.forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  tabKeys($('tabList'), buttons, b => showTab(b.dataset.tab));
+  const wide = matchMedia('(min-width: 900px)');
+  const orient = () => $('tabList').setAttribute('aria-orientation', wide.matches ? 'vertical' : 'horizontal');
+  wide.addEventListener('change', orient); orient();
+})();
+// Segments inside a place: one part shown at a time, the choice kept.
+function segInit(id, dflt, store){
+  const box = $(id), buttons = [...box.querySelectorAll('[data-pane]')];
+  const has = p => buttons.some(b => b.dataset.pane === p);
+  let now = null;
+  const set = (pane, fire) => {
+    if(!has(pane)) pane = dflt;
+    now = pane;
+    for(const b of buttons){
+      const on = b.dataset.pane === pane;
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+      $(b.dataset.pane).hidden = !on;
+    }
+    if(store) lsSet(store, pane);
+    if(fire) firePane(pane);
+  };
+  buttons.forEach(b => b.addEventListener('click', () => { if(now !== b.dataset.pane) set(b.dataset.pane, true); }));
+  tabKeys(box, buttons, b => set(b.dataset.pane, true));
+  set(store ? lsGet(store, dflt) : dflt, false);
+  return {set: pane => set(pane, true), get now(){ return now; }};
+}
+const addSeg = segInit('addSeg', 'addSpool', null);
+const stockSeg = segInit('stockSeg', 'stockBox', 'f2b.segStock');
+const shelfSeg = segInit('shelfSeg', 'locCard', 'f2b.segShelf');
+const labelSeg = segInit('labelSeg', 'labelCard', null);
+// Sheets: opened as a history entry, closed by back.
+function sheetOpen(d){
+  if(!d.open){ if(d.showModal) d.showModal(); else d.setAttribute('open', ''); }
+  if(!(history.state && history.state.sheet === d.id)) navPush(Object.assign({}, history.state, {sheet: d.id}), location.hash);
+}
+document.querySelectorAll('dialog.sheet').forEach(d => d.addEventListener('close', () => {
+  if(d.dataset.navGone){ delete d.dataset.navGone; return; }
+  if(history.state && history.state.sheet === d.id) navBack();
+}));
+window.addEventListener('popstate', e => {
+  if(navIgnorePop){
+    navIgnorePop--;
+    const d = navBackDone; navBackWait = navBackDone = null;
+    if(d) d();
+    return;
+  }
+  const st = e.state || {};
+  for(const d of document.querySelectorAll('dialog.sheet[open]')){
+    if(st.sheet !== d.id){ d.dataset.navGone = '1'; d.close(); }
+  }
+  if(!st.spool && $('tab-stock').classList.contains('detail')) closeSpool(true);
+  showTab(st.tab || tabOf(location.hash) || 'add', {push: false});
+});
 
 // Register the service worker (enables installable PWA). Needs https or localhost.
 if('serviceWorker' in navigator && window.isSecureContext){
@@ -1161,23 +1536,36 @@ function themeNow(){
 function applyTheme(mode){
   const root = document.documentElement;
   if(mode === 'auto') delete root.dataset.theme; else root.dataset.theme = mode;
-  $('themeIcon').setAttribute('href', {auto:'#i-auto', light:'#i-sun', dark:'#i-moon'}[mode]);
-  $('themeBtn').setAttribute('aria-label', t('theme.'+mode));
-  $('themeBtn').title = t('theme.'+mode);
+  for(const b of $('themeBtn').querySelectorAll('[data-mode]')){
+    const on = b.dataset.mode === mode;
+    b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1;
+  }
   $('themeColor').content = getComputedStyle(root).getPropertyValue('--bg').trim() || '#1b1f23';
 }
-$('themeBtn').onclick = () => {
-  const next = THEMES[(THEMES.indexOf(themeNow()) + 1) % THEMES.length];
-  try{ if(next === 'auto') localStorage.removeItem('f2b.theme'); else localStorage.setItem('f2b.theme', next); }catch(e){}
-  applyTheme(next);
-  toast(t('theme.'+next), 'info');
-};
+(function(){
+  const buttons = [...$('themeBtn').querySelectorAll('[data-mode]')];
+  const pick = b => {
+    const next = b.dataset.mode;
+    try{ if(next === 'auto') localStorage.removeItem('f2b.theme'); else localStorage.setItem('f2b.theme', next); }catch(e){}
+    applyTheme(next);
+  };
+  buttons.forEach(b => b.addEventListener('click', () => pick(b)));
+  tabKeys($('themeBtn'), buttons, pick);
+})();
+$('langPick').onchange = () => { location.href = '/?lang=' + encodeURIComponent($('langPick').value) + location.hash; };
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(themeNow()));
 applyTheme(themeNow());
 $('statusLine').onclick = () => $('statusLine').classList.toggle('open');
 
 // ── Health ──
+// All well: told under Mehr only. Not well: in the header too, on every place.
+function healthShown(){
+  $('statusLine').classList.toggle('quiet', $('dot').dataset.ok === '1');
+  $('connDot').style.background = $('dot').style.background;
+  $('connText').innerHTML = $('health').innerHTML;
+}
 fetch('/api/health').then(r=>r.json()).then(d=>{
+  $('dot').dataset.ok = d.ok ? '1' : '';
   if(d.ok){
     $('dot').style.background = 'var(--brand)';
     $('health').textContent = t('health.connected', {bambuddy: d.bambuddy||'Bambuddy'});
@@ -1190,7 +1578,8 @@ fetch('/api/health').then(r=>r.json()).then(d=>{
     $('health').innerHTML = t('health.not_reachable')+(d.error?': '+d.error:'')
       + (d.bambuddy ? '<br><span style="font-size:11px">'+t('health.using',{bambuddy:d.bambuddy})+'</span>' : '');
   }
-}).catch(()=>{ $('health').textContent=t('health.server_error'); });
+  healthShown();
+}).catch(()=>{ $('health').textContent=t('health.server_error'); $('dot').style.background = 'var(--danger)'; healthShown(); });
 
 // ── Dropdown options (mirrors Bambuddy's spool form) ──
 let OPTS = null;
@@ -1656,7 +2045,7 @@ async function importPage(query){
   // app with that code looked up, the same as typing it into the field.
   const code = (qs.get('barcode')||'').trim();
   if(code){
-    history.replaceState(null, '', location.pathname);
+    history.replaceState({tab: 'add'}, '', location.pathname);
     const gtin = extractGtinFromManualEntry(code);
     const lookup = (gtin && isValidUpcEanBarcode(gtin)) ? gtin
       : isPlausibleSku(code) ? code.toUpperCase() : null;
@@ -1669,7 +2058,7 @@ async function importPage(query){
   else if(qs.get('title') || qs.get('text') || qs.get('url')) query = 'share=1&title='+encodeURIComponent(qs.get('title')||'')
     +'&text='+encodeURIComponent(qs.get('text')||'')+'&url='+encodeURIComponent(qs.get('url')||'');
   if(!query) return;
-  history.replaceState(null, '', location.pathname);
+  history.replaceState({tab: 'add'}, '', location.pathname);
   importPage(query);
 })();
 
@@ -1790,7 +2179,7 @@ function setSearchLink(code, source){
 
 function fillForm(d){
   const f = d.fields || {};
-  closeSpool();
+  addDoneHide();
   extraCodes = [];
   formProfile.manual = false;
   $('form').classList.remove('hidden');
@@ -2369,7 +2758,12 @@ function sortPicker(box, store, dflt, onChange){
 }
 // The stock card's order: the search, the whole list.
 const invSort = sortPicker($('invSort'), 'f2b.sortInv', [{key: 'material'}, {key: 'color'}],
-                           () => { if($('stockBox').open) stockRender(); });
+                           () => { invSortSay(); if(paneOn('stockBox')) stockRender(); });
+// The order in a word on the folded line: "Material · Farbe ↓".
+function invSortSay(){
+  $('invSortNow').textContent = sortMain(invSort.order).map(o => t('sort.k_' + o.key) + (o.desc ? ' ↓' : '')).join(' · ');
+}
+invSortSay();
 
 // ── The user's spools ──
 // One compact list from the active inventory (archived ones left out), kept
@@ -2419,6 +2813,28 @@ function spoolRow(s, sub){
   b.append(sw, main, left);
   return b;
 }
+// Loading, nothing, failed: the same three looks on every place.
+function skeleton(box, n, tiles){
+  box.innerHTML = '';
+  const wrap = tiles ? document.createElement('div') : box;
+  if(tiles){ wrap.className = 'skel-grid'; box.appendChild(wrap); }
+  for(let i = 0; i < n; i++){ const d = document.createElement('span'); d.className = 'skel' + (tiles ? ' tile' : ''); d.setAttribute('aria-hidden', 'true'); wrap.appendChild(d); }
+}
+function emptyEl(icon, text, action, onAction){
+  const d = document.createElement('div'); d.className = 'empty';
+  d.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#' + icon + '"/></svg>';
+  const p = document.createElement('p'); p.textContent = text; d.appendChild(p);
+  if(action){ const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-secondary'; b.textContent = action; b.onclick = onAction; d.appendChild(b); }
+  return d;
+}
+function errBox(text, retry){
+  const d = document.createElement('div'); d.className = 'err-box'; d.setAttribute('role', 'alert');
+  const p = document.createElement('div'); p.textContent = text; d.appendChild(p);
+  if(retry){ const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-secondary with-ico';
+    b.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg><span></span>';
+    b.querySelector('span').textContent = t('nav.retry'); b.onclick = retry; d.appendChild(b); }
+  return d;
+}
 function hintEl(text, err){ const d = document.createElement('div'); d.className = 'hint' + (err ? ' err' : ''); d.textContent = text; return d; }
 function kgText(g){ return (g / 1000).toLocaleString(I18N_LANG, {minimumFractionDigits: 1, maximumFractionDigits: 1}); }
 
@@ -2457,11 +2873,12 @@ makeCombo('invSearch', {
 // maker or location when that sorts first.
 async function stockRender(){
   const box = $('stockList');
+  if(!INV) skeleton(box, 6);
   const all = await inventoryList();
-  $('stockCount').textContent = INV ? '(' + all.length + ')' : '';
+  $('stockCount').textContent = INV ? all.length : '';
   box.innerHTML = '';
-  if(!INV && invErr){ box.appendChild(hintEl(t('sort.read_failed', {error: invErr}), true)); return; }
-  if(!all.length){ box.appendChild(hintEl(t('sort.empty'))); return; }
+  if(!INV && invErr){ box.appendChild(errBox(t('sort.read_failed', {error: invErr}), () => stockRender())); return; }
+  if(!all.length){ box.appendChild(emptyEl('i-box', t('sort.empty'))); return; }
   const order = invSort.order, main = sortMain(order);
   const head = SORT_HEADED.includes(main[0].key) ? main[0].key : null, split = order[0].key === 'tech';
   let group = null, count = 0, n = null, block = null;
@@ -2496,7 +2913,7 @@ async function stockRender(){
     box.appendChild(row);
   }
 }
-$('stockBox').addEventListener('toggle', () => { if($('stockBox').open) stockRender(); });
+onPane('stockBox', stockRender);
 // The same list as a table, in the same order; with semicolons and decimal
 // commas where the language writes 1,5.
 $('stockCsv').onclick = async () => {
@@ -2515,13 +2932,14 @@ $('stockCsv').onclick = async () => {
 let statsBy = lsGet('f2b.statsBy', 'material');
 if(!['material', 'brand', 'location'].includes(statsBy)) statsBy = 'material';
 async function statsRender(){
+  if(!INV) skeleton($('statsList'), 4);
   const all = await inventoryList();
   document.querySelectorAll('#statsBox .seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.by === statsBy)));
   const total = all.reduce((a, s) => a + (s.remaining || 0), 0);
-  $('statsTotal').textContent = INV ? '(' + t('sort.stats_total', {n: all.length, kg: kgText(total)}) + ')' : '';
+  $('statsTotal').textContent = INV ? t('sort.stats_total', {n: all.length, kg: kgText(total)}) : '';
   const box = $('statsList'); box.innerHTML = '';
-  if(!INV && invErr){ box.appendChild(hintEl(t('sort.read_failed', {error: invErr}), true)); return; }
-  if(!all.length){ box.appendChild(hintEl(t('sort.empty'))); return; }
+  if(!INV && invErr){ box.appendChild(errBox(t('sort.read_failed', {error: invErr}), () => statsRender())); return; }
+  if(!all.length){ box.appendChild(emptyEl('i-box', t('sort.empty'))); return; }
   const groups = new Map();
   for(const s of all){
     const h = sortHeading(s, statsBy);
@@ -2547,7 +2965,7 @@ async function statsRender(){
 document.querySelectorAll('#statsBox .seg button').forEach(b => {
   b.onclick = () => { statsBy = b.dataset.by; lsSet('f2b.statsBy', statsBy); statsRender(); };
 });
-$('statsBox').addEventListener('toggle', () => { if($('statsBox').open) statsRender(); });
+onPane('statsBox', statsRender);
 
 // What runs low: one line per kind (maker, material, subtype, colour) with
 // spools under the threshold, what is left of them, the last price paid
@@ -2561,6 +2979,7 @@ async function reorderRender(){
   const max = reorderMax();
   try{ localStorage.setItem('f2b.reorderMax', String(max)); }catch(e){}
   const groups = new Map();
+  if(!INV) skeleton($('reorderList'), 3);
   for(const s of await inventoryList()){
     if(s.remaining == null || s.remaining >= max) continue;
     const key = comboNorm([s.brand, s.material, s.subtype, s.color_name].join('|'));
@@ -2570,7 +2989,7 @@ async function reorderRender(){
   }
   const list = sortSpools([...groups.values()].map(g => Object.assign(g, {id: g.first.id,
     sort: Object.assign({}, g.first.sort, {remaining: g.left})})), reoSort.order);
-  $('reorderCount').textContent = list.length ? '(' + list.length + ')' : '';
+  $('reorderCount').textContent = list.length ? list.length : '';
   const box = $('reorderList'); box.innerHTML = '';
   if(!list.length){ const d = document.createElement('div'); d.className = 'hint'; d.textContent = t('inv.reorder_none', {max}); box.appendChild(d); return; }
   for(const g of list){
@@ -2595,7 +3014,7 @@ async function reorderRender(){
     box.appendChild(row);
   }
 }
-$('reorderBox').addEventListener('toggle', () => { if($('reorderBox').open) reorderRender(); });
+onPane('reorderBox', reorderRender);
 $('reorderMax').addEventListener('change', reorderRender);
 
 // The message when a kind runs out: switched on here, sent by the server
@@ -2639,7 +3058,7 @@ async function reoAlertSave(check){
 $('reoAlert').addEventListener('change', () => reoAlertSave(false));
 $('reoAlertCheck').addEventListener('click', () => reoAlertSave(true));
 $('reorderMax').addEventListener('change', () => { if($('reoAlert').checked) reoAlertSave(false); });
-$('reorderBox').addEventListener('toggle', () => { if($('reorderBox').open) reoAlertLoad(); });
+onPane('reorderBox', reoAlertLoad);
 
 // The spools of the kind on the form already in stock, so a box is not
 // bought or added twice by mistake.
@@ -2693,7 +3112,6 @@ async function openSpool(id){
   await optionsReady;
   const sp = d.spool;
   spoolRec = Object.assign({}, sp, {qr: d.qr});
-  $('form').classList.add('hidden');
   $('spTitle').textContent = t('spool.title', {id});
   $('spMat').textContent = [sp.material, sp.subtype].filter(Boolean).join(' ') || '—';
   $('spBrand').textContent = sp.brand || '';
@@ -2723,14 +3141,35 @@ async function openSpool(id){
       .then(() => { if(spProfile.pick) $('spProfileHint').textContent += '\n' + t('profile.suggested'); });
   }
   $('spoolCard').classList.remove('hidden');
-  $('spoolCard').scrollIntoView({behavior: 'smooth', block: 'start'});
+  spoolShow(id);
 }
-function closeSpool(){
+// The record is a place of its own on a phone (back returns to the list,
+// where it was left) and the right-hand column on a wide screen.
+let spoolListY = 0;
+function spoolShow(id){
+  const tab = $('tab-stock');
+  if(!tab.classList.contains('detail') && tabNow === 'stock') spoolListY = window.scrollY;
+  else if(tabNow !== 'stock') spoolListY = 0;
+  tab.classList.add('detail');
+  showTab('stock', {keepScroll: true});
+  const st = history.state || {};
+  if(st.spool) history.replaceState(Object.assign({}, st, {spool: id}), '', navUrl('#stock'));
+  else navPush({tab: 'stock', spool: id}, '#stock');
+  if(matchMedia('(min-width: 900px)').matches) $('stockSide').scrollTop = 0;
+  else window.scrollTo(0, 0);
+  $('spTitle').setAttribute('tabindex', '-1');
+  $('spTitle').focus({preventScroll: true});
+}
+function closeSpool(fromHistory){
   nfcStop();
   spoolRec = null;
   $('spoolCard').classList.add('hidden');
+  const tab = $('tab-stock'), was = tab.classList.contains('detail');
+  tab.classList.remove('detail');
+  if(was && !matchMedia('(min-width: 900px)').matches && tabNow === 'stock') requestAnimationFrame(() => window.scrollTo(0, spoolListY));
+  if(fromHistory !== true && history.state && history.state.spool) navBack();
 }
-$('spClose').onclick = closeSpool;
+$('spClose').onclick = () => closeSpool();
 $('spGross').addEventListener('input', () => {
   const g = parseFloat(String($('spGross').value).replace(',', '.'));
   if(spoolRec && spoolRec.core_weight && isFinite(g)) $('spRemain').value = Math.max(0, Math.round(g - spoolRec.core_weight));
@@ -2739,7 +3178,7 @@ $('spOpen').onclick = () => { if(spoolRec && spoolRec.qr) window.open(spoolRec.q
 $('spLabel').onclick = () => {
   if(!spoolRec) return;
   labelLocs = null; $('labelSpool').value = spoolRec.id;
-  $('labelCard').scrollIntoView({behavior: 'smooth', block: 'start'});
+  labelGo();
   labelPreview();
 };
 $('spSave').onclick = async () => {
@@ -3082,15 +3521,15 @@ function locSyncOptions(){
 }
 async function locLoad(fresh){
   const my = ++locSeq;
-  if(!LOC) $('locSummary').textContent = t('loc.loading');
+  if(!LOC){ $('locSummary').textContent = ''; skeleton($('locView'), 6, true); }
   let d = null;
   try{ d = await (await fetch('/api/locations' + (fresh ? '?fresh=1' : ''))).json(); }catch(e){}
   if(my !== locSeq) return;
   if(!d || !d.ok){
     LOC = null;
-    $('locView').innerHTML = ''; $('locStats').innerHTML = '';
-    $('locSummary').textContent = locErr(d);
-    $('locSummary').classList.add('err');
+    $('locStats').innerHTML = '';
+    $('locView').replaceChildren(errBox(locErr(d), () => locLoad(true)));
+    $('locSummary').textContent = '';
     return;
   }
   LOC = d;
@@ -3099,7 +3538,7 @@ async function locLoad(fresh){
   locRender();
   locPreviewSoon();
   planFillPlaces();
-  if($('planBox').open) planSoon();
+  if(paneOn('planBox')) planSoon();
 }
 function locDot(s){
   const dot = document.createElement('span');
@@ -3280,7 +3719,7 @@ function locOpen(kind, item){
     act.append(lab, row, label, del);
   }
   const sheet = $('locSheet');
-  if(sheet.showModal) sheet.showModal(); else sheet.setAttribute('open', '');
+  sheetOpen(sheet);
 }
 
 // Names made in BamBuddy: {created, exists, failed, results} or the refusal.
@@ -3330,7 +3769,7 @@ function locSpec(){
 }
 function locPreviewSoon(){ clearTimeout(locPrevTimer); locPrevTimer = setTimeout(locPreview, 250); }
 async function locPreview(){
-  if(!$('locBulk').open) return;
+  if(!paneOn('locBulk')) return;
   const my = ++locPrevSeq;
   const spec = locSpec();
   // Nothing typed yet is no error to ask the server about.
@@ -3367,7 +3806,7 @@ document.querySelectorAll('#locBulk .seg button').forEach(b => { b.onclick = () 
 ['locList', 'locPrefix', 'locSuffix', 'locFrom', 'locTo', 'locRowFrom', 'locRowTo', 'locColFrom', 'locColTo', 'locTemplate']
   .forEach(id => $(id).addEventListener('input', locPreviewSoon));
 $('locPad').addEventListener('change', locPreviewSoon);
-$('locBulk').addEventListener('toggle', () => { if($('locBulk').open){ if(!LOC) locLoad(); locPreview(); } });
+onPane('locBulk', () => { if(!LOC) locLoad(); locPreview(); });
 $('locCreate').onclick = async () => {
   if(!locNew.length) return;
   const names = locNew.slice();
@@ -3389,11 +3828,8 @@ $('locCreate').onclick = async () => {
 $('locResultLabels').onclick = () => labelForLocations(locMade);
 $('locReload').onclick = () => locLoad(true);
 locSetMode(locMode);
-// Read once the card comes into view, not with every page load.
-if('IntersectionObserver' in window){
-  const io = new IntersectionObserver(es => { if(es.some(e => e.isIntersecting)){ io.disconnect(); if(!LOC) locLoad(); } });
-  io.observe($('locCard'));
-}else locLoad();
+// Read when the shelf is first opened, not with every page load.
+onTab('shelf', () => { if(!LOC) locLoad(); });
 
 // ── Sorting a shelf ──
 // The places of a group (or all of them), how many spools a place takes
@@ -3449,7 +3885,7 @@ function planClear(msg){
   $('planSummary').textContent = msg || '';
 }
 async function planLoad(fresh){
-  if(!$('planBox').open) return;
+  if(!paneOn('planBox')) return;
   guideResumeOffer();
   if(!LOC){ planClear(t('loc.loading')); locLoad(); return; }
   const body = planRequest();
@@ -3528,11 +3964,11 @@ $('planCap').addEventListener('input', () => {
 });
 ['planElsewhere', 'planBreak'].forEach(id => $(id).addEventListener('change', () => { lsSet('f2b.' + id, $(id).checked); planLoad(); }));
 $('planOnlyMoves').addEventListener('change', () => { lsSet('f2b.planOnly', $('planOnlyMoves').checked); planRender(); });
-$('planBox').addEventListener('toggle', () => { if($('planBox').open){ planFillPlaces(); planLoad(); } });
+onPane('planBox', () => { planFillPlaces(); planLoad(); });
 function planOpenFor(value){
   lsSet('f2b.planGroup', value);
-  if($('planBox').open){ planFillPlaces(); planLoad(); } else $('planBox').open = true;
-  $('planBox').scrollIntoView({behavior: 'smooth', block: 'start'});
+  if(paneOn('planBox')){ planFillPlaces(); planLoad(); }
+  else{ shelfSeg.set('planBox'); showTab('shelf'); }
 }
 $('planGuide').onclick = () => { if(planData && planData.steps.length) guideStart(planData, planBody, null); };
 
@@ -3550,7 +3986,7 @@ function labelsButton(btn, ids){
     const sheet = btn.closest('dialog');
     if(sheet && sheet.open) sheet.close();
     labelOffer(ids);
-    $('labelCard').scrollIntoView({behavior: 'smooth', block: 'start'});
+    labelGo();
   };
 }
 
@@ -3622,7 +4058,7 @@ function guideStart(plan, body, before){
   inventoryList();      // for a tag held to the phone
   guideDraw('');
   const sheet = $('guideSheet');
-  if(!sheet.open){ if(sheet.showModal) sheet.showModal(); else sheet.setAttribute('open', ''); }
+  sheetOpen(sheet);
 }
 function guidePlace(kind, name){
   return kind === 'place' || kind === 'other' ? name : kind === 'table' ? t('guide.table') : t('guide.none');
@@ -3774,7 +4210,7 @@ async function guideReplan(changed){
   if(!d || !d.ok){ guideHint(planErr(d), true); return; }
   guideStart(d, g.body, before);
   if(changed){ guideHint(t('guide.changed')); toast(t('guide.changed'), 'info'); }
-  if($('planBox').open) planSoon();
+  if(paneOn('planBox')) planSoon();
 }
 // A scan in the guide: the spool in hand, or the compartment it goes into.
 function guideOnScan(w){
@@ -4016,7 +4452,7 @@ async function sortScanPut(place){
 $('sortScanOpen').onclick = async () => {
   sortScanSp = null; sortScanTarget = null; sortScanDraw(); sortScanHint('');
   const sheet = $('sortScanSheet');
-  if(sheet.showModal) sheet.showModal(); else sheet.setAttribute('open', '');
+  sheetOpen(sheet);
   await inventoryList(true);
   if(!LOC) locLoad();
 };
@@ -4142,6 +4578,8 @@ let labelPrinter = null;  // the printer picked in this session
 let labelSeq = 0;
 let labelLocs = null;     // [{loc: name}] while storage location labels are shown
 
+// To the labels, the print part showing.
+function labelGo(){ labelSeg.set('labelCard'); showTab('labels'); }
 function labelHint(msg, err){ $('labelHint').textContent = msg||''; $('labelHint').classList.toggle('err', !!err); }
 // The layout is also kept on the server: the scale prints the same label.
 let labelSyncTimer = null;
@@ -4557,7 +4995,7 @@ function labelForLocations(names){
   $('labelChips').innerHTML = '';
   labelJob = null;
   labelTwoUpSync();
-  $('labelCard').scrollIntoView({behavior: 'smooth', block: 'start'});
+  labelGo();
   labelPreview();
 }
 async function locLabelDraw(name, cfg = labelCfg){
@@ -4815,6 +5253,22 @@ async function labelShare(){
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
+// ── Added: what comes next ──
+// Bought, scanned and added; then onto the shelf and labelled. The label is
+// already in the preview, the shelf's scan-and-put-away one tap away.
+function addDoneShow(ids, n){
+  $('addDoneTitle').textContent = tn('submit.added', n || ids.length);
+  $('addDoneIds').textContent = ids.map(i => '#' + i).join(', ');
+  $('addDone').classList.remove('hidden');
+  window.scrollTo(0, 0);
+  $('addDoneTitle').focus({preventScroll: true});
+}
+function addDoneHide(){ $('addDone').classList.add('hidden'); }
+$('addDoneClose').onclick = addDoneHide;
+$('addDoneLabel').onclick = () => labelGo();
+$('addDoneShelf').onclick = () => { showTab('shelf'); $('sortScanOpen').click(); };
+$('invReload').onclick = () => { invForget(); $('tab-stock').querySelectorAll('.pane').forEach(p => firePane(p.id)); };
+
 // ── Submit ──
 $('form').onsubmit = async (e) => {
   e.preventDefault();
@@ -4859,12 +5313,20 @@ $('form').onsubmit = async (e) => {
       $('tag_uid').value=''; nfcStop(); showSpoolman(null);
       invForget();
       labelOffer(d.spool_ids);
-      nfcOffer(d.spool_ids); }
+      nfcOffer(d.spool_ids);
+      addDoneShow(d.spool_ids || [], d.created || (d.spool_ids || []).length); }
     else if((d.errors || [])[0] === 'mode_changed'){ toast(t('submit.mode_changed'), false); fetch('/api/settings').then(r => r.json()).then(showInv).catch(() => {}); }
     else { toast(t('submit.failed')+(d.error?': '+d.error:(d.errors&&d.errors.length?': '+d.errors[0]:'')), false); }
   }catch(e){ toast(t('submit.request_failed'), false); }
   finally{ $('submitBtn').disabled = false; }
 };
+
+// The place the address names (#stock …), else Erfassen.
+(function(){
+  const tab = (history.state && history.state.tab) || tabOf(location.hash) || 'add';
+  history.replaceState({tab}, '', navUrl('#' + tab));
+  showTab(tab, {push: false, force: true, keepScroll: true});
+})();
 </script>
 <script src="/static/invoices.js?v={{ version }}"></script>
 </body>
