@@ -499,7 +499,7 @@
     background:var(--brand);color:var(--on-brand)}
   .done-check .ico{width:20px;height:20px;stroke-width:2.4}
   .done-card .two{flex-wrap:wrap}
-  .done-card .two>*{flex:1 1 150px}
+  .done-card .two>*{flex:1 1 190px;white-space:nowrap}
   /* Header: the line about the connection only when it is not fine. */
   .status.quiet{display:none}
   .conn{display:flex;align-items:flex-start;gap:8px;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
@@ -562,6 +562,7 @@
     #labelBox:not(.hidden) ~ .lbl-ph{display:none !important}
     .lbl-ph{min-height:220px}
     #labelSetup{max-width:640px}
+    .lay-demo canvas{max-width:440px}
   }
   @media (min-width:1200px){
     .cols{grid-template-columns:minmax(0,1fr) minmax(0,480px)}
