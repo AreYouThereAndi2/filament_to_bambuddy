@@ -443,6 +443,7 @@
     .spool .wind{transition:none}
   }
 </style>
+<link rel="stylesheet" href="/static/invoices.css?v={{ version }}">
 </head>
 <body>
 <div id="ptr"><span id="ptrIcon">↓</span><span id="ptrText">{{ t('ptr.pull') }}</span></div>
@@ -800,6 +801,33 @@
       <button id="linkCheck" type="button" class="btn-secondary" style="margin-top:10px">{{ t('profile.link_check') }}</button>
       <div id="linkList" class="hint"></div>
       <button id="linkApply" type="button" class="btn-primary hidden" style="margin-top:10px"></button>
+    </details>
+  </section>
+
+  <!-- Invoices: the price of the spools from what was paid (static/invoices.js). -->
+  <section class="card" id="ivcCard">
+    <h2 class="card-title with-ico" style="justify-content:flex-start"><svg class="ico" aria-hidden="true"><use href="#i-clip"/></svg><span>{{ t('ivc.title') }}</span></h2>
+    <div class="hint" style="margin-top:0">{{ t('ivc.intro') }} <span id="ivcCount"></span></div>
+    <div class="ivc-picks">
+      <button id="ivcCamera" type="button" class="btn-secondary with-ico ivc-pick"><svg class="ico" aria-hidden="true"><use href="#i-camera"/></svg><span>{{ t('ivc.photo') }}</span></button>
+      <button id="ivcPick" type="button" class="btn-secondary ivc-pick">{{ t('ivc.pick_files') }}</button>
+    </div>
+    <input id="ivcPhoto" type="file" accept="image/*" capture="environment" hidden>
+    <input id="ivcFiles" type="file" accept="application/pdf,image/*" multiple hidden>
+    <div id="ivcOcrNote" class="hint"></div>
+    <div id="ivcHint" class="hint" role="status"></div>
+    <div id="ivcReview"></div>
+    <details id="ivcAmazon" class="bm" style="margin-top:14px">
+      <summary style="font-weight:600;font-size:14px">{{ t('ivc.amazon_title') }}</summary>
+      <ol class="hint">
+        <li>{{ t('ivc.amazon_step1') }}</li>
+        <li>{{ t('ivc.amazon_step2') }}</li>
+        <li>{{ t('ivc.amazon_step3') }}</li>
+      </ol>
+      <div class="hint">{{ t('ivc.amazon_private') }}</div>
+      <button id="ivcAmazonPick" type="button" class="btn-secondary" style="margin-top:10px">{{ t('ivc.amazon_pick') }}</button>
+      <input id="ivcAmazonFile" type="file" accept=".zip,.csv,application/zip,text/csv" hidden>
+      <div id="ivcAmazonHint" class="hint" role="status"></div>
     </details>
   </section>
 
@@ -4835,5 +4863,6 @@ $('form').onsubmit = async (e) => {
   finally{ $('submitBtn').disabled = false; }
 };
 </script>
+<script src="/static/invoices.js?v={{ version }}"></script>
 </body>
 </html>
