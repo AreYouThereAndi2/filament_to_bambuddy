@@ -17,6 +17,8 @@ services:
     #   BAMBUDDY_API_KEY=bb_xxx
     #   # optional: DEFAULT_LABEL_WEIGHT, UPCITEMDB_KEY, UPC_LOOKUP=off, TIGERTAG=off,
     #   #           SPOOLMAN_URL=http://spoolman:7912, INVENTORY_MODE=spoolman
+    #   # AUTH_MODE=bambuddy: sign in with your BamBuddy users; changes are made as
+    #   #   that user (default off: no sign-in). Update the SpoolmanScale first.
     env_file:
       - .env
     volumes:

@@ -34,6 +34,7 @@ from pathlib import Path
 import requests
 from flask import Flask, Response, jsonify, make_response, render_template, request
 
+import auth
 import i18n
 import presets
 import spool_sort
@@ -49,6 +50,29 @@ log = logging.getLogger(__name__)
 
 BAMBUDDY_URL = os.getenv("BAMBUDDY_URL", "http://localhost:8000").rstrip("/")
 BAMBUDDY_API_KEY = os.getenv("BAMBUDDY_API_KEY", "")
+
+
+def _bb_headers(extra: dict | None = None, *, server: bool = False) -> dict:
+    """Headers for a request to BamBuddy. Signed in (AUTH_MODE=bambuddy),
+    the user's own token, so BamBuddy checks that user's permissions and
+    records who changed what; for the scale, the API key it sent. Otherwise,
+    and in jobs without a request (running-out messages, warm-up), the
+    server's BAMBUDDY_API_KEY. `server` takes BAMBUDDY_API_KEY whenever one
+    is set: for BamBuddy's settings read into caches all users share (the
+    inventory mode, the Spoolman address, the external URL, the profiles)."""
+    cred = None if (server and BAMBUDDY_API_KEY) else auth.request_credential()
+    if cred and cred[0] == "bearer":
+        headers = {"Authorization": f"Bearer {cred[1]}"}
+    else:
+        headers = {"X-API-Key": cred[1] if cred else BAMBUDDY_API_KEY}
+    headers["Accept"] = "application/json"
+    headers.update(extra or {})
+    return headers
+
+
+def _have_credential() -> bool:
+    """Whether BamBuddy can be asked: an API key here, or a signed-in user."""
+    return bool(BAMBUDDY_API_KEY) or auth.request_credential() is not None
 
 DEFAULT_LABEL_WEIGHT = int(os.getenv("DEFAULT_LABEL_WEIGHT", "1000"))
 CACHE_FILE = Path(os.getenv("BARCODE_CACHE_FILE", "barcode_cache.json"))
@@ -376,6 +400,13 @@ def _resolve_request_locale() -> str:
     )
 
 
+auth.init_app(app, bambuddy_url=lambda: BAMBUDDY_URL, data_dir=lambda: SETTINGS_FILE.parent,
+              locale=lambda: _resolve_request_locale(),
+              # The sign-in page links BamBuddy without asking it (it may be down).
+              public_url=lambda: (os.getenv("BAMBUDDY_PUBLIC_URL", "").strip().rstrip("/")
+                                  or _public_url_cache["url"] or BAMBUDDY_URL))
+
+
 @app.get("/")
 def index():
     lang = _resolve_request_locale()
@@ -389,6 +420,7 @@ def index():
             supported_langs=i18n.SUPPORTED_LANGS,
             t=translator.t,
             translations=i18n.TRANSLATIONS.get(lang, i18n.TRANSLATIONS[i18n.DEFAULT_LANG]),
+            auth=auth.page_info(),
         )
     )
     # Remember an explicit ?lang= choice so it sticks on the next visit
@@ -479,10 +511,10 @@ def _probe_mode() -> str | None:
     if c["at"] and now - c["at"] < _INVENTORY_MODE_TTL:
         return c["answer"]
     answer, probe = None, None
-    if BAMBUDDY_API_KEY:
+    if _have_credential():
         try:
             r = requests.get(f"{BAMBUDDY_URL}/api/v1/settings/spoolman",
-                             headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"},
+                             headers=_bb_headers(server=True),
                              timeout=10)
             probe = r.status_code
             body = r.json() if r.ok else None
@@ -554,10 +586,10 @@ def _spoolman_url() -> str | None:
     if _spoolman_url_cache["at"] and now - _spoolman_url_cache["at"] < _SPOOLMAN_URL_TTL:
         return _spoolman_url_cache["url"]
     url = None
-    if BAMBUDDY_API_KEY:
+    if _have_credential():
         try:
             r = requests.get(f"{BAMBUDDY_URL}/api/v1/settings/spoolman",
-                             headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=10)
+                             headers=_bb_headers(server=True), timeout=10)
             if r.ok:
                 url = _normalize_spoolman_url((r.json() or {}).get("spoolman_url")) or None
         except Exception:
@@ -600,10 +632,10 @@ def _spoolman_filaments(force: bool = False) -> list:
             log.warning("Spoolman at %s not read (%s %s), asking Bambuddy", url, error, detail or "")
     else:
         error = "no_url"
-    if filaments is None and BAMBUDDY_API_KEY:
+    if filaments is None and _have_credential():
         try:
             r = requests.get(f"{BAMBUDDY_URL}{_INVENTORY_BASES['spoolman']}/filaments",
-                             headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=15)
+                             headers=_bb_headers(server=True), timeout=15)
             if r.ok and isinstance(r.json(), list):
                 filaments = r.json()
         except Exception:
@@ -726,11 +758,11 @@ _PRESETS_TTL = 300.0
 _presets_cache: dict = {"at": 0.0, "list": None, "models": None, "model_map": None, "error": None}
 
 
-def _bambuddy_get(path: str):
-    """GET a Bambuddy path: (json, None) or (None, why not)."""
+def _bambuddy_get(path: str, server: bool = False):
+    """GET a Bambuddy path: (json, None) or (None, why not). `server`: with
+    the server's own key (see _bb_headers)."""
     try:
-        r = requests.get(f"{BAMBUDDY_URL}{path}", headers={"X-API-Key": BAMBUDDY_API_KEY,
-                                                            "Accept": "application/json"}, timeout=15)
+        r = requests.get(f"{BAMBUDDY_URL}{path}", headers=_bb_headers(server=server), timeout=15)
     except Exception as e:
         log.debug("%s not read: %s", path, e)
         return None, "unreachable"
@@ -751,18 +783,18 @@ def _local_presets(force: bool = False) -> list:
     now = time.monotonic()
     if c["list"] is not None and not force and now - c["at"] < _PRESETS_TTL:
         return c["list"]
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         c.update(at=now, list=[], models=[], model_map=presets.MODEL_MAP, error="no_key")
         return []
-    data, error = _bambuddy_get("/api/v1/local-presets/")
+    data, error = _bambuddy_get("/api/v1/local-presets/", server=True)
     found = [p for p in ((data or {}).get("filament") or []) if isinstance(p, dict)] if isinstance(data, dict) else []
-    printers, perror = _bambuddy_get("/api/v1/printers/")
+    printers, perror = _bambuddy_get("/api/v1/printers/", server=True)
     counts: dict = {}
     for pr in printers if isinstance(printers, list) else []:
         model = str((pr or {}).get("model") or "").strip()
         if model and pr.get("is_active", True):
             counts[model] = counts.get(model, 0) + 1
-    model_map, _ = _bambuddy_get("/api/v1/slicer/printer-models")
+    model_map, _ = _bambuddy_get("/api/v1/slicer/printer-models", server=True)
     c.update(at=now, list=found, models=sorted(counts, key=lambda m: -counts[m]),
              model_map=model_map if isinstance(model_map, dict) and model_map else presets.MODEL_MAP,
              error=error or (f"printers {perror}" if perror else None))
@@ -796,7 +828,7 @@ def _save_model_presets(base: str, spool_id: int, rows: list, replace: bool) -> 
     """The per-printer-model profiles of a spool in Bambuddy, merged with
     what it has (see presets.merge_rows). None, or what went wrong."""
     url = f"{BAMBUDDY_URL}{base}/spools/{spool_id}/filament-presets"
-    headers = {"X-API-Key": BAMBUDDY_API_KEY, "Content-Type": "application/json", "Accept": "application/json"}
+    headers = _bb_headers({"Content-Type": "application/json"})
     try:
         r = requests.get(url, headers=headers, timeout=15)
         existing = r.json() if r.ok else []
@@ -836,14 +868,14 @@ def preset_link_all():
     """Every spool without a profile linked to the line that fits it, on
     each printer model; spools linked to a local profile get the rows for
     models they lack. {"apply": false} only lists what would change."""
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="no_key"), 400
     body = request.get_json(force=True, silent=True) or {}
     found = _local_presets(force=True)
     if not found:
         return jsonify(ok=False, error=_presets_cache["error"] or "no_presets"), 409
     base = _inventory_base()
-    headers = {"X-API-Key": BAMBUDDY_API_KEY, "Content-Type": "application/json", "Accept": "application/json"}
+    headers = _bb_headers({"Content-Type": "application/json"})
     try:
         r = requests.get(f"{BAMBUDDY_URL}{base}/spools", headers=headers, timeout=30)
     except Exception:
@@ -938,11 +970,11 @@ def set_settings():
 
 def _bambuddy_locations() -> list[str]:
     """Storage-location names from Bambuddy (best-effort; empty on failure)."""
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return []
     try:
         r = requests.get(f"{BAMBUDDY_URL}/api/v1/inventory/locations",
-                         headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"},
+                         headers=_bb_headers(),
                          timeout=10)
         if r.ok:
             return [loc.get("name") for loc in r.json() if loc.get("name")]
@@ -1062,10 +1094,17 @@ def ofd_refresh():
 @app.get("/api/health")
 def health():
     """Confirm Bambuddy is reachable + config present, with a specific reason."""
-    if not BAMBUDDY_API_KEY:
+    if auth.enabled() and auth.request_credential() is None:
+        # Not signed in, no key of its own: only whether BamBuddy answers.
+        try:
+            reachable = requests.get(f"{BAMBUDDY_URL}/api/v1/auth/status", timeout=10).ok
+        except Exception:
+            reachable = False
+        return jsonify(ok=reachable, login_required=True), 200
+    if not _have_credential():
         return jsonify(ok=False, bambuddy=BAMBUDDY_URL,
                        error="BAMBUDDY_API_KEY not set — start with ./run.sh"), 200
-    headers = {"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}
+    headers = _bb_headers()
     # Probe the endpoint we actually use (inventory), so the key is checked
     # against the permission this app needs.
     try:
@@ -1434,7 +1473,7 @@ def _bed_text(lo, hi) -> str | None:
 @app.post("/api/spool")
 def add_spool():
     """Create one or more spools in Bambuddy, then remember the details by barcode."""
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="BAMBUDDY_API_KEY not set on the server"), 400
 
     body = request.get_json(force=True, silent=True) or {}
@@ -1506,8 +1545,7 @@ def add_spool():
         line = i18n.get_translation(_resolve_request_locale(), "form.bed_note", range=bed)
         payload["note"] = f"{payload['note']}\n{line}" if payload.get("note") else line
 
-    headers = {"X-API-Key": BAMBUDDY_API_KEY, "Content-Type": "application/json",
-               "Accept": "application/json"}
+    headers = _bb_headers({"Content-Type": "application/json"})
     # Bambuddy's own inventory takes the tag right in the create request. The
     # Spoolman one has no tag in its create schema and drops it silently, so
     # there the tag is linked with a second request once the spool exists.
@@ -1650,7 +1688,7 @@ def _public_bambuddy_url() -> str:
     url = BAMBUDDY_URL
     try:
         r = requests.get(f"{BAMBUDDY_URL}/api/v1/settings",
-                         headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=10)
+                         headers=_bb_headers(server=True), timeout=10)
         if r.ok:
             url = (str((r.json() or {}).get("external_url") or "").strip().rstrip("/")) or BAMBUDDY_URL
     except Exception:
@@ -1668,11 +1706,11 @@ _LABEL_SPOOL_KEYS = ("brand", "material", "subtype", "color_name", "rgba", "stor
 def _spool_record(spool_id: int) -> tuple[dict | None, str | None, int]:
     """One spool as the label and the record need it: (spool, None, 200) or
     (None, why not, HTTP status)."""
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return None, "no_key", 400
     try:
         r = requests.get(f"{BAMBUDDY_URL}{_inventory_base()}/spools/{spool_id}",
-                         headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=15)
+                         headers=_bb_headers(), timeout=15)
     except Exception as e:
         log.warning("spool %s: Bambuddy not reachable: %s", spool_id, e)
         return None, "unreachable", 502
@@ -1844,7 +1882,8 @@ def own_label(spool_id: int, fmt: str):
 # a tag held to the phone, labels by location and the reorder list. Kept
 # half a minute: the page asks again for each of those.
 _INVENTORY_TTL = 30.0
-_inventory_cache: dict = {"at": 0.0, "base": None, "list": None}
+# Read with the signed-in user's token, so kept for that user only ("who").
+_inventory_cache: dict = {"at": 0.0, "base": None, "list": None, "who": None}
 _INVENTORY_KEYS = ("id", "brand", "material", "subtype", "color_name", "rgba", "label_weight", "weight_used",
                    "storage_location", "tag_uid", "tray_uuid", "cost_per_kg", "material_number",
                    "slicer_filament", "slicer_filament_name")
@@ -1877,7 +1916,7 @@ def _inventory_forget():
 def inventory():
     """The active inventory's spools (archived ones left out), compact;
     ?sort=material,color:desc in that order (see spool_sort.parse_sort)."""
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="no_key"), 400
     spools, error, status = _read_inventory(fresh=bool(request.args.get("fresh")))
     if spools is None:
@@ -1912,7 +1951,7 @@ def _csv_cell(value, comma: bool) -> str:
 def inventory_csv():
     import csv
     import io
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="no_key"), 400
     spools, error, status = _read_inventory(fresh=bool(request.args.get("fresh")))
     if spools is None:
@@ -1941,18 +1980,20 @@ def _read_inventory(fresh: bool = False) -> tuple[list | None, str | None, int |
     base = _inventory_base()
     now = time.monotonic()
     c = _inventory_cache
-    if c["list"] is not None and c["base"] == base and not fresh and now - c["at"] < _INVENTORY_TTL:
+    who = auth.cache_identity()
+    if (c["list"] is not None and c["base"] == base and c.get("who") == who and not fresh
+            and now - c["at"] < _INVENTORY_TTL):
         return c["list"], None, None
     try:
         r = requests.get(f"{BAMBUDDY_URL}{base}/spools",
-                         headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=30)
+                         headers=_bb_headers(), timeout=30)
     except Exception as e:
         log.warning("inventory not read: %s", e)
         return None, "unreachable", None
     if not r.ok or not isinstance(r.json(), list):
         return None, "failed", r.status_code
     spools = [s for s in (_compact_spool(x) for x in r.json()) if s]
-    c.update(at=now, base=base, list=spools)
+    c.update(at=now, base=base, list=spools, who=who)
     return spools, None, None
 
 
@@ -1960,11 +2001,11 @@ def _read_inventory(fresh: bool = False) -> tuple[list | None, str | None, int |
 def archive_spool(spool_id: int):
     """An empty spool out of the inventory: archived, not deleted, so its
     history stays in BamBuddy and Spoolman."""
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="no_key"), 400
     try:
         r = requests.post(f"{BAMBUDDY_URL}{_inventory_base()}/spools/{spool_id}/archive",
-                          headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=20)
+                          headers=_bb_headers(), timeout=20)
     except Exception as e:
         log.warning("spool %s not archived: %s", spool_id, e)
         return jsonify(ok=False, error="unreachable"), 502
@@ -1983,7 +2024,7 @@ def update_spool(spool_id: int):
     note, what is left on it, its slicer profile, and an NFC tag linked
     afterwards. Only the
     fields sent are changed."""
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="no_key"), 400
     body = request.get_json(force=True, silent=True) or {}
     patch: dict = {}
@@ -2016,7 +2057,7 @@ def update_spool(spool_id: int):
         return jsonify(ok=True, changed=[])
 
     base = _inventory_base()
-    headers = {"X-API-Key": BAMBUDDY_API_KEY, "Content-Type": "application/json", "Accept": "application/json"}
+    headers = _bb_headers({"Content-Type": "application/json"})
     errors, tag_error = [], None
     try:
         if patch:
@@ -2065,7 +2106,7 @@ def _bambuddy_send(method: str, path: str, body: dict | None = None):
     None) or (None, "unreachable")."""
     try:
         return getattr(requests, method)(f"{BAMBUDDY_URL}{path}", json=body, timeout=20,
-                                         headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}), None
+                                         headers=_bb_headers()), None
     except Exception as e:
         log.warning("%s %s: Bambuddy not reachable: %s", method.upper(), path, e)
         return None, "unreachable"
@@ -2110,7 +2151,7 @@ def locations_list():
     """BamBuddy's storage locations with the spools in each, the spools
     without one and the names on spools BamBuddy's list does not have."""
     import locations
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="no_key"), 400
     data, refusal = _locations_read()
     if refusal:
@@ -2137,7 +2178,7 @@ def locations_bulk():
     in any case) or "error"; the identifier, when a prefix is given, is the
     prefix and the name's number in the list ("R-01")."""
     import locations
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="no_key"), 400
     body = request.get_json(force=True, silent=True) or {}
     if not isinstance(body.get("names"), list):
@@ -2180,7 +2221,7 @@ def locations_bulk():
 def location_update(location_id: int):
     """Rename a location ({"name"}) or set its identifier: BamBuddy moves
     its spools along, in Spoolman too."""
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="no_key"), 400
     body = request.get_json(force=True, silent=True) or {}
     patch: dict = {}
@@ -2208,7 +2249,7 @@ def location_update(location_id: int):
 @app.delete("/api/locations/<int:location_id>")
 def location_delete(location_id: int):
     """Delete a location; BamBuddy refuses while spools are stored there."""
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="no_key"), 400
     r, error = _bambuddy_send("delete", f"{_LOCATIONS_PATH}/{location_id}")
     if r is None:
@@ -2241,7 +2282,7 @@ def locations_plan():
     "include_unassigned" is false. Places BamBuddy does not have are left
     out; their spelling is BamBuddy's."""
     import locations
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="no_key"), 400
     body = request.get_json(force=True, silent=True) or {}
     wanted = body.get("places")
@@ -2287,7 +2328,7 @@ def locations_suggest():
     spool_sort.suggest_place), or null. Only a suggestion: a spool may be
     added without a place."""
     import locations
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="no_key"), 400
     body = request.get_json(force=True, silent=True) or {}
     new = body.get("spool") if isinstance(body.get("spool"), dict) else {}
@@ -2332,7 +2373,7 @@ def locations_apply():
     ("changed", with where it is "now"), one that is gone is "not_found".
     Stops at a refusal."""
     import locations
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="no_key"), 400
     body = request.get_json(force=True, silent=True) or {}
     raw = body.get("moves")
@@ -2397,7 +2438,7 @@ def _labels_path() -> str:
 @app.post("/api/label")
 def spool_label():
     """One spool's label from Bambuddy as a 203 dpi monochrome PNG."""
-    if not BAMBUDDY_API_KEY:
+    if not _have_credential():
         return jsonify(ok=False, error="BAMBUDDY_API_KEY not set on the server"), 400
     body = request.get_json(force=True, silent=True) or {}
     try:
@@ -2417,7 +2458,7 @@ def spool_label():
         payload["fields"] = fields
     try:
         r = requests.post(f"{BAMBUDDY_URL}{_labels_path()}", json=payload, timeout=30,
-                          headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "image/png"})
+                          headers=_bb_headers({"Accept": "image/png"}))
     except Exception as e:
         log.warning("label for spool %s: Bambuddy not reachable: %s", spool_id, e)
         return jsonify(ok=False, error="unreachable"), 502
@@ -2487,7 +2528,7 @@ def _reorder_check(force: bool = False) -> dict:
             body["url"] = state["page"]
         try:
             r = requests.post(f"{BAMBUDDY_URL}/api/v1/notifications/app-message", json=body,
-                              headers={"X-API-Key": BAMBUDDY_API_KEY, "Accept": "application/json"}, timeout=20)
+                              headers=_bb_headers(), timeout=20)
             if r.ok:
                 result["sent"] = int((r.json() or {}).get("channels") or 0)
                 if not result["sent"]:
@@ -2514,7 +2555,7 @@ def reorder_alert_get():
     """The message setting, and the channels Bambuddy would use for it."""
     state = _reorder_state()
     channels, error = [], None
-    if BAMBUDDY_API_KEY:
+    if _have_credential():
         data, error = _bambuddy_get("/api/v1/notifications/app-message/channels")
         if isinstance(data, list):
             channels = [str(c.get("name") or c.get("provider_type") or "?") for c in data if isinstance(c, dict)]

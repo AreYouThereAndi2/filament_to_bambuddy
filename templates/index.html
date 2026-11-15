@@ -481,6 +481,7 @@
       <rect class="flange" x="48" y="9" width="8" height="46" rx="3.2"/>
     </svg>
     <h1>{{ t('app.title')|replace('→', '<span class="to">→</span>'|safe) }}</h1>
+    {% if auth.mode == 'bambuddy' %}<button id="userBtn" type="button" class="icon-btn" aria-haspopup="true" aria-expanded="false"><span class="user-initial" aria-hidden="true">?</span></button>{% endif %}
     <button id="themeBtn" type="button" class="icon-btn"><svg class="ico" aria-hidden="true"><use id="themeIcon" href="#i-auto"/></svg></button>
   </div>
   <div class="status" id="statusLine" role="status"><span id="dot" class="status-dot"></span><span id="health">{{ t('health.checking') }}</span></div>
@@ -1040,6 +1041,8 @@
 </footer>
 
 <script src="https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
+{% if auth.mode == 'bambuddy' %}<script>window.F2B_AUTH = {{ dict(auth, texts=translations.auth)|tojson }};</script>
+<script src="/static/auth.js?v={{ version|urlencode }}"></script>{% endif %}
 <script>
 // Active-language translation dict, embedded server-side (see app.py's
 // index() route) so the in-browser JS doesn't need a second round trip or

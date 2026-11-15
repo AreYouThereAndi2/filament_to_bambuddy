@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ t('auth.title') }} · {{ t('app.title') }}</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1b1f23">
+<link rel="icon" type="image/svg+xml" href="/static/icons/logo.svg">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<meta name="referrer" content="same-origin">
+<script>
+  (function(){
+    var m = null;
+    try{ m = localStorage.getItem('f2b.theme'); }catch(e){}
+    if(m === 'light' || m === 'dark') document.documentElement.dataset.theme = m;
+  })();
+</script>
+<style>
+  @font-face{font-family:"Barlow Semi Condensed";font-weight:600;font-display:swap;
+    src:url("/static/fonts/BarlowSemiCondensed-SemiBold.ttf") format("truetype")}
+  @font-face{font-family:"Barlow Semi Condensed";font-weight:700;font-display:swap;
+    src:url("/static/fonts/BarlowSemiCondensed-Bold.ttf") format("truetype")}
+  /* The same tokens as the app's page (templates/index.html). */
+  :root{
+    --bg:#1b1f23; --surface:#23282d; --raised:#2c3238; --inset:#16191c; --line:#394047;
+    --text:#e8ecef; --muted:#9aa4ad; --brand:#00ae42; --brand-strong:#00c64d; --on-brand:#03200e;
+    --warn:#e8a93a; --danger:#e2553f; --focus:#6bd49a;
+    --card-border:var(--line); --card-shadow:none; --field:var(--inset);
+    --mark-flange:#d5dbe0; --mark-wind:#00c64d; --mark-bar:#008a35;
+    --display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --r-card:18px; --r-ctl:11px;
+    color-scheme:dark;
+  }
+  :root[data-theme=light]{
+    --bg:#edf0f2; --surface:#ffffff; --raised:#f2f4f6; --inset:#e5e9ec; --line:#cbd3d9;
+    --text:#1a1f24; --muted:#5b6670; --brand:#00953a; --brand-strong:#007f31; --on-brand:#ffffff;
+    --warn:#a86a00; --danger:#c43c28; --focus:#00953a;
+    --card-border:transparent; --card-shadow:0 1px 2px rgba(20,30,40,.08); --field:#ffffff;
+    --mark-flange:#2c3238; --mark-wind:#00ae42; --mark-bar:#00702b;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:light){
+    :root:not([data-theme=dark]){
+      --bg:#edf0f2; --surface:#ffffff; --raised:#f2f4f6; --inset:#e5e9ec; --line:#cbd3d9;
+      --text:#1a1f24; --muted:#5b6670; --brand:#00953a; --brand-strong:#007f31; --on-brand:#ffffff;
+      --warn:#a86a00; --danger:#c43c28; --focus:#00953a;
+      --card-border:transparent; --card-shadow:0 1px 2px rgba(20,30,40,.08); --field:#ffffff;
+      --mark-flange:#2c3238; --mark-wind:#00ae42; --mark-bar:#00702b;
+      color-scheme:light;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{background:var(--bg)}
+  body{margin:0;color:var(--text);font:15px/1.45 var(--body);-webkit-text-size-adjust:100%}
+  header{padding:calc(12px + env(safe-area-inset-top)) 16px 10px}
+  .bar{max-width:440px;margin:0 auto;display:flex;align-items:center;gap:10px}
+  header h1{font:700 22px/1 var(--display);margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header h1 .to{color:var(--muted);font-weight:500;margin:0 .12em}
+  .mark{width:38px;height:38px;flex:0 0 auto;margin:-6px 0 -6px -4px}
+  .mark .flange{fill:var(--mark-flange)} .mark .wind{fill:var(--mark-wind)}
+  .mark .code{fill:var(--mark-bar)} .mark .strand{fill:none;stroke:var(--mark-wind);stroke-width:3.4;stroke-linecap:round}
+  main{padding:14px 16px calc(40px + env(safe-area-inset-bottom));max-width:440px;margin:0 auto}
+  body.embed main{padding:16px}
+  .card{background:var(--surface);border-radius:var(--r-card);padding:20px 18px;border:1px solid var(--card-border);box-shadow:var(--card-shadow)}
+  body.embed .card{border:none;box-shadow:none;padding:0;background:transparent}
+  h2{font:700 24px/1.15 var(--display);margin:0 0 6px}
+  .lead{color:var(--muted);font-size:14px;margin:0 0 6px}
+  label{display:block;font:600 14px/1.2 var(--display);letter-spacing:.2px;color:var(--muted);margin:16px 0 6px}
+  input,button{font-size:16px;font-family:inherit}
+  input{width:100%;padding:12px 13px;border-radius:var(--r-ctl);border:1px solid var(--line);background:var(--field);color:var(--text)}
+  input:focus-visible{outline:none;border-color:var(--focus);box-shadow:0 0 0 3px color-mix(in srgb,var(--focus) 28%,transparent)}
+  button:focus-visible,a:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+  #code{font:700 26px/1 var(--display);letter-spacing:.35em;text-align:center;padding:12px 8px}
+  .check{display:flex;align-items:center;gap:10px;margin:16px 0 0;color:var(--text);font:500 15px/1.3 var(--body);cursor:pointer}
+  .check input{width:22px;height:22px;margin:0;flex:0 0 auto;accent-color:var(--brand)}
+  button{cursor:pointer;border:none;border-radius:var(--r-ctl);padding:14px 16px;font:600 18px/1.15 var(--display);letter-spacing:.2px}
+  .btn-primary{background:var(--brand);color:var(--on-brand);width:100%;margin-top:20px;min-height:52px}
+  .btn-primary:active{background:var(--brand-strong)}
+  .btn-primary:disabled{opacity:.55}
+  .btn-secondary{background:var(--raised);color:var(--text);width:100%;border:1px solid var(--line);margin-top:10px}
+  .btn-quiet{background:none;border:none;color:var(--muted);padding:8px 4px;font:500 14px/1.2 var(--body);
+    text-decoration:underline;text-underline-offset:3px}
+  .links{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;margin-top:10px}
+  .msg{margin-top:14px;padding:11px 13px;border-radius:var(--r-ctl);font-size:14px;line-height:1.4}
+  .msg.err{background:color-mix(in srgb,var(--danger) 16%,transparent);color:var(--text);border:1px solid color-mix(in srgb,var(--danger) 55%,transparent)}
+  .msg.warn{background:color-mix(in srgb,var(--warn) 14%,transparent);border:1px solid color-mix(in srgb,var(--warn) 50%,transparent)}
+  .msg.ok{background:color-mix(in srgb,var(--brand) 14%,transparent);border:1px solid color-mix(in srgb,var(--brand) 50%,transparent)}
+  .hidden{display:none !important}
+  .foot{color:var(--muted);font-size:12.5px;text-align:center;margin-top:18px}
+  .foot a{color:var(--muted)}
+</style>
+</head>
+<body class="{{ 'embed' if embed else '' }}">
+{% if not embed %}
+<header>
+  <div class="bar">
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+      <path class="strand" d="M40 17C44 9 50 8 58 8"/>
+      <rect class="wind" x="15" y="17" width="34" height="30" rx="2"/>
+      <rect class="code" x="21.5" y="17" width="2.2" height="30"/><rect class="code" x="24.7" y="17" width="3" height="30"/>
+      <rect class="code" x="28.7" y="17" width="1.6" height="30"/><rect class="code" x="32.9" y="17" width="1" height="30"/>
+      <rect class="code" x="36.1" y="17" width="1" height="30"/><rect class="code" x="38.1" y="17" width="1.4" height="30"/>
+      <rect class="flange" x="8" y="9" width="8" height="46" rx="3.2"/>
+      <rect class="flange" x="48" y="9" width="8" height="46" rx="3.2"/>
+    </svg>
+    <h1>{{ t('app.title')|replace('→', '<span class="to">→</span>'|safe) }}</h1>
+  </div>
+</header>
+{% endif %}
+<main>
+  <div class="card">
+    <form id="stepLogin" autocomplete="on" novalidate>
+      <h2>{{ t('auth.relogin_title') if embed else t('auth.title') }}</h2>
+      <p class="lead">{{ t('auth.relogin_intro') if embed else t('auth.intro') }}</p>
+      <div id="status" class="msg warn hidden" role="status"></div>
+      <label for="username">{{ t('auth.username') }}</label>
+      <input id="username" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+      <label for="password">{{ t('auth.password') }}</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <label class="check"><input id="remember" type="checkbox"> <span>{{ t('auth.remember') }}</span></label>
+      <div id="loginMsg" class="msg err hidden" role="alert"></div>
+      <button id="loginBtn" class="btn-primary" type="submit">{{ t('auth.submit') }}</button>
+    </form>
+
+    <form id="step2fa" class="hidden" autocomplete="off" novalidate>
+      <h2>{{ t('auth.twofa_title') }}</h2>
+      <p class="lead" id="twofaIntro">{{ t('auth.twofa_intro_totp') }}</p>
+      <label for="code">{{ t('auth.twofa_code') }}</label>
+      <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" autocapitalize="characters" spellcheck="false">
+      <button id="emailBtn" class="btn-secondary hidden" type="button">{{ t('auth.twofa_email_send') }}</button>
+      <div id="twofaMsg" class="msg hidden" role="alert"></div>
+      <button id="twofaBtn" class="btn-primary" type="submit">{{ t('auth.twofa_submit') }}</button>
+      <div class="links">
+        <button id="backBtn" class="btn-quiet" type="button">{{ t('auth.back') }}</button>
+        <span>
+          <button id="useTotp" class="btn-quiet hidden" type="button">{{ t('auth.twofa_use_totp') }}</button>
+          <button id="useEmail" class="btn-quiet hidden" type="button">{{ t('auth.twofa_use_email') }}</button>
+          <button id="useBackup" class="btn-quiet hidden" type="button">{{ t('auth.twofa_use_backup') }}</button>
+        </span>
+      </div>
+    </form>
+  </div>
+  {% if not embed %}<p class="foot"><a href="{{ bambuddy_url }}" rel="noopener">BamBuddy</a></p>{% endif %}
+</main>
+<script>
+const NEXT = {{ next|tojson }};
+const EMBED = {{ embed|tojson }};
+const TXT = {{ auth_texts|tojson }};
+const $ = id => document.getElementById(id);
+let methods = [], method = 'totp';
+
+function show(el, text, kind){
+  el.textContent = text || '';
+  el.className = 'msg ' + (kind || 'err') + (text ? '' : ' hidden');
+}
+function errText(d, status){
+  if(d && d.message) return d.message;
+  return (TXT.err_failed || '').replace('{status}', status || '?');
+}
+async function post(url, body){
+  const r = await fetch(url, {method: 'POST', credentials: 'same-origin',
+    headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body || {})});
+  let d = null;
+  try{ d = await r.json(); }catch(e){}
+  return {r, d};
+}
+function done(d){
+  if(EMBED){
+    // Signed in again from inside the page: it takes the new token and goes on.
+    parent.postMessage({f2bLogin: true, csrf: d.csrf, user: d.user}, location.origin);
+    return;
+  }
+  location.replace(d.next || NEXT || '/');
+}
+
+// Before anybody types: does BamBuddy answer, and is its sign-in on?
+fetch('/api/auth/status', {credentials: 'same-origin'}).then(r => r.json()).then(d => {
+  if(d.mode !== 'bambuddy') return;
+  if(!d.reachable) show($('status'), TXT.status_unreachable, 'warn');
+  else if(d.auth_enabled === false) show($('status'), TXT.status_off, 'warn');
+}).catch(() => {});
+
+$('stepLogin').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const username = $('username').value.trim(), password = $('password').value;
+  if(!username || !password){ show($('loginMsg'), TXT.err_missing); return; }
+  $('loginBtn').disabled = true; $('loginBtn').textContent = TXT.busy;
+  show($('loginMsg'), '');
+  let res;
+  try{ res = await post('/api/auth/login', {username, password, remember: $('remember').checked, next: NEXT}); }
+  catch(e){ res = {r: {status: 0}, d: {message: TXT.err_unreachable}}; }
+  $('loginBtn').disabled = false; $('loginBtn').textContent = TXT.submit;
+  const {r, d} = res;
+  if(d && d.ok){ $('password').value = ''; done(d); return; }
+  if(d && d.step === '2fa'){
+    $('password').value = '';
+    methods = d.methods || ['totp'];
+    pick(methods[0]);
+    $('stepLogin').classList.add('hidden'); $('step2fa').classList.remove('hidden');
+    $('code').focus();
+    return;
+  }
+  show($('loginMsg'), errText(d, r.status));
+  if(r.status === 401) $('password').select();
+});
+
+function pick(m){
+  method = m;
+  $('twofaIntro').textContent = TXT['twofa_intro_' + m] || TXT.twofa_intro_totp;
+  $('code').inputMode = m === 'backup' ? 'text' : 'numeric';
+  $('code').value = '';
+  $('emailBtn').classList.toggle('hidden', m !== 'email');
+  $('useTotp').classList.toggle('hidden', m === 'totp' || !methods.includes('totp'));
+  $('useEmail').classList.toggle('hidden', m === 'email' || !methods.includes('email'));
+  $('useBackup').classList.toggle('hidden', m === 'backup' || !methods.includes('backup'));
+  show($('twofaMsg'), '');
+}
+$('useTotp').onclick = () => pick('totp');
+$('useEmail').onclick = () => pick('email');
+$('useBackup').onclick = () => pick('backup');
+$('backBtn').onclick = () => {
+  $('step2fa').classList.add('hidden'); $('stepLogin').classList.remove('hidden'); $('password').focus();
+};
+$('emailBtn').onclick = async () => {
+  $('emailBtn').disabled = true;
+  let res;
+  try{ res = await post('/api/auth/2fa/email', {}); }catch(e){ res = {r: {status: 0}, d: {message: TXT.err_unreachable}}; }
+  $('emailBtn').disabled = false;
+  if(res.d && res.d.ok){ show($('twofaMsg'), TXT.twofa_email_sent, 'ok'); $('code').focus(); }
+  else show($('twofaMsg'), errText(res.d, res.r.status));
+};
+$('step2fa').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const code = $('code').value.replace(/[\s-]/g, '');
+  if(code.length < 6) { show($('twofaMsg'), TXT.err_bad_code); return; }
+  $('twofaBtn').disabled = true;
+  let res;
+  try{ res = await post('/api/auth/2fa', {code, method}); }catch(e){ res = {r: {status: 0}, d: {message: TXT.err_unreachable}}; }
+  $('twofaBtn').disabled = false;
+  const {r, d} = res;
+  if(d && d.ok){ done(d); return; }
+  show($('twofaMsg'), errText(d, r.status));
+  if(d && d.error === '2fa_expired') setTimeout(() => $('backBtn').click(), 1600);
+  else $('code').select();
+});
+// The code in full (six digits, or a backup code's eight): sent at once.
+$('code').addEventListener('input', () => {
+  const v = $('code').value.replace(/[\s-]/g, '');
+  if(method !== 'backup' && /^\d{6}$/.test(v)) $('step2fa').requestSubmit();
+});
+$('username').focus();
+</script>
+</body>
+</html>
