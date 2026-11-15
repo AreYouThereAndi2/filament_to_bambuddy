@@ -1,0 +1,45 @@
+{
+ "merchant": "Prusa",
+ "vendor": "prusa",
+ "invoice_number": "2026-INV-77341",
+ "order_number": "PR-55102399",
+ "date": "2026-09-21",
+ "currency": "EUR",
+ "shipping": 10.0,
+ "discount": 0.0,
+ "total": 207.83,
+ "items": [
+  {
+   "description": "Prusament PLA Galaxy Black 1kg",
+   "quantity": 4,
+   "unit_price_gross": 25.99,
+   "total_gross": 103.96,
+   "vat_rate": 19.0,
+   "filament": true
+  },
+  {
+   "description": "Prusament PETG Prusa Orange 1kg",
+   "quantity": 2,
+   "unit_price_gross": 25.99,
+   "total_gross": 51.98,
+   "vat_rate": 19.0,
+   "filament": true
+  },
+  {
+   "description": "Prusament ASA Lipstick Red 850g",
+   "quantity": 1,
+   "unit_price_gross": 29.9,
+   "total_gross": 29.9,
+   "vat_rate": 19.0,
+   "filament": true
+  },
+  {
+   "description": "Nozzle Brass 0.4 mm",
+   "quantity": 3,
+   "unit_price_gross": 4.0,
+   "total_gross": 12.0,
+   "vat_rate": 19.0,
+   "filament": false
+  }
+ ]
+}

@@ -124,6 +124,11 @@ ROUTE_PERMISSIONS = {
     ("POST", "/api/settings"): SETTINGS_UPDATE,
     ("POST", "/api/label-layout"): SETTINGS_UPDATE,
     ("POST", "/api/reorder-alert"): NOTIFICATIONS_UPDATE,
+    ("GET", "/api/invoices/status"): INVENTORY_READ,
+    ("POST", "/api/invoices/parse"): INVENTORY_READ,
+    ("POST", "/api/invoices/suggest"): INVENTORY_READ,
+    ("POST", "/api/invoices/apply"): INVENTORY_UPDATE,
+    ("POST", "/api/amazon/import"): INVENTORY_READ,
 }
 # What the page asks to hide or disable what the user may not do.
 CAN = {"inventory_read": INVENTORY_READ, "inventory_update": INVENTORY_UPDATE,

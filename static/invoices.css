@@ -1,0 +1,27 @@
+/* The invoices card (static/invoices.js): the review of what an invoice says. */
+.ivc-picks{display:flex;gap:10px;margin-top:12px}
+.ivc-picks button{flex:1}
+.ivc-inv{margin-top:14px}
+.ivc-inv>summary{font:600 15px/1.3 var(--display);overflow-wrap:anywhere}
+.ivc-sumsub{font-weight:400}
+.ivc-body{padding-top:4px}
+.ivc-warn{margin-top:8px;padding:8px 10px;border-radius:var(--r-ctl);font-size:13.5px;line-height:1.35;
+  background:color-mix(in srgb,var(--warn) 16%,transparent);border:1px solid color-mix(in srgb,var(--warn) 55%,transparent)}
+.ivc-items{margin-top:12px}
+.ivc-item{border-top:1px solid var(--line);padding:12px 0 6px}
+.ivc-item-top{display:flex;align-items:center;gap:10px}
+.ivc-price{margin-left:auto;font:600 15px/1.2 var(--display);white-space:nowrap}
+.ivc-check{display:flex;gap:10px;align-items:center;margin:10px 0 0;color:var(--text);font-weight:600}
+.ivc-item-top .ivc-check{margin:0}
+.ivc-check input,.ivc-spool input{width:22px;height:22px;margin:0;flex:0 0 auto;accent-color:var(--brand)}
+.ivc-desc{margin-top:8px;resize:vertical;font-size:15px;line-height:1.35}
+.ivc-narrow{flex:0 0 96px !important}
+.ivc-fil .seg button{font-size:15px}
+.ivc-spools{margin-top:6px}
+.ivc-spool{display:flex;align-items:center;gap:10px;min-height:48px;margin:0;padding:6px 2px;color:var(--text);
+  font:600 15px/1.25 var(--display);border-top:1px solid var(--line)}
+.ivc-spool:first-of-type{border-top:none}
+.ivc-spool .sw{width:18px;height:18px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.ivc-spool .main{flex:1;min-width:0;overflow-wrap:anywhere}
+.ivc-spool .sub{display:block;font:400 12.5px/1.3 var(--body);color:var(--muted);margin-top:2px}
+.ivc-apply{margin-top:14px;min-height:52px}
