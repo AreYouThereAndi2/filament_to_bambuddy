@@ -140,7 +140,7 @@ def group_of(name: str) -> str:
 
 def _spool(s: dict) -> dict:
     return {k: s.get(k) for k in ("id", "rgba", "color_name", "material", "subtype", "brand", "remaining",
-                                  "sort", "color_family")}
+                                  "sort", "color_family", "material_label")}
 
 
 def merge(locations: list, spools: list) -> dict:
