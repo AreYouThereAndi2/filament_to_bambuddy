@@ -2587,6 +2587,12 @@ if _truthy(os.getenv("WARM_INDEXES", "on")):
     threading.Thread(target=_warm_indexes, name="warm-indexes", daemon=True).start()
 
 
+# Invoices and Amazon's order history: prices onto spools (invoices.py).
+import invoices
+
+invoices.init_app(app, sys.modules[__name__])
+
+
 if __name__ == "__main__":
     print(f"  Bambuddy: {BAMBUDDY_URL}  (API key {'set' if BAMBUDDY_API_KEY else 'NOT set'})")
     print(f"  Open on your phone:  http://<this-computer-ip>:{PORT}/")
