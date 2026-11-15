@@ -254,6 +254,22 @@ Außerdem:
 - **Mehrere Etiketten:** In *Spulen-ID* gehen `12, 15, 20-24`; dazu *Alle aus Lagerort …* und *Heute angelegt*. *Drucken* schickt alle nacheinander an den Drucker.
 - **Leer: archivieren:** Im Spulen-Datensatz archiviert das eine aufgebrauchte Spule in BamBuddy. Sie verschwindet aus dem Bestand, ihre Daten bleiben erhalten.
 
+## Rechnungen: der Preis der Spulen
+
+Die Karte **Rechnungen** liest die Rechnung, mit der das Filament kam, und schreibt den **bezahlten Preis inklusive MwSt.** auf die Spulen.
+
+1. **Rechnung fotografieren** (Kamera) oder **PDF oder Bild wählen** (auch mehrere). Ein PDF mit Text wird direkt gelesen, ein Scan oder Foto per Texterkennung – das dauert ein paar Sekunden. Gut ausgeleuchtet und gerade fotografieren hilft.
+2. Die App zeigt Händler, Datum, Rechnungs- und Bestellnummer, die Positionen mit Menge und Stückpreis (brutto), Versand, Rabatte und den Gesamtbetrag. **Alles lässt sich korrigieren.** Ergeben die Positionen nicht den Gesamtbetrag, steht das gelb darüber.
+3. Filament ist angehakt (Düsen, Druckplatten usw. nicht), Marke, Material und Farbe stehen schon drin. Pro Position:
+   - **Vorhandene Spulen**: Die App schlägt Spulen dieser Art ohne Preis vor, die um das Rechnungsdatum angelegt wurden, und hakt so viele an, wie gekauft wurden.
+   - **Neue Spulen**: legt sie mit dem Preis an; die Rechnung steht in der Notiz.
+4. **Versand auf die Spulen verteilen** (aus, wenn nicht angehakt) schlägt den Versand (abzüglich Rabatte) anteilig nach Preis auf.
+5. **Preise übernehmen.**
+
+Die **Datei selbst wird nicht gespeichert**, nur was daraus gelesen wurde (in `/data/invoices.json`). Daran erkennt die App eine Rechnung wieder („Schon übernommen“). Scans und Fotos brauchen Tesseract, das im Docker-Image enthalten ist; HEIC-Fotos vom iPhone bitte als JPEG („Maximale Kompatibilität“).
+
+**Amazon-Bestellverlauf**: Auf amazon.de unter *Konto → Meine Daten anfordern* die Kategorie *Ihre Bestellungen* anfordern und die Mail bestätigen. Nach einigen Stunden bis Tagen kommt ein Download-Link; die ZIP-Datei unter *Amazon-Bestellverlauf importieren* hochladen. Die App nimmt nur die Bestellungen mit Filament, mit Datum, Bruttopreis und ASIN; Adressen und Zahlungsdaten werden sofort verworfen, schon übernommene Bestellungen übersprungen. Eine ASIN merkt sich die App mit ihrem Filament, auch für spätere Scans. In dein Amazon-Konto meldet sich die App nicht an.
+
 ## Lagerorte
 
 Die Karte **Lagerorte** zeigt BamBuddys Liste der Lagerorte als Kacheln, gruppiert nach dem Namensanfang („Regal A“ für „Regal A-01“ bis „Regal A-12“). Jede Kachel zeigt, wie viele Spulen dort liegen, und ihre Farben als Punkte; leere Orte sind nur umrandet. Ein Tipp öffnet den Ort:

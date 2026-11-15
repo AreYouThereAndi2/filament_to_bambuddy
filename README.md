@@ -44,6 +44,15 @@ them — the same barcode, a sibling package size, or the manufacturer SKU —
 auto-fills instantly next time — price included, never the NFC tag, which
 belongs to one physical spool. *(Scope: new, unopened spools still in the box.)*
 
+### Invoices and Amazon orders
+
+The **Invoices** card reads the invoice a spool came with (a PDF, or a photo
+from the phone's camera: Tesseract OCR on the server) and puts the **gross
+price paid** onto the spools — existing ones it suggests, or new ones — as
+BamBuddy's `cost_per_kg`; shipping can be spread by price. Amazon's own
+order-history export (ZIP) works the same way, without logging into Amazon.
+Only the extracted data is kept, never the file or any address.
+
 ### NFC tags from the phone
 
 The **📶 Scan** button reads a tag's UID with
@@ -296,6 +305,7 @@ Each created spool is tagged `data_origin = "barcode-scan"`.
 | `filament_parse.py` | Heuristics turning product/label text into filament fields (paste-title + label OCR), English and German |
 | `locations.py` | Storage locations: names from a list, a range or a grid; the locations merged with the stock and grouped for the tiles |
 | `spool_sort.py` | Sort keys (material family, colour hue, maker …), the shelf plan that keeps most spools in place, the steps to get there, and a place for a new spool |
+| `invoices.py`, `invoice_extract.py`, `invoice_parse.py`, `amazon_orders.py` | Invoices: routes and the record of imported ones; text from PDFs and OCR of scans/photos; reading the table into items with gross prices; Amazon's order history export |
 | `upc_lookup.py` | UPCitemdb fallback for retail barcodes the filament databases don't know; title + average offer price |
 | `templates/index.html` | Mobile UI (barcode scan + manual entry + editable form), Bambuddy dark/green theme |
 | `static/manifest.webmanifest`, `static/sw.js`, `static/icons/` | PWA manifest, service worker, and app icons |
