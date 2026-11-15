@@ -1,7 +1,10 @@
 /* filament_to_bambuddy service worker — app-shell cache for installable PWA */
-const CACHE = "f2b-v9";
+const CACHE = "f2b-v10";
+// The page itself ("/") is not fetched here: with the sign-in through
+// BamBuddy on, it answers a browser without a session with a redirect to
+// /login, and that must not end up cached as the page. It is kept from the
+// first real visit instead (see the navigation handler below).
 const SHELL = [
-  "/",
   "/manifest.webmanifest",
   "/static/icons/icon-192.png",
   "/static/icons/icon-512.png",
@@ -28,14 +31,26 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
 
-  // Never cache live API data — always go to the network.
-  if (url.origin === location.origin && url.pathname.startsWith("/api/")) {
+  // Never cache live API data — always go to the network. Nor the sign-in
+  // page, which belongs to no session.
+  if (url.origin === location.origin && (url.pathname.startsWith("/api/") || url.pathname === "/login")) {
     return; // default browser handling
   }
 
-  // Navigations: network-first, fall back to cached shell when offline.
+  // Navigations: network-first, fall back to cached shell when offline. Only
+  // the page itself is kept, as it came: not a redirect to the sign-in, not
+  // an error.
   if (req.mode === "navigate") {
-    e.respondWith(fetch(req).catch(() => caches.match("/")));
+    e.respondWith(
+      fetch(req).then((res) => {
+        if (url.origin === location.origin && url.pathname === "/" && res.ok && !res.redirected
+            && res.type === "basic") {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put("/", copy)).catch(() => {});
+        }
+        return res;
+      }).catch(() => caches.match("/"))
+    );
     return;
   }
 
@@ -44,8 +59,11 @@ self.addEventListener("fetch", (e) => {
     caches.match(req).then((hit) =>
       hit ||
       fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+        // Opaque: a CDN library loaded without CORS, kept as before.
+        if ((res.ok || res.type === "opaque") && !res.redirected) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+        }
         return res;
       })
     )
