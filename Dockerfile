@@ -13,9 +13,14 @@ FROM python:3.14-slim
 # Dockerfile ever changes, so without this the "upgrade" above silently
 # stops upgrading anything after the first cached build) — CI passes the
 # build date so each day's first CI run picks up newly-published patches.
+#
+# Tesseract (German and English) reads scanned invoices and photos of them
+# (invoice_extract.py); without it only PDFs with a text layer are read.
 ARG CACHE_BUST=dev
 RUN echo "apt cache bust: ${CACHE_BUST}" \
-    && apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+    && apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set at build time from the release git tag (see .github/workflows/docker-publish.yml);
 # defaults to "dev" for a plain local `docker build` with no --build-arg.
@@ -28,7 +33,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
 # App code
-COPY app.py catalog_util.py ofd.py filament_parse.py spoolmandb_community.py tigertag.py name_match.py spoolman_match.py presets.py label_render.py reorder.py locations.py spool_sort.py i18n.py upc_lookup.py page_import.py ./
+COPY app.py catalog_util.py ofd.py filament_parse.py spoolmandb_community.py tigertag.py name_match.py spoolman_match.py presets.py label_render.py reorder.py locations.py spool_sort.py i18n.py upc_lookup.py page_import.py invoice_extract.py invoice_parse.py ./
 COPY templates ./templates
 COPY static ./static
 

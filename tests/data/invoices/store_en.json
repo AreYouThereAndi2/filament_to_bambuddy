@@ -1,0 +1,41 @@
+{
+ "merchant": "Bambu Lab",
+ "vendor": "bambulab",
+ "invoice_number": "EU-INV-00982211",
+ "order_number": "EU9934127",
+ "date": "2026-08-30",
+ "currency": "EUR",
+ "shipping": 0.0,
+ "discount": 6.8,
+ "total": 151.13,
+ "items": [
+  {
+   "description": "PLA Basic - Jade White (10100) / Refill / 1 kg",
+   "quantity": 2,
+   "unit_price_gross": 19.99,
+   "total_gross": 39.98,
+   "filament": true
+  },
+  {
+   "description": "PLA Matte - Charcoal (11101) / Filament with spool / 1 kg",
+   "quantity": 3,
+   "unit_price_gross": 22.99,
+   "total_gross": 68.97,
+   "filament": true
+  },
+  {
+   "description": "PETG HF - Black (33102) / Refill / 1 kg",
+   "quantity": 1,
+   "unit_price_gross": 18.99,
+   "total_gross": 18.99,
+   "filament": true
+  },
+  {
+   "description": "Textured PEI Plate",
+   "quantity": 1,
+   "unit_price_gross": 29.99,
+   "total_gross": 29.99,
+   "filament": false
+  }
+ ]
+}
