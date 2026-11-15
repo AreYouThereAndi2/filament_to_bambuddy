@@ -16,7 +16,10 @@ FROM python:3.14-slim
 #
 # Tesseract (German and English) reads scanned invoices and photos of them
 # (invoice_extract.py); without it only PDFs with a text layer are read.
+# Not pinned: Debian's security updates replace exact versions, and the
+# upgrade above is meant to take them.
 ARG CACHE_BUST=dev
+# hadolint ignore=DL3008
 RUN echo "apt cache bust: ${CACHE_BUST}" \
     && apt-get update && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng \
