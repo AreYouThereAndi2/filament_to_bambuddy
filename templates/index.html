@@ -360,6 +360,9 @@
   .sortpick{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 8px;align-items:center;margin-top:10px}
   .sortpick .sp-lbl{font:600 13.5px/1.2 var(--display);color:var(--muted);white-space:nowrap}
   .sortpick select{padding:8px 10px;min-height:44px;font-size:15px}
+  .sortpick .sp-tech{grid-column:1 / -1;font-size:14px;color:var(--muted);display:flex;align-items:center;justify-content:flex-start;gap:8px;min-height:36px;text-align:left}
+  .sortpick .sp-tech input{width:20px;height:20px;min-height:0;margin:0;flex:none}
+  .grp-block{margin:18px 0 2px;padding:6px 10px;border-radius:8px;background:var(--chip, rgba(127,127,127,.12));font:700 13px/1.2 var(--display);letter-spacing:.04em;text-transform:uppercase}
   .sp-dir{width:44px;height:44px;padding:0;display:grid;place-items:center;border-radius:var(--r-ctl);
     background:var(--raised);border:1px solid var(--line);color:var(--text)}
   .sp-dir:active{background:var(--line)}
@@ -2269,18 +2272,22 @@ function sortHeading(s, key){
   const label = key === 'material' ? (s.material_label || s.material) : key === 'brand' ? s.brand : s.storage_location;
   return {id: JSON.stringify(k), label: String(label || '').trim() || '—'};
 }
+// Up to two keys; "tech" (technical filaments in a row of their own) only
+// in front of them.
 function sortClean(v){
-  const out = [];
-  for(const o of Array.isArray(v) ? v : [])
+  const list = Array.isArray(v) ? v : [], out = [];
+  const tech = list.some(o => o && o.key === 'tech');
+  for(const o of list)
     if(o && SORT_KEYS.includes(o.key) && !out.some(x => x.key === o.key)) out.push({key: o.key, desc: !!o.desc});
-  return out.slice(0, 2);
+  return (tech ? [{key: 'tech', desc: false}] : []).concat(out.slice(0, 2));
 }
+function sortMain(order){ return order.filter(o => o.key !== 'tech'); }
 function sortParam(order){ return order.map(o => o.key + (o.desc ? ':desc' : '')).join(','); }
 // Two rows: a key and its direction, then an optional second key. The
 // choice stays in this browser, one per list.
 function sortPicker(box, store, dflt, onChange){
   let order = sortClean(lsGet(store, null));
-  if(!order.length) order = sortClean(dflt);
+  if(!sortMain(order).length) order = sortClean(dflt);
   box.classList.add('sortpick');
   box.setAttribute('role', 'group'); box.setAttribute('aria-label', t('sort.title'));
   const rows = [0, 1].map(i => {
@@ -2293,23 +2300,39 @@ function sortPicker(box, store, dflt, onChange){
     box.append(lbl, sel, dir);
     return {sel, dir};
   });
+  // Technical filaments (TPU, ABS, ASA, PA, PC, anything with GF/CF …) in a
+  // row of their own, after the others: an option, off by default.
+  const techLbl = document.createElement('label'); techLbl.className = 'sp-tech';
+  const techBox = document.createElement('input'); techBox.type = 'checkbox';
+  techLbl.append(techBox, document.createTextNode(' ' + t('sort.tech')));
+  box.appendChild(techLbl);
+  techBox.onchange = () => set((techBox.checked ? [{key: 'tech'}] : []).concat(sortMain(order)));
   function draw(){
+    const main = sortMain(order);
+    techBox.checked = order.length > 0 && order[0].key === 'tech';
     rows.forEach((r, i) => {
-      const o = order[i], desc = !!(o && o.desc), name = t(desc ? 'sort.desc' : 'sort.asc');
+      const o = main[i], desc = !!(o && o.desc), name = t(desc ? 'sort.desc' : 'sort.asc');
       r.sel.value = o ? o.key : '';
       r.dir.disabled = !o;
       r.dir.querySelector('use').setAttribute('href', desc ? '#i-desc' : '#i-asc');
       r.dir.setAttribute('aria-label', name); r.dir.title = name;
     });
-    for(const opt of rows[1].sel.options) opt.disabled = !!opt.value && opt.value === order[0].key;
+    for(const opt of rows[1].sel.options) opt.disabled = !!opt.value && opt.value === main[0].key;
   }
+  function techPart(){ return order.filter(o => o.key === 'tech'); }
   function set(next){ order = sortClean(next); lsSet(store, order); draw(); onChange(order); }
   rows[0].sel.onchange = () => {
-    const k = rows[0].sel.value;
-    set([{key: k, desc: false}].concat(order[1] && order[1].key !== k ? [order[1]] : []));
+    const k = rows[0].sel.value, main = sortMain(order);
+    set(techPart().concat([{key: k, desc: false}], main[1] && main[1].key !== k ? [main[1]] : []));
   };
-  rows[1].sel.onchange = () => { const k = rows[1].sel.value; set(k ? [order[0], {key: k, desc: false}] : [order[0]]); };
-  rows.forEach((r, i) => { r.dir.onclick = () => { if(order[i]) set(order.map((o, j) => j === i ? {key: o.key, desc: !o.desc} : o)); }; });
+  rows[1].sel.onchange = () => {
+    const k = rows[1].sel.value, main = sortMain(order);
+    set(techPart().concat([main[0]], k ? [{key: k, desc: false}] : []));
+  };
+  rows.forEach((r, i) => { r.dir.onclick = () => {
+    const main = sortMain(order);
+    if(main[i]) set(techPart().concat(main.map((o, j) => j === i ? {key: o.key, desc: !o.desc} : o)));
+  }; });
   draw();
   return {get order(){ return order; }};
 }
@@ -2408,9 +2431,19 @@ async function stockRender(){
   box.innerHTML = '';
   if(!INV && invErr){ box.appendChild(hintEl(t('sort.read_failed', {error: invErr}), true)); return; }
   if(!all.length){ box.appendChild(hintEl(t('sort.empty'))); return; }
-  const order = invSort.order, head = SORT_HEADED.includes(order[0].key) ? order[0].key : null;
-  let group = null, count = 0, n = null;
+  const order = invSort.order, main = sortMain(order);
+  const head = SORT_HEADED.includes(main[0].key) ? main[0].key : null, split = order[0].key === 'tech';
+  let group = null, count = 0, n = null, block = null;
   for(const s of sortSpools(all, order)){
+    // With technical filaments apart: one line where their row starts.
+    if(split && sortKeyOf(s, 'tech') !== block){
+      block = sortKeyOf(s, 'tech'); group = null;
+      if(block){
+        const el = document.createElement('div'); el.className = 'grp-block';
+        el.textContent = t('sort.tech_block');
+        box.appendChild(el);
+      }
+    }
     if(head){
       const h = sortHeading(s, head);
       if(!group || group.id !== h.id){

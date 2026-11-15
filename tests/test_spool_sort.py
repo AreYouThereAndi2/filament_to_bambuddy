@@ -470,3 +470,45 @@ class TestSuggestPlace:
         assert ss.suggest_place({"material": "ABS"}, _shelf((5, "PLA", RED, "")), ["A1"]) is None
         assert ss.suggest_place({"material": "ABS"}, list(self.STOCK), ["A1", "A2", "A3"], MAT_COL,
                                 lambda name: 1) is None
+
+
+class TestTechnical:
+    @pytest.mark.parametrize("material,subtype,tech", [
+        ("PLA", "Basic", False), ("PLA+", None, False), ("PETG", "Matte", False), ("PCTG", None, False),
+        ("PETG", "GF", True), ("PETG", "-CF black", True), ("PLA-CF", None, True), ("ASA", "Glass Fiber", True),
+        ("TPU", None, True), ("TPE", None, True), ("ABS", None, True), ("ASA", None, True), ("PA6-CF", None, True),
+        ("PA12", None, True), ("Nylon", None, True), ("PC", None, True), ("PVA", None, True), ("", None, False),
+    ])
+    def test_which_are_technical(self, material, subtype, tech):
+        assert ss.is_technical(material, subtype) is tech
+
+    def test_off_technical_ones_sort_with_their_base(self):
+        ordered = ss.sort_spools(_stock2(), [("material", False), ("color", False)])
+        assert [ss.spool_material_label(s) for s in ordered][-3:] == ["PETG GF", "PETG CF", "TPU"]
+
+    def test_on_a_row_of_their_own_after_the_rest(self):
+        order = ss.parse_sort("tech,material,color")
+        assert order == [("tech", False), ("material", False), ("color", False)]
+        ordered = ss.sort_spools(_stock2() + [_sp(99, material="ABS", rgba="FF0000FF"),
+                                             _sp(98, material="PLA", subtype="Silk", rgba="FFD700FF")], order)
+        tech = [ss.sort_keys(s)["tech"] for s in ordered]
+        assert tech == sorted(tech)                       # one block, after the others
+        labels = [ss.spool_material_label(s) for s in ordered]
+        assert labels[-4:] == ["PETG GF", "PETG CF", "ABS", "TPU"]
+        assert "PLA Silk" in labels[:-4]
+
+    def test_plan_starts_a_new_place_for_the_technical_row(self):
+        spools = [_sp(1, material="PLA", rgba="FF0000FF", storage_location=""),
+                  _sp(2, material="PETG", subtype="GF", rgba="FFFFFFFF", storage_location=""),
+                  _sp(3, material="PETG", rgba="00FF00FF", storage_location="")]
+        p = ss.shelf_plan(spools, ["A1", "A2", "A3"], 3, ss.parse_sort("tech,material"), break_on_group=True)
+        assert [[s["id"] for s in pl["spools"]] for pl in p["places"]] == [[1], [3], [2]]
+
+
+def _stock2():
+    """The same stock after its subtypes were tidied up (15 Nov 2026), in short."""
+    rows = [("PLA", "Basic", "White", "FFFFFF"), ("PLA", "Silk", "Silk Gold", "C48E2F"),
+            ("PLA+", "Basic", "Brick-Red", "8B271D"), ("PETG", None, "Yellow", "FFFF00"),
+            ("PETG", "Matte", "Matcha Green", "989F4F"), ("PETG", "GF", "White", "FFFFFF"),
+            ("PETG", "-CF black", None, "1A1E21"), ("TPU", "Black", None, "000000")]
+    return [_sp(i, material=m, subtype=st, color_name=c, rgba=h + "FF") for i, (m, st, c, h) in enumerate(rows, 1)]
