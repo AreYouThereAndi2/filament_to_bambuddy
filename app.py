@@ -1905,6 +1905,8 @@ def _compact_spool(raw: dict) -> dict | None:
     out["sort"] = spool_sort.sort_keys(out)
     out["color_family"] = spool_sort.spool_color_family(out)
     out["material_label"] = spool_sort.spool_material_label(out)
+    out["material_base"] = spool_sort.spool_material_base(out)
+    out["material_line"] = spool_sort.spool_material_line(out)
     return out
 
 

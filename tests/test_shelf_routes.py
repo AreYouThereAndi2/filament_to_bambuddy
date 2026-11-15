@@ -59,7 +59,8 @@ class TestInventorySorted:
         with patch("requests.get", side_effect=_get()):
             d = client.get("/api/inventory").get_json()
         s = {x["id"]: x for x in d["spools"]}
-        assert s[3]["sort"]["material"] == [5, "abs", -1, ""] and s[3]["color_family"] == "red"
+        assert s[3]["sort"]["material"] == [4, "abs", 7, "abs"] and s[3]["color_family"] == "red"
+        assert s[3]["sort"]["line"] == [-1, ""] and s[3]["material_base"] == "ABS"
         assert s[3]["material_label"] == "ABS"
         assert s[4]["color_family"] == "black" and s[5]["sort"]["location"] is None
 
@@ -104,14 +105,16 @@ class TestPlanRoute:
         # The spool without a location (5) is placed too.
         assert d["ok"] and d["capacity"] == 2 and d["spools"] == 5
         assert [(p["name"], p["id"], [s["id"] for s in p["spools"]]) for p in d["places"]] == \
-            [("Regal A-1", 11, [4]), ("Regal A-2", 12, [2, 3]), ("Regal A-10", 13, [1, 5])]
+            [("Regal A-1", 11, [4, 2]), ("Regal A-2", 12, [3, 1]), ("Regal A-10", 13, [5])]
         assert {m["id"]: (m["from"], m["to"]) for m in d["moves"]} == \
-            {3: ("Regal A-10", "Regal A-2"), 5: ("", "Regal A-10"), 1: ("Regal A-1", "Regal A-10")}
+            {2: ("Regal A-2", "Regal A-1"), 3: ("Regal A-10", "Regal A-2"), 1: ("Regal A-1", "Regal A-2"),
+             5: ("", "Regal A-10")}
         assert d["order"] == [["material", False], ["color", False]]
         # The steps, each with room where it puts a spool.
         assert [(st["n"], st["id"], st["from"], st["to"]) for st in d["steps"]] == \
-            [(1, 1, "Regal A-1", "Regal A-10"), (2, 3, "Regal A-10", "Regal A-2"), (3, 5, "", "Regal A-10")]
-        assert d["steps"][2]["from_kind"] == "none" and d["steps"][2]["spool"]["material"] == "ABS"
+            [(1, 1, "Regal A-1", "Regal A-2"), (2, 2, "Regal A-2", "Regal A-1"), (3, 3, "Regal A-10", "Regal A-2"),
+             (4, 5, "", "Regal A-10")]
+        assert d["steps"][3]["from_kind"] == "none" and d["steps"][3]["spool"]["material"] == "ABS"
 
     def test_default_order_capacity_and_options(self, client):
         with patch("requests.get", side_effect=_get()):

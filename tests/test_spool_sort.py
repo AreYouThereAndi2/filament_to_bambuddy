@@ -134,9 +134,23 @@ class TestMaterial:
 
     def test_pla_plus_never_mixed_with_pla(self):
         spools = [_sp(1, material="PLA+", subtype="Red"), _sp(2, material="PLA", subtype="Basic"),
-                  _sp(3, material="PLA"), _sp(4, material="PLA+", subtype="Basic"), _sp(5, material="PLA", subtype="Matte")]
-        ordered = ss.sort_spools(spools, [("material", False)])
-        assert [ss.spool_material_label(s) for s in ordered] == ["PLA", "PLA Basic", "PLA Matte", "PLA+", "PLA+ Basic"]
+                  _sp(3, material="PLA"), _sp(4, material="PLA+", subtype="Basic"), _sp(5, material="PLA", subtype="Matte"),
+                  _sp(6, material="ePLA"), _sp(7, material="PETG", subtype="Silk"), _sp(8, material="PETG+")]
+        ordered = ss.sort_spools(spools, [("material", False), ("line", False)])
+        assert [ss.spool_material_label(s) for s in ordered] == \
+            ["PLA", "PLA Basic", "PLA Matte", "PLA+", "PLA+ Basic", "ePLA", "PETG Silk", "PETG+"]
+
+    def test_variants_follow_their_family_and_are_not_technical(self):
+        for m in ("PLA+", "ePLA", "E-PLA", "PLA Pro", "PETG+"):
+            assert not ss.is_technical(m)
+        assert ss.material_base("e-pla") == "ePLA" and ss.material_base("PLA Plus") == "PLA+"
+        fam = [ss.material_key(m)[0] for m in ("PLA", "PLA+", "ePLA", "PETG", "PETG+", "ABS")]
+        assert fam == sorted(fam) and fam[0] == fam[1] == fam[2] and fam[3] == fam[4] < fam[5]
+
+    def test_subtype_is_a_key_of_its_own(self):
+        assert ss.line_key("PLA", "Silk Rose Gold") == ss.line_key("Silk PLA") == [2, "silk"]
+        assert ss.line_key("PLA", "Red") == [-1, ""]
+        assert ss.spool_material_line({"material": "PLA", "subtype": "-Matte Ice Blue"}) == "Matte"
 
     def test_bases_in_shelf_order_others_by_name(self):
         mats = ["TPU", "PETG", "PA12", "PLA+", "ABS", "PLA", "ASA", "PVB", "PA6"]
@@ -149,7 +163,7 @@ class TestMaterial:
         assert _ids(ss.sort_spools(spools, [("material", True)])) == [4, 2, 1, 3]
 
     def test_real_stock_by_material_then_colour(self):
-        ordered = ss.sort_spools(_stock(), [("material", False), ("color", False)])
+        ordered = ss.sort_spools(_stock(), [("material", False), ("line", False), ("color", False)])
         labels = [ss.spool_material_label(s) for s in ordered]
         assert _runs(labels) == ["PLA", "PLA Basic", "PLA Matte", "PLA Silk", "PLA High Speed", "PLA Lite",
                                  "PLA+", "PLA+ Basic", "PLA+ Bio", "PETG", "PETG Matte", "PETG Translucent",
@@ -205,8 +219,8 @@ class TestParse:
             [("brand", True), ("color", True), ("id", True)]
 
     def test_unknown_repeats_and_too_many_left_out(self):
-        assert ss.parse_sort("bogus, material, material:desc, color, brand, id") == \
-            [("material", False), ("color", False), ("brand", False)]
+        assert ss.parse_sort("bogus, material, material:desc, line, color, brand, id") == \
+            [("material", False), ("line", False), ("color", False), ("brand", False)]
 
     def test_default(self):
         assert ss.parse_sort("", default=[("id", False)]) == [("id", False)]
@@ -217,7 +231,8 @@ class TestGroups:
     def test_headings(self):
         keys = ss.sort_keys({"material": "PLA", "subtype": "Matte", "rgba": "FF0000FF", "brand": "eSUN",
                              "storage_location": "A1", "remaining": 3})
-        assert ss.group_key(keys, "material") == [0, "pla", 1, "matte"]
+        assert ss.group_key(keys, "material") == [0, "pla", 0, "pla"]
+        assert ss.group_key(keys, "line") == [1, "matte"]
         assert ss.group_key(keys, "color") == "red"
         assert ss.group_key(keys, "brand") == "esun"
         assert ss.group_key(keys, "remaining") is None
@@ -254,19 +269,18 @@ def _walk(steps, start: dict, places, cap):
 
 
 class TestShelfPlan:
-    def test_places_in_natural_order_and_as_many_stay_as_can(self):
+    def test_places_in_natural_order_filled_from_the_top_left(self):
         spools = _shelf((1, "ABS", BLUE, "Regal A-1"), (2, "PETG", RED, "Regal A-2"), (3, "ABS", RED, "Regal A-10"),
                         (4, "PLA", BLACK, "Regal A-1"), (5, "ABS", GREEN, "Keller"))
         p = ss.shelf_plan(spools, list(PLACES), 2, MAT_COL)
         assert [pl["name"] for pl in p["places"]] == ["Regal A-1", "Regal A-2", "Regal A-10"]
-        # Three keep their place, the sort order still runs across the places;
-        # spool 5 in the cellar stays out of it.
-        assert _layout(p) == [[4], [2], [3, 1]]
+        # Filled from the first place on, none left empty in between, even if
+        # that moves more; spool 5 in the cellar stays out of it.
+        assert _layout(p) == [[4, 2], [3, 1], []]
         assert p["spools"] == 4 and p["slots"] == 6 and p["overflow"] == []
-        assert p["moves"] == [{"id": 1, "from": "Regal A-1", "to": "Regal A-10"}]
-        assert [s["move"] for s in p["places"][2]["spools"]] == [False, True]
-        # Filling front to back would have moved two.
-        assert len(ss.shelf_plan(spools, list(PLACES), 2, MAT_COL)["steps"]) == 1
+        assert {m["id"]: m["to"] for m in p["moves"]} == {2: "Regal A-1", 3: "Regal A-2", 1: "Regal A-2"}
+        # Each step has room where it puts a spool: 1 makes room in A-1 first.
+        assert [(st["id"], st["to"]) for st in p["steps"]] == [(1, "Regal A-2"), (2, "Regal A-1"), (3, "Regal A-2")]
 
     def test_new_spools_without_a_place_are_sorted_in(self):
         spools = _shelf(*[(i, "ABS" if i % 2 else "PETG", RED, "") for i in range(1, 6)])
@@ -283,9 +297,12 @@ class TestShelfPlan:
         assert not any(s["move"] for pl in p["places"] for s in pl["spools"])
 
     def test_a_new_spool_goes_where_there_is_room(self):
-        # Sorted shelf with room left: the new spool goes in, nothing else moves.
+        # The shelf is packed from A1 on: the new spool sorts in, the rest closes up.
         spools = _shelf((1, "PLA", RED, "A1"), (2, "PETG", RED, "A2"), (3, "ABS", RED, "A3"), (9, "PETG", BLUE, ""))
         p = ss.shelf_plan(spools, ["A1", "A2", "A3"], 2, MAT_COL)
+        assert _layout(p) == [[1, 2], [9, 3], []]
+        # With a place per group it keeps one material to a place.
+        p = ss.shelf_plan(spools, ["A1", "A2", "A3"], 2, MAT_COL, break_on_group=True)
         assert _layout(p) == [[1], [2, 9], [3]] and p["moves"] == [{"id": 9, "from": "", "to": "A2"}]
 
     def test_full_shelf_shifts_once_back_to_front(self):
@@ -483,7 +500,7 @@ class TestTechnical:
         assert ss.is_technical(material, subtype) is tech
 
     def test_off_technical_ones_sort_with_their_base(self):
-        ordered = ss.sort_spools(_stock2(), [("material", False), ("color", False)])
+        ordered = ss.sort_spools(_stock2(), [("material", False), ("line", False), ("color", False)])
         assert [ss.spool_material_label(s) for s in ordered][-3:] == ["PETG GF", "PETG CF", "TPU"]
 
     def test_on_a_row_of_their_own_after_the_rest(self):
