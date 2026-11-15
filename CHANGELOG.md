@@ -52,6 +52,7 @@ Releases of the fork [AreYouThereAndi2/filament_to_bambuddy](https://github.com/
 - CI installs `requirements.txt`, so the label tests get Pillow and segno and `pip-audit` checks them too.
 
 ### Fixed
+- **Printing without the printer's own app.** The label printer is found and connected by Chrome itself, with the printer's app closed: the chooser also lists printers that send no name yet (PM…, TYPONOS …), and after a closed chooser the next tap lists every Bluetooth device. Connecting is tried three times with a time limit (a printer that just woke often refuses the first), and the job goes to the first writable channel of the common label-printer services when 0xff00 is not there. A printer needs no pairing in Android's Bluetooth settings.
 - **BamBuddy's inventory mode wins.** Set by hand to the other inventory than BamBuddy uses, the app posted spools where BamBuddy does not show them. It now follows BamBuddy whenever BamBuddy answers, and says so in red. The mode set by hand only counts when BamBuddy refuses the question. A create refused because BamBuddy just switched asks again and says to tap *Add* once more.
 - **Empty spool weight no longer frozen on each spool.** The linked Spoolman filament's (or its maker's) empty-spool weight was copied onto every new spool, so a later correction of the filament never reached them. Now it stays on the filament; a different weight goes onto the filament when it has none.
 - Colour names BamBuddy made up from the line ("Matte") are no longer shown as colours.
