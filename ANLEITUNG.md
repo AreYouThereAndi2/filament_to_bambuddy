@@ -44,7 +44,21 @@ BAMBUDDY_API_KEY=bb_xxxxxxxx
 # AUTH_MODE=bambuddy         # Anmeldung mit BamBuddy-Benutzern, siehe „Anmeldung über BamBuddy“
 ```
 
-Danach läuft die App auf Port **8088**: `http://<server-ip>:8088`. Die Statuszeile oben zeigt 🟢, wenn BamBuddy erreichbar ist und der Schlüssel passt. Unten im Fußbereich steht die Version.
+Danach läuft die App auf Port **8088**: `http://<server-ip>:8088`. Unter **Mehr → Verbindung** steht 🟢, wenn BamBuddy erreichbar ist und der Schlüssel passt; klappt die Verbindung nicht, erscheint die Meldung zusätzlich oben auf jeder Seite. Ganz unten unter **Mehr** steht die Version.
+
+## Wo was ist
+
+Die App ist in fünf Bereiche geteilt. Auf dem Handy wechselst du sie über die Leiste am unteren Rand, am Computer (ab 900 px Breite) über die Leiste links. Die Zurück-Taste des Handys geht zum vorigen Bereich und schließt offene Fenster und eine geöffnete Spule.
+
+| Bereich | Was dort ist |
+| --- | --- |
+| **Erfassen** (Startseite) | *Spule*: Barcode scannen, Nummer eintippen, Etikett fotografieren, in deinen Spoolman-Filamenten suchen, dann das Formular. Nach dem Hinzufügen geht es mit einem Tipp zu *Etikett drucken* oder *Einsortieren*. *Rechnung*: Rechnung fotografieren oder als PDF wählen, Amazon-Bestellverlauf importieren. |
+| **Bestand** | Suche über alle Spulen, darunter *Spulen* (die ganze Liste, Sortierung zum Aufklappen, CSV-Export oben rechts), *Statistik* und *Nachkauf* (was knapp wird, Nachricht über BamBuddy). Eine angetippte Spule öffnet sich an der Stelle der Liste, am Computer rechts daneben. |
+| **Regal** | *Scannen & einsortieren* oben, darunter *Lagerorte* (die Kacheln), *Sortieren* (Regal einsortieren, Schritt für Schritt) und *Anlegen* (viele Lagerorte auf einmal). |
+| **Etiketten** | *Drucken*: Spulennummern, Lagerort, 2 auf 1, Vorschau und Druck. *Layout*: Etikettenrolle, Anordnung und Zeilen des eigenen Layouts. |
+| **Mehr** | Verbindung und BamBuddy-Inventar, Design (System/Hell/Dunkel) und Sprache, Datenbank aktualisieren, gespeicherte Suchen löschen, Druckprofile verknüpfen. |
+
+Links funktionieren wie bisher: `/?barcode=…` (vom QR-Code der Waage) öffnet *Erfassen* mit dem Code, `/?spool=12` (vom QR-Code auf dem Etikett) die Spule im *Bestand*, geteilte Shop-Seiten landen in *Erfassen*. Ein Bereich lässt sich auch direkt öffnen: `/#stock`, `/#shelf`, `/#labels`, `/#more`.
 
 ### ZimaOS: „mkdir /root/.docker: read-only file system“
 
@@ -147,7 +161,7 @@ Aus dem Link liest der Server die Seite: Bei normalen Shops kommen Name, EAN und
 
 ## Etiketten drucken (TYPONOS PM240)
 
-Die Karte **🏷️ Etikett drucken** holt das Etikett einer Spule fertig von BamBuddy, in BamBuddys eigenen Vorlagen. Das geht auch im Spoolman-Modus. Dafür braucht es **BamBuddy 1.2.5.7 oder neuer**: Erst ab dieser Version liefert BamBuddy Etiketten als Bild.
+Der Bereich **Etiketten** holt das Etikett einer Spule fertig von BamBuddy, in BamBuddys eigenen Vorlagen. Das geht auch im Spoolman-Modus. Dafür braucht es **BamBuddy 1.2.5.7 oder neuer**: Erst ab dieser Version liefert BamBuddy Etiketten als Bild.
 
 1. Die Spulen-ID eingeben, also die # aus BamBuddy. Nach dem Anlegen einer Spule steht ihre ID schon da; bei mehreren Spulen kann man sie antippen.
 2. Unter **Vorlage** ein Format wählen. **Eigenes Layout** (Standard) nutzt die ganze Rolle mit den Zeilen, die du eingeschaltet hast: Marke, Material, Farbe, Farbcode, Lagerort, Düsentemperatur, Gewicht, Artikelnummer, Druckprofil, Notiz (darin z. B. das Druckbett), Datum, Spulennummer und QR-Code. Die Vorlagen von BamBuddy gibt es weiter; **Box 40 × 30 mm** lässt aber weg, wofür kein Platz ist, deshalb fehlten dort Lagerort und Temperatur. Der QR-Code öffnet die Spule in BamBuddy unter der *External URL* aus BamBuddys Einstellungen (oder `BAMBUDDY_PUBLIC_URL`).
@@ -172,7 +186,7 @@ Nach **Etikett fotografieren** oder **Ausfüllen** (eingefügter Titel) erschein
 
 ## BamBuddy mit Spoolman: welches Inventar?
 
-Ganz unten auf der Seite steht **BamBuddy-Inventar**:
+Unter **Mehr → Verbindung** steht **BamBuddy-Inventar**:
 
 - **Automatisch:** Die App fragt BamBuddy, ob Spoolman eingeschaltet ist, und zeigt darunter, was erkannt wurde.
 - **Spoolman (über BamBuddy):** Neue Spulen und Etiketten gehen über BamBuddys Spoolman-Routen (`/api/v1/spoolman/inventory`).
@@ -201,7 +215,7 @@ SPOOLMAN_URL=http://<server-ip>:7912
 
 `192.168.1.5:7912` ohne `http://` und eine Adresse mit `/api/v1` am Ende gehen auch. Ohne `SPOOLMAN_URL` nimmt die App die Spoolman-Adresse aus BamBuddys Einstellungen (Schlüssel mit „Read Status“).
 
-Ganz unten auf der Seite, unter **BamBuddy-Inventar**, steht der Status:
+Unter **Mehr → Verbindung**, unter **BamBuddy-Inventar**, steht der Status:
 
 - 🟢 **Spoolman verbunden: 240 Filamente**, darunter die Adresse und woher sie kommt.
 - 🟡 **Spoolman-Adresse fehlt:** `SPOOLMAN_URL` ist im Container nicht gesetzt. Steht sie in der `.env` neben der `docker-compose.yml`? Danach `docker compose up -d`, damit der Container sie bekommt.
@@ -216,7 +230,7 @@ Profile, die in BamBuddy importiert sind (**Settings → Profiles**, aus OrcaSli
 - **Je Druckertyp ein Profil.** Importierte Profile gibt es pro Druckermodell („eSUN PLA+ @BBL X1C“, „… @BBL P1S“, auch „… 0.2 nozzle“). Die App liest deine Drucker aus BamBuddy und gibt der Spule für **jedes deiner Druckermodelle** dessen Profil derselben Linie. Bei mehreren Modellen landet das des häufigsten Modells an der Spule selbst, die übrigen als BamBuddys „Profil je Druckermodell“, ebenso Profile für andere Düsen. Profile, die du in BamBuddy selbst gesetzt hast, bleiben.
 - **Im Formular** (Druck & Preis → **Druckprofil**) schlägt die App das passende Profil aus Hersteller, Material und Linie vor („Matte“, „Silk“, „PLA+“ statt „PLA“) und zeigt darunter, was jeder Drucker lädt. Antippen und tippen sucht in allen importierten Profilen; **Kein Profil** lässt BamBuddy das allgemeine nehmen.
 - **In der Spulenakte** (QR-Code scannen) lässt sich das Profil ändern. Hat die Spule keins, steht der Vorschlag da und wird mit **Speichern** übernommen.
-- **Für den ganzen Bestand:** **Dein Bestand → Druckprofile zuordnen → Prüfen** listet jede Spule ohne Profil mit dem passenden. Erst **N Spulen verknüpfen** schreibt es. Spulen, die schon ein importiertes Profil haben, bekommen dabei nur die Profile für fehlende Druckermodelle.
+- **Für den ganzen Bestand:** **Mehr → Druckprofile zuordnen → Prüfen** listet jede Spule ohne Profil mit dem passenden. Erst **N Spulen verknüpfen** schreibt es. Spulen, die schon ein importiertes Profil haben, bekommen dabei nur die Profile für fehlende Druckermodelle.
 
 Profile und Drucker liest die App mit dem Recht **Read Status** des API-Schlüssels.
 
@@ -229,20 +243,20 @@ Den QR-Code auf dem Etikett einer Spule mit **Barcode scannen** lesen. Das geht 
 - **Lagerort, Notiz und Restgewicht ändern**, dann **Änderungen speichern**. Das Restgewicht ist netto, ohne Leerspule. Mit der Küchenwaage samt Spule gewogen? Den Wert unter **Gewogen (brutto)** eintragen, die App zieht die Leerspule ab.
 - **das Druckprofil ändern** (siehe *Druckprofile*).
 - Hängt an der Spule ein **Bambu-RFID** (vom AMS oder der Waage), steht das dabei. Hinter Spoolman hat eine Spule nur einen Tag: Ein anderer Tag würde den RFID ersetzen, daran erkennen AMS und Waage die Spule. Die App fragt vorher.
-- **das Etikett neu drucken:** springt zur Etikett-Karte mit der Spulennummer.
+- **das Etikett neu drucken:** wechselt zu *Etiketten* mit der Spulennummer.
 - **die Spule in BamBuddy öffnen.**
 
 Ohne Kamera geht es auch: den Link vom Etikett ins Code-Feld einfügen oder `#12` eintippen.
 
 ## Dein Bestand
 
-Die Karte **Dein Bestand** liest deine Spulen aus dem aktiven Inventar (BamBuddy oder Spoolman dahinter):
+Der Bereich **Bestand** liest deine Spulen aus dem aktiven Inventar (BamBuddy oder Spoolman dahinter):
 
 - **Spule suchen:** Jedes Wort grenzt ein: Marke, Material, Farbe, Lagerort, Tag, Artikelnummer oder `#12`. `<200` zeigt nur Spulen mit weniger als 200 g. Ein Tipp öffnet die Spule.
 - **Sortieren:** nach Material, Farbe, Marke, Restmenge, Lagerort, Spulennummer oder Datum, in zwei Stufen („erst Material, dann Farbe“), jeweils auf- oder absteigend. Farbe geht nach dem Farbton (Rot, Orange, Gelb, Grün, Blau, Lila, Pink, dann Weiß über Grau bis Schwarz, dann Transparent), Material nach Familie (PLA, PLA+, PLA Silk stehen zusammen). Die Wahl merkt sich das Handy für jede Liste.
-- **Alle Spulen:** der ganze Bestand in dieser Reihenfolge, mit einer Überschrift je Material, Farbfamilie, Marke oder Lagerort; dazu **Als CSV exportieren** (für Excel mit Semikolon) und eine **Statistik** (Spulen und kg je Material, Marke oder Lagerort).
-- **Nachbestellen:** Spulen unter einer Grenze (200 g, änderbar), nach Sorte gruppiert, mit Restmenge, letztem Preis und *Nachkaufen* (Websuche).
-- **Benachrichtigen, wenn eine Sorte knapp wird** (unten in *Nachbestellen*): Alle paar Stunden schaut die App in den Bestand. Liegen alle Spulen einer Sorte (Marke, Material, Linie, Farbe) zusammen unter der Grenze, kommt einmal eine Nachricht über die Kanäle von BamBuddy (Telegram, ntfy, E-Mail …). Erst wenn die Sorte wieder über der Grenze war, z. B. nach einer neuen Spule, meldet sie sich erneut. Dafür braucht es zwei Dinge in BamBuddy:
+- **Spulen:** der ganze Bestand in dieser Reihenfolge, mit einer Überschrift je Material, Farbfamilie, Marke oder Lagerort; dazu **Als CSV exportieren** (Pfeil oben rechts, für Excel mit Semikolon) und eine **Statistik** (Spulen und kg je Material, Marke oder Lagerort).
+- **Nachkauf:** Spulen unter einer Grenze (200 g, änderbar), nach Sorte gruppiert, mit Restmenge, letztem Preis und *Nachkaufen* (Websuche).
+- **Benachrichtigen, wenn eine Sorte knapp wird** (unten in *Nachkauf*): Alle paar Stunden schaut die App in den Bestand. Liegen alle Spulen einer Sorte (Marke, Material, Linie, Farbe) zusammen unter der Grenze, kommt einmal eine Nachricht über die Kanäle von BamBuddy (Telegram, ntfy, E-Mail …). Erst wenn die Sorte wieder über der Grenze war, z. B. nach einer neuen Spule, meldet sie sich erneut. Dafür braucht es zwei Dinge in BamBuddy:
   1. Der API-Schlüssel braucht **Benachrichtigungen senden**.
   2. Bei mindestens einem Kanal (Einstellungen → Benachrichtigungen) **Nachrichten verbundener Apps** einschalten.
 
@@ -250,14 +264,14 @@ Die Karte **Dein Bestand** liest deine Spulen aus dem aktiven Inventar (BamBuddy
 
 Außerdem:
 
-- **Tag ans Handy halten** (Chrome auf Android): Der Knopf in der Scan-Karte liest den NFC-Tag und öffnet die Spule, an der er hängt.
+- **Tag ans Handy halten** (Chrome auf Android): Der Knopf unter *Erfassen* liest den NFC-Tag und öffnet die Spule, an der er hängt.
 - **Schon im Bestand:** Beim Anlegen zeigt das Formular, ob es Spulen derselben Marke, desselben Materials und derselben Farbe schon gibt.
 - **Mehrere Etiketten:** In *Spulen-ID* gehen `12, 15, 20-24`; dazu *Alle aus Lagerort …* und *Heute angelegt*. *Drucken* schickt alle nacheinander an den Drucker.
 - **Leer: archivieren:** Im Spulen-Datensatz archiviert das eine aufgebrauchte Spule in BamBuddy. Sie verschwindet aus dem Bestand, ihre Daten bleiben erhalten.
 
 ## Rechnungen: der Preis der Spulen
 
-Die Karte **Rechnungen** liest die Rechnung, mit der das Filament kam, und schreibt den **bezahlten Preis inklusive MwSt.** auf die Spulen.
+**Erfassen → Rechnung** liest die Rechnung, mit der das Filament kam, und schreibt den **bezahlten Preis inklusive MwSt.** auf die Spulen.
 
 1. **Rechnung fotografieren** (Kamera) oder **PDF oder Bild wählen** (auch mehrere). Ein PDF mit Text wird direkt gelesen, ein Scan oder Foto per Texterkennung – das dauert ein paar Sekunden. Gut ausgeleuchtet und gerade fotografieren hilft.
 2. Die App zeigt Händler, Datum, Rechnungs- und Bestellnummer, die Positionen mit Menge und Stückpreis (brutto), Versand, Rabatte und den Gesamtbetrag. **Alles lässt sich korrigieren.** Ergeben die Positionen nicht den Gesamtbetrag, steht das gelb darüber.
@@ -273,7 +287,7 @@ Die **Datei selbst wird nicht gespeichert**, nur was daraus gelesen wurde (in `/
 
 ## Lagerorte
 
-Die Karte **Lagerorte** zeigt BamBuddys Liste der Lagerorte als Kacheln, gruppiert nach dem Namensanfang („Regal A“ für „Regal A-01“ bis „Regal A-12“). Jede Kachel zeigt, wie viele Spulen dort liegen, und ihre Farben als Punkte; leere Orte sind nur umrandet. Ein Tipp öffnet den Ort:
+Der Bereich **Regal** zeigt unter *Lagerorte* BamBuddys Liste der Lagerorte als Kacheln, gruppiert nach dem Namensanfang („Regal A“ für „Regal A-01“ bis „Regal A-12“). Jede Kachel zeigt, wie viele Spulen dort liegen, und ihre Farben als Punkte; leere Orte sind nur umrandet. Ein Tipp öffnet den Ort:
 
 - **die Spulen dort**: ein Tipp öffnet den Spulen-Datensatz,
 - **Umbenennen**: BamBuddy zieht die Spulen mit, auch in Spoolman,
@@ -290,13 +304,13 @@ Die Karte **Lagerorte** zeigt BamBuddys Liste der Lagerorte als Kacheln, gruppie
 
 Die Namen erscheinen, bevor etwas angelegt wird; was BamBuddy schon hat, ist durchgestrichen. Danach gibt es auf Wunsch gleich die Etiketten für die neuen Orte.
 
-Zum Lesen braucht der API-Schlüssel **Read Status** („Status lesen“), zum Anlegen, Umbenennen und Löschen **Manage Inventory** („Bestand verwalten“). Fehlt eines, sagt die Karte, welches.
+Zum Lesen braucht der API-Schlüssel **Read Status** („Status lesen“), zum Anlegen, Umbenennen und Löschen **Manage Inventory** („Bestand verwalten“). Fehlt eines, steht dort, welches.
 
 ### Regal einsortieren
 
 Neue Spulen brauchen beim Anlegen **kein Fach**: Der Lagerort ist freiwillig, die Spule wartet unter *Ohne Lagerort*. Das Formular schlägt ein Fach vor („Vorschlag: Regal A-03 – dort liegen schon 3× PLA Rot, 1 Platz frei“), ein Tipp übernimmt es; ignorieren geht genauso.
 
-**Regal einsortieren** (in der Karte *Lagerorte*, oder *Einsortieren* bei einer Gruppe wie „Regal A“):
+**Regal einsortieren** (*Regal → Sortieren*, oder *Einsortieren* bei einer Gruppe wie „Regal A“):
 
 1. Lagerorte wählen, **Spulen pro Fach** eintragen (leer: gleichmäßig verteilt) und die Sortierung (z. B. Material, dann Farbe).
 2. Der Plan zeigt je Fach, welche Spulen hineinkommen; was umzieht, ist markiert, mit dem bisherigen Platz. Er hält die Reihenfolge über die Fächer (A-2 vor A-10) und lässt so viele Spulen liegen, wie es geht. Spulen ohne Lagerort kommen immer mit dazu, Spulen aus anderen Lagerorten auf Wunsch. Passt nicht alles, sagt er es: Spulen aus dem Regal kommen auf die Ablage, neue warten weiter.
