@@ -4193,6 +4193,18 @@ async function printerChannel(server){
   }
   throw new Error(t('label.bt_no_channel'));
 }
+// The PM240 takes a job only from a client that listens to its status
+// notifications (0xff03), as the Labelife app does: without it the data
+// arrived and nothing printed, and it printed only while Labelife was open.
+// Any notifying characteristic of the same service is taken; none is no error.
+async function printerListen(ch){
+  try{
+    const chars = await ch.service.getCharacteristics();
+    const n = chars.find(c => c.uuid.startsWith('0000ff03')) || chars.find(c => c.properties.notify || c.properties.indicate);
+    if(n){ await n.startNotifications(); return n; }
+  }catch(e){}
+  return null;
+}
 let labelSeq = 0;
 let labelLocs = null;     // [{loc: name}] while storage location labels are shown
 
@@ -4790,7 +4802,7 @@ function labelRaster(img, id, out){
   const x0 = Math.floor((TSPL_HEAD_DOTS - dots)/2/8)*8;
   const enc = new TextEncoder();
   const head = enc.encode('SIZE '+labelCfg.w.toFixed(1)+' mm,'+labelCfg.l.toFixed(1)+' mm\r\nGAP '+TSPL_GAP_MM+'.0 mm,0 mm\r\n'
-    +'DIRECTION 0,0\r\nDENSITY '+TSPL_DENSITY+'\r\nCLS\r\nBITMAP '+x0+',0,'+row+','+H+',1,');
+    +'DIRECTION 0,0\r\nDENSITY '+TSPL_DENSITY+'\r\nCLS\r\nBITMAP '+x0+',0,'+row+','+H+',0,');
   const tail = enc.encode('\r\nPRINT 1\r\n');
   const job = new Uint8Array(head.length + bits.length + tail.length);
   job.set(head, 0); job.set(bits, head.length); job.set(tail, head.length + bits.length);
@@ -4810,6 +4822,7 @@ async function labelPrint(){
     labelHint(t('label.connecting'));
     const server = await printerConnect(device);
     const ch = await printerChannel(server);
+    await printerListen(ch);
     labelPrinter = device;
     const write = ch.writeValueWithoutResponse ? b => ch.writeValueWithoutResponse(b) : b => ch.writeValue(b);
     let printed = 0;
