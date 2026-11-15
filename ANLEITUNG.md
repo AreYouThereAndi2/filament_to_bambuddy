@@ -41,6 +41,7 @@ BAMBUDDY_API_KEY=bb_xxxxxxxx
 # UPCITEMDB_KEY=...          # bezahlter UPCitemdb-Schlüssel, sonst 100 Abfragen/Tag frei
 # UPC_LOOKUP=off             # UPCitemdb ganz abschalten
 # TIGERTAG=off               # TigerTag-Katalog nicht verwenden
+# AUTH_MODE=bambuddy         # Anmeldung mit BamBuddy-Benutzern, siehe „Anmeldung über BamBuddy“
 ```
 
 Danach läuft die App auf Port **8088**: `http://<server-ip>:8088`. Die Statuszeile oben zeigt 🟢, wenn BamBuddy erreichbar ist und der Schlüssel passt. Unten im Fußbereich steht die Version.
@@ -295,6 +296,31 @@ In der Weboberfläche der Waage → Einstellungen → Barcode-Scanner → **fila
 
 - **Angelegt wird die Spule von der App**, genau wie vom Handy: Sie kommt auf dein Spoolman-Filament und bekommt die Druckprofile für jedes Druckermodell. Der Preis kommt aus dem Speicher, und der Code wird gemerkt; einen Lagerort bekommt die Spule erst beim Einsortieren. Ist die App nicht erreichbar, legt die Waage die Spule selbst über BamBuddy an.
 - **Etiketten von der Waage** kommen im selben Layout, das du am Handy unter *Etikettenrolle und Zeilen* angeordnet hast. Die App merkt sich die Anordnung (`/data/label_layout.json`) und zeichnet das Etikett für die Waage. Ein neues Handy übernimmt sie von dort. Mit `?twoup=stack` oder `?twoup=side` an `/api/label/<id>.bits` kommt dieselbe Spule zweimal halb so groß aufs Etikett.
+
+## Anmeldung über BamBuddy
+
+Ohne Einstellung kann jeder, der die Seite erreicht, sie benutzen, und alles läuft über den API-Schlüssel. Mit `AUTH_MODE=bambuddy` fragt die App nach einem **BamBuddy-Benutzer**, und alles, was du änderst, macht sie **als dieser Benutzer**: BamBuddy prüft seine Berechtigungen und zeigt im Verlauf, wer eine Spule angelegt oder umgelagert hat.
+
+1. **Zuerst die Firmware der SpoolmanScale aktualisieren.** Die Waage ruft die App selbst auf (Code nachschlagen, Spule anlegen, Etikett holen) und muss dabei ihren BamBuddy-API-Schlüssel mitschicken. Eine ältere Firmware bekommt sonst „401“ und kann keine Spulen mehr über die App anlegen.
+2. In BamBuddy muss die **Anmeldung eingeschaltet** sein (Einstellungen → Benutzer) und jeder, der die App benutzt, einen eigenen Benutzer haben. Ist sie aus, sagt die Anmeldeseite das.
+3. In der `.env` ergänzen und den Container neu starten:
+
+   ```ini
+   AUTH_MODE=bambuddy
+   ```
+
+   `BAMBUDDY_API_KEY` bleibt drin: Damit laufen die Meldung „Filament geht aus“ und das Lesen der BamBuddy-Einstellungen, die für alle gleich sind (Inventar-Modus, Spoolman-Adresse, Druckprofile).
+4. Die Seite öffnen: Es kommt die **Anmeldung**. Benutzername (oder E-Mail) und Passwort eingeben, bei Bedarf **Angemeldet bleiben** ankreuzen. Hat der Benutzer die Zwei-Faktor-Bestätigung an, folgt der **Code** aus der Authenticator-App; per Link geht auch ein Backup-Code oder ein Code per E-Mail.
+5. Oben rechts steht dann der Anfangsbuchstabe des Benutzers: Antippen zeigt, als wer du angemeldet bist und was dir fehlt, und **Abmelden**.
+
+Gut zu wissen:
+
+- **Das Passwort wird nie gespeichert.** Die App hebt nur den Zugangs-Token von BamBuddy auf (in `/data/sessions.json`, nur für den Container lesbar), im Browser liegt nur eine zufällige Sitzungsnummer.
+- **Wie lange die Anmeldung hält**, bestimmt BamBuddy (*session_max_hours*, normal 24 Stunden). Danach erscheint die Anmeldung über der Seite; was du eingetippt hast, bleibt stehen, und die Aktion läuft nach der Anmeldung weiter. Ohne „Angemeldet bleiben“ endet die Sitzung auch, wenn der Browser geschlossen wird.
+- **Was ein Benutzer darf**, kommt aus seinen BamBuddy-Gruppen: Spulen anlegen und ändern, Lagerorte und Regalpläne brauchen „inventory:update“, den Bestand sehen „inventory:read“, Inventar-Modus und Etiketten-Layout „settings:update“, die Meldung „Filament geht aus“ „notifications:update“. Was fehlt, ist auf der Seite ausgegraut und wird mit dem Namen der fehlenden Berechtigung abgelehnt. Administratoren dürfen alles.
+- **Links** wie `/?barcode=…`, `/?spool=12` oder „Teilen“ vom Handy führen erst zur Anmeldung und danach dorthin zurück.
+- Nach 10 falschen Anmeldungen in 15 Minuten wartet die App eine Weile, BamBuddy zählt zusätzlich selbst.
+- Zurück zum alten Verhalten: `AUTH_MODE=off` (oder die Zeile löschen) und neu starten.
 
 ## Fehlersuche
 
