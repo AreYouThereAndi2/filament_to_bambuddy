@@ -41,7 +41,7 @@ from functools import cmp_to_key
 
 from locations import group_of
 
-KEYS = ("material", "color", "brand", "remaining", "location", "id", "added")
+KEYS = ("tech", "material", "color", "brand", "remaining", "location", "id", "added")
 MAX_KEYS = 3
 MAX_CAPACITY = 999
 
@@ -186,6 +186,29 @@ def material_key(material, subtype=None) -> list | None:
     return [rank, natural(base), lrank, natural(" ".join(lines))]
 
 
+# Technical filaments get a row of their own when asked ("tech" first in the
+# order): flexible ones, the engineering plastics, everything filled with
+# glass or carbon fibre (a PETG-GF is not stored with the PETG), and support
+# materials.
+TECH_BASES = {"TPU", "TPE", "ABS", "ASA", "HIPS", "PA", "PC", "PP", "PVA", "BVOH", "PVB", "PEEK", "PEI", "PEKK",
+              "PPS", "POM", "PMMA", "PCL"}
+_FIBRE = re.compile(r"(?:^|[^a-z])(?:cf|gf|carbon|glass|kohle|glas|fiber|fibre|faser)(?:[^a-z]|$)")
+
+
+def is_technical(material, subtype=None) -> bool:
+    """True for flexible, engineering, fibre-filled and support filaments."""
+    b = _base(material)
+    if not b:
+        return False
+    base = b[0]
+    if base in TECH_BASES or base.startswith(("PA-", "PA6", "PA1", "PC-", "PC6", "PC1")):
+        return True
+    lines = _lines(material, subtype)
+    if "GF" in lines or "CF" in lines:
+        return True
+    return bool(_FIBRE.search(_fold(f"{material} {subtype or ''}").replace("-", " ")))
+
+
 # ── Colour ──────────────────────────────────────────────────────────────────
 # Spools are sorted along a colour chart, the way a filament shelf is usually
 # arranged: white, transparent, beige, yellow, gold, orange, red, pink, purple,
@@ -205,7 +228,7 @@ FAMILIES = ("white", "clear", "beige", "yellow", "gold", "orange", "red", "pink"
 _COLOR_WORDS = {
     "white": "white weiss weis snow ivory bone pearl perlweiss alabaster chalk milk milky offwhite",
     "clear": "transparent clear klar durchsichtig natural natur glass",
-    "beige": "beige khaki sand cream creme skin haut champagne wheat linen tan latte vanilla",
+    "beige": "beige khaki kaki sand cream creme skin haut champagne wheat linen tan latte vanilla",
     "yellow": "yellow gelb lemon zitrone banana canary mustard senf",
     "gold": "gold golden goldene",
     "orange": "orange tangerine mandarin apricot aprikose peach pfirsich pumpkin kuerbis amber bernstein",
@@ -380,6 +403,7 @@ def sort_keys(s: dict) -> dict:
     """A spool's key for each way to sort, None where it has no value."""
     added = str(s.get("added") or "").strip()[:10]
     return {
+        "tech": 1 if is_technical(s.get("material"), s.get("subtype")) else 0,
         "material": material_key(s.get("material"), s.get("subtype")),
         "color": color_key(s.get("rgba"), s.get("color_name"), s.get("subtype")),
         "brand": _text_or_none(s.get("brand")),
@@ -396,7 +420,7 @@ def group_key(keys: dict, key: str):
     number or date would be a heading of its own)."""
     if key == "color":
         return _family(keys.get("color"))
-    if key in ("material", "brand", "location"):
+    if key in ("material", "brand", "location", "tech"):
         return keys.get(key)
     return None
 
@@ -623,10 +647,16 @@ def shelf_plan(spools: list, places: list, capacity: int | None = None, order=No
 
     def tie(s):
         return (where(s), _number_or_none(s.get("id")) or 0)
-    first = order[0][0] if order else None
+    # The heading key: the first after "tech"; with "tech" the blocks stay apart too.
+    keys_ = [k for k, _ in order or []]
+    first = next((k for k in keys_ if k != "tech"), None)
+    tech_first = bool(keys_) and keys_[0] == "tech"
 
     def group(s):
-        return repr(group_key(sort_keys(s), first)) if break_on_group and first else ""
+        if not (break_on_group and first):
+            return ""
+        k = sort_keys(s)
+        return repr((k["tech"] if tech_first else 0, group_key(k, first)))
 
     # What fits: the shelf's own first, then the others, each in sort order.
     per_group: dict = {}
