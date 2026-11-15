@@ -3776,7 +3776,20 @@ $('guideRedo').onclick = () => { guide.steps.forEach(s => { if(s.state === 'skip
 $('guideReplan').onclick = () => guideReplan(false);
 $('guideClose').onclick = () => $('guideSheet').close();
 $('guideLabelEach').checked = !!lsGet('f2b.guideLabelEach', false);
-$('guideLabelEach').addEventListener('change', () => lsSet('f2b.guideLabelEach', $('guideLabelEach').checked));
+// Ticking it picks the printer at once: the browser offers its chooser only
+// on a tap, and a step's "Done" comes after the location was saved.
+$('guideLabelEach').addEventListener('change', async () => {
+  lsSet('f2b.guideLabelEach', $('guideLabelEach').checked);
+  if(!$('guideLabelEach').checked || labelPrinter || !navigator.bluetooth) return;
+  try{
+    labelPrinter = await printerPick();
+    labelPickAll = false;
+    guideHint(t('guide.printer_ready', {name: labelPrinter.name || '?'}));
+  }catch(e){
+    if(e && e.name === 'NotFoundError'){ labelPickAll = !labelPickAll; guideHint(labelPickAll ? t('label.bt_all_hint') : ''); }
+    else guideHint(t('label.bt_failed', {error: (e && e.message) || e}), true);
+  }
+});
 $('guideSheet').addEventListener('close', () => {
   guideScan.stop(); guideSave();
   if(LOC){ invForget(); locLoad(true); }
