@@ -1,0 +1,40 @@
+{
+ "merchant": "Amazon",
+ "vendor": "amazon",
+ "invoice_number": "DE6AE3ABCD4EUI",
+ "order_number": "302-1234567-7654321",
+ "date": "2026-11-14",
+ "currency": "EUR",
+ "shipping": 0.0,
+ "discount": 0.0,
+ "total": 75.96,
+ "items": [
+  {
+   "description": "SUNLU PLA Filament 1,75 mm, 3D Drucker Filament PLA 1 kg Spule, Maßgenauigkeit +/- 0,02 mm, Schwarz",
+   "quantity": 2,
+   "unit_price_gross": 19.99,
+   "total_gross": 39.98,
+   "vat_rate": 19.0,
+   "asin": "B07PGY2JP1",
+   "filament": true
+  },
+  {
+   "description": "Bambu Lab PETG HF Filament 1,75 mm 1 kg mit Spule, Blau",
+   "quantity": 1,
+   "unit_price_gross": 22.99,
+   "total_gross": 22.99,
+   "vat_rate": 19.0,
+   "asin": "B0CTHX7Q2M",
+   "filament": true
+  },
+  {
+   "description": "Gehärtete Stahldüse 0,4 mm für Bambu Lab X1 / P1, 2 Stück",
+   "quantity": 1,
+   "unit_price_gross": 12.99,
+   "total_gross": 12.99,
+   "vat_rate": 19.0,
+   "asin": "B0BZ8K1R4T",
+   "filament": false
+  }
+ ]
+}

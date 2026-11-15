@@ -13,5 +13,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
+      # Tesseract for the OCR tests of scanned invoices (they skip without it).
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng
       - run: pip install -r requirements.txt pytest
       - run: pytest

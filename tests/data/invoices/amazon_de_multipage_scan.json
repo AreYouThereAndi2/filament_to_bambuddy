@@ -1,0 +1,175 @@
+{
+ "merchant": "Amazon",
+ "vendor": "amazon",
+ "invoice_number": "DE6BX9QRST1EUI",
+ "order_number": "028-7654321-1122334",
+ "date": "2026-11-02",
+ "currency": "EUR",
+ "shipping": 3.99,
+ "discount": 5.0,
+ "total": 460.75,
+ "items": [
+  {
+   "description": "ELEGOO PLA Filament 1,75 mm Weiß 1 kg, Maßgenauigkeit +/- 0,02 mm",
+   "quantity": 2,
+   "unit_price_gross": 15.99,
+   "total_gross": 31.98,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0000",
+   "filament": true
+  },
+  {
+   "description": "ELEGOO PLA Filament 1,75 mm Grau 1 kg",
+   "quantity": 1,
+   "unit_price_gross": 15.99,
+   "total_gross": 15.99,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0001",
+   "filament": true
+  },
+  {
+   "description": "eSUN PETG Filament 1,75 mm Transparent 1 kg Spule",
+   "quantity": 1,
+   "unit_price_gross": 18.49,
+   "total_gross": 18.49,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0002",
+   "filament": true
+  },
+  {
+   "description": "Polymaker PolyTerra PLA Matt Filament 1,75 mm 1 kg, Kohle Schwarz",
+   "quantity": 2,
+   "unit_price_gross": 21.99,
+   "total_gross": 43.98,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0003",
+   "filament": true
+  },
+  {
+   "description": "ANYCUBIC PLA Silk Filament 1,75 mm Gold 1 kg",
+   "quantity": 1,
+   "unit_price_gross": 17.99,
+   "total_gross": 17.99,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0004",
+   "filament": true
+  },
+  {
+   "description": "Geeetech PLA Filament 1,75 mm Rot 1 kg Vakuumverpackt",
+   "quantity": 1,
+   "unit_price_gross": 14.99,
+   "total_gross": 14.99,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0005",
+   "filament": true
+  },
+  {
+   "description": "Creality Hyper PLA 1,75 mm Hochgeschwindigkeit Filament 1 kg, Orange",
+   "quantity": 2,
+   "unit_price_gross": 16.49,
+   "total_gross": 32.98,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0006",
+   "filament": true
+  },
+  {
+   "description": "Filament Trockenbox mit Hygrometer für 1 kg Spulen",
+   "quantity": 1,
+   "unit_price_gross": 39.99,
+   "total_gross": 39.99,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0007",
+   "filament": false
+  },
+  {
+   "description": "SUNLU TPU 95A Filament 1,75 mm Schwarz 1 kg",
+   "quantity": 1,
+   "unit_price_gross": 24.99,
+   "total_gross": 24.99,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0008",
+   "filament": true
+  },
+  {
+   "description": "Overture PETG Filament 1,75 mm Grün 1 kg",
+   "quantity": 2,
+   "unit_price_gross": 19.99,
+   "total_gross": 39.98,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0009",
+   "filament": true
+  },
+  {
+   "description": "Kingroon PLA+ Filament 1,75 mm Blau 1 kg, 2er Pack",
+   "quantity": 1,
+   "unit_price_gross": 27.99,
+   "total_gross": 27.99,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0010",
+   "filament": true
+  },
+  {
+   "description": "Isopropanol 99,9 % 1 Liter für 3D-Druck Reinigung",
+   "quantity": 1,
+   "unit_price_gross": 9.49,
+   "total_gross": 9.49,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0011",
+   "filament": false
+  },
+  {
+   "description": "JAYO PLA Meta Filament 1,75 mm Weiß 1,1 kg Spule",
+   "quantity": 2,
+   "unit_price_gross": 15.49,
+   "total_gross": 30.98,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0012",
+   "filament": true
+  },
+  {
+   "description": "Bambu Lab PLA Basic Filament 1,75 mm 1 kg Nachfüllung ohne Spule, Cyan",
+   "quantity": 1,
+   "unit_price_gross": 17.99,
+   "total_gross": 17.99,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0013",
+   "filament": true
+  },
+  {
+   "description": "SUNLU ABS Filament 1,75 mm Grau 1 kg",
+   "quantity": 1,
+   "unit_price_gross": 18.99,
+   "total_gross": 18.99,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0014",
+   "filament": true
+  },
+  {
+   "description": "Eryone Silk PLA Filament 1,75 mm Kupfer 1 kg",
+   "quantity": 2,
+   "unit_price_gross": 19.49,
+   "total_gross": 38.98,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0015",
+   "filament": true
+  },
+  {
+   "description": "3D Drucker Spachtel Set 4-teilig Edelstahl",
+   "quantity": 1,
+   "unit_price_gross": 8.99,
+   "total_gross": 8.99,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0016",
+   "filament": false
+  },
+  {
+   "description": "Polymaker PolyLite ASA Filament 1,75 mm Weiß 1 kg",
+   "quantity": 1,
+   "unit_price_gross": 26.99,
+   "total_gross": 26.99,
+   "vat_rate": 19.0,
+   "asin": "B0TEST0017",
+   "filament": true
+  }
+ ]
+}

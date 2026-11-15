@@ -1,0 +1,45 @@
+{
+ "merchant": "3DJake",
+ "vendor": "3djake",
+ "invoice_number": "RE-2026-0481516",
+ "order_number": "8807123",
+ "date": "2026-10-03",
+ "currency": "EUR",
+ "shipping": 4.95,
+ "discount": 0.0,
+ "total": 157.79,
+ "items": [
+  {
+   "description": "Jake PLA Filament 1,75 mm Schwarz 1 kg",
+   "quantity": 3,
+   "unit_price_gross": 16.99,
+   "total_gross": 50.97,
+   "sku": "FIL-PLA-175-SW",
+   "filament": true
+  },
+  {
+   "description": "Jake PETG Filament 1,75 mm Transparent Blau 1 kg",
+   "quantity": 2,
+   "unit_price_gross": 19.49,
+   "total_gross": 38.98,
+   "sku": "FIL-PETG-175-TR",
+   "filament": true
+  },
+  {
+   "description": "PEI Druckplatte texturiert 257 x 257 mm",
+   "quantity": 1,
+   "unit_price_gross": 34.9,
+   "total_gross": 34.9,
+   "sku": "ACC-SHEET-PEI",
+   "filament": false
+  },
+  {
+   "description": "Jake TPU 95A Filament 1,75 mm Rot 0,75 kg",
+   "quantity": 1,
+   "unit_price_gross": 27.99,
+   "total_gross": 27.99,
+   "sku": "FIL-TPU-175-RT",
+   "filament": true
+  }
+ ]
+}
