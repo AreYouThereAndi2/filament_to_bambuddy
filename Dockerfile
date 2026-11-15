@@ -37,6 +37,8 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
 # App code
 COPY app.py catalog_util.py ofd.py filament_parse.py spoolmandb_community.py tigertag.py name_match.py spoolman_match.py presets.py label_render.py reorder.py locations.py spool_sort.py i18n.py upc_lookup.py page_import.py invoices.py invoice_extract.py invoice_parse.py amazon_orders.py ./
+# Sign-in through BamBuddy (AUTH_MODE=bambuddy)
+COPY auth.py ./
 COPY templates ./templates
 COPY static ./static
 

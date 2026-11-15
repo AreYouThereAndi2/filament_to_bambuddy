@@ -278,9 +278,50 @@ Docker-specific env vars: `OFD_CACHE_FILE` and `BARCODE_CACHE_FILE` default to
 | `HOST` / `PORT` | `0.0.0.0` / `8088` | Server bind address, only for `python app.py` (the Docker image always listens on 8088) |
 | `UPC_LOOKUP` | `on` | `off` disables the UPCitemdb fallback |
 | `UPCITEMDB_KEY` | — | Paid UPCitemdb key; without one the free trial is used (100 lookups a day per IP) |
+| `AUTH_MODE` | `off` | `bambuddy`: the page asks for a BamBuddy user (with 2FA), and every BamBuddy request made for it carries that user's token, so BamBuddy checks their permissions and records who changed what. `off`: no sign-in, everything with the API key. See [Sign-in through BamBuddy](#sign-in-through-bambuddy) |
 
 The Open Filament Database dump is downloaded once and cached in
 `ofd_index.json`, refreshed daily (or on demand via the **Refresh DB** button).
+
+### Sign-in through BamBuddy
+
+With `AUTH_MODE=bambuddy` the page and its API need a BamBuddy user
+(BamBuddy's own sign-in must be on: *Settings → Users*). The sign-in page
+sends the name and password to BamBuddy (`POST /api/v1/auth/login`, and
+`/auth/2fa/verify` or the email code when the user has two-step
+verification); the password is never stored. The token BamBuddy hands back is
+kept on this server in a session (`sessions.json` in the data directory,
+mode 600, next to a secret made on the first start, `f2b_secret.key`); the
+browser holds a random id in an HttpOnly, SameSite=Lax cookie, Secure on
+https (also behind a proxy that sends `X-Forwarded-Proto: https`).
+
+- **Actions run as the user.** Every BamBuddy request made for the page
+  carries the user's token (`Authorization: Bearer …`), so BamBuddy checks
+  their permissions and its history shows who added or moved a spool.
+  `BAMBUDDY_API_KEY` is still used for what runs without a browser (the
+  running-out message, *Send notifications*) and for BamBuddy settings read
+  into caches all users share (inventory mode, Spoolman address, external URL,
+  slicer profiles); keep it set. The stock list cache is kept per user.
+- **Permissions** come from BamBuddy (`/auth/me`): adding and changing spools,
+  locations and shelf plans need `inventory:update`, reading the stock
+  `inventory:read`, the inventory mode and the label layout `settings:update`,
+  the running-out message `notifications:update`; admins may do everything.
+  The page greys out what the user may not do, and the server refuses it with
+  `403` naming the permission.
+- **Sessions** last as long as BamBuddy's token (BamBuddy's *session_max_hours*,
+  24 hours by default; BamBuddy has no refresh). *Stay signed in* keeps the
+  cookie until then; otherwise it ends with the browser. When it ends the page
+  shows the sign-in over itself and nothing typed is lost. *Sign out* (the
+  initial in the header) also revokes the token in BamBuddy.
+- **Links** such as `/?barcode=…`, `/?spool=12` or a share open the sign-in
+  first and come back afterwards.
+- **Changes** from the page carry a CSRF token. Failed sign-ins are limited per
+  address here too (10 in 15 minutes), besides BamBuddy's own limit.
+- **The SpoolmanScale** calls `GET /api/lookup`, `POST /api/spool` and
+  `GET /api/label/<id>.bits` itself. It has to send its BamBuddy API key in
+  `X-API-Key`; the key is checked with BamBuddy (`/auth/me`, the answer kept
+  five minutes) and the scale's request is made with it. **Update the scale's
+  firmware before switching `AUTH_MODE` on**; an older one gets `401`.
 
 ---
 
@@ -297,6 +338,7 @@ Each created spool is tagged `data_origin = "barcode-scan"`.
 
 | File | Purpose |
 |---|---|
+| `auth.py` | Sign-in through BamBuddy (`AUTH_MODE=bambuddy`): sessions, 2FA, CSRF, permissions, the scale's API key; `templates/login.html`, `static/auth.js` |
 | `app.py` | Flask backend: serves the page; `/api/lookup`, `/api/parse`, `/api/spool`, `/api/health`; the learning cache; posts to Bambuddy |
 | `ofd.py` | Open Filament Database client — builds the GTIN + article-number (SKU) indexes, cached/refreshed daily |
 | `tigertag.py` | TigerTag catalogue client — EAN + article-number (SKU) indexes from TigerTag's CC0 catalogue, cached/refreshed daily |
