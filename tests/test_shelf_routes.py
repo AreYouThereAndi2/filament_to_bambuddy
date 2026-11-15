@@ -26,9 +26,10 @@ def _spool(i, material, rgba, loc, brand="eSUN", **kw):
             "label_weight": 1000, "weight_used": 0, "storage_location": loc, **kw}
 
 
-SPOOLS = [_spool(1, "PLA", "0000FFFF", "Regal A-1"), _spool(2, "PETG", "FF0000FF", "Regal A-2"),
-          _spool(3, "PLA", "FF0000FF", "Regal A-10"), _spool(4, "ABS", "000000FF", "Regal A-1"),
-          _spool(5, "PLA", "00A000FF", "")]
+# ABS sorts after PETG, PLA before it; red, blue, green along the colour chart.
+SPOOLS = [_spool(1, "ABS", "0000FFFF", "Regal A-1"), _spool(2, "PETG", "FF0000FF", "Regal A-2"),
+          _spool(3, "ABS", "FF0000FF", "Regal A-10"), _spool(4, "PLA", "000000FF", "Regal A-1"),
+          _spool(5, "ABS", "00A000FF", "")]
 LOCS = [_loc(11, "Regal A-1"), _loc(12, "Regal A-2"), _loc(13, "Regal A-10"), _loc(14, "Keller")]
 
 
@@ -58,7 +59,8 @@ class TestInventorySorted:
         with patch("requests.get", side_effect=_get()):
             d = client.get("/api/inventory").get_json()
         s = {x["id"]: x for x in d["spools"]}
-        assert s[3]["sort"]["material"] == ["pla", []] and s[3]["color_family"] == "red"
+        assert s[3]["sort"]["material"] == [5, "abs", -1, ""] and s[3]["color_family"] == "red"
+        assert s[3]["material_label"] == "ABS"
         assert s[4]["color_family"] == "black" and s[5]["sort"]["location"] is None
 
     def test_sorted_on_request(self, client):
@@ -67,8 +69,8 @@ class TestInventorySorted:
             d = client.get("/api/inventory?sort=material,color").get_json()
             back = client.get("/api/inventory?sort=material:desc,color").get_json()
         assert [s["id"] for s in plain["spools"]] == [1, 2, 3, 4, 5]
-        assert [s["id"] for s in d["spools"]] == [4, 2, 3, 5, 1]
-        assert [s["id"] for s in back["spools"]] == [3, 5, 1, 2, 4]
+        assert [s["id"] for s in d["spools"]] == [4, 2, 3, 1, 5]
+        assert [s["id"] for s in back["spools"]] == [3, 1, 5, 2, 4]
 
 
 class TestCsv:
@@ -80,9 +82,9 @@ class TestCsv:
         text = r.get_data(as_text=True)
         assert text.startswith("﻿id,brand,material")
         rows = text[1:].strip().split("\r\n")
-        assert [row.split(",")[0] for row in rows[1:]] == ["2", "3", "5", "1", "6", "4"]
-        assert rows[1] == "2,eSUN,PETG,,,#FF0000,1000,1000,Regal A-2,,,,"
-        assert "'=HYPERLINK(1)" in rows[5] and rows[5].endswith(",19.5")
+        assert [row.split(",")[0] for row in rows[1:]] == ["6", "2", "3", "1", "5", "4"]
+        assert rows[2] == "2,eSUN,PETG,,,#FF0000,1000,1000,Regal A-2,,,,"
+        assert "'=HYPERLINK(1)" in rows[1] and rows[1].endswith(",19.5")
 
     def test_semicolons_and_decimal_commas(self, client):
         with patch("requests.get", side_effect=_get([_spool(1, "PLA", "FF0000FF", "A1", cost_per_kg=19.99)])):
@@ -102,14 +104,14 @@ class TestPlanRoute:
         # The spool without a location (5) is placed too.
         assert d["ok"] and d["capacity"] == 2 and d["spools"] == 5
         assert [(p["name"], p["id"], [s["id"] for s in p["spools"]]) for p in d["places"]] == \
-            [("Regal A-1", 11, [4]), ("Regal A-2", 12, [2, 3]), ("Regal A-10", 13, [5, 1])]
+            [("Regal A-1", 11, [4]), ("Regal A-2", 12, [2, 3]), ("Regal A-10", 13, [1, 5])]
         assert {m["id"]: (m["from"], m["to"]) for m in d["moves"]} == \
             {3: ("Regal A-10", "Regal A-2"), 5: ("", "Regal A-10"), 1: ("Regal A-1", "Regal A-10")}
         assert d["order"] == [["material", False], ["color", False]]
         # The steps, each with room where it puts a spool.
         assert [(st["n"], st["id"], st["from"], st["to"]) for st in d["steps"]] == \
             [(1, 1, "Regal A-1", "Regal A-10"), (2, 3, "Regal A-10", "Regal A-2"), (3, 5, "", "Regal A-10")]
-        assert d["steps"][2]["from_kind"] == "none" and d["steps"][2]["spool"]["material"] == "PLA"
+        assert d["steps"][2]["from_kind"] == "none" and d["steps"][2]["spool"]["material"] == "ABS"
 
     def test_default_order_capacity_and_options(self, client):
         with patch("requests.get", side_effect=_get()):
@@ -120,7 +122,7 @@ class TestPlanRoute:
                                                             "include_elsewhere": True, "prefer": [3, "x"]}).get_json()
         # Four spools (one without a place), two places: two to a place.
         assert d["capacity"] == 2 and d["order"] == [["material", False], ["color", False]]
-        assert [[s["id"] for s in p["spools"]] for p in d["places"]] == [[4, 2], [5, 1]]
+        assert [[s["id"] for s in p["spools"]] for p in d["places"]] == [[4, 2], [1, 5]]
         assert alone["spools"] == 3
         assert wide["spools"] == 5 and {s["id"] for p in wide["places"] for s in p["spools"]} == {1, 2, 3, 4, 5}
 
@@ -244,7 +246,7 @@ class TestIntakeWithoutPlace:
 
 class TestSuggestRoute:
     def test_suggestion_with_room(self, client):
-        spool = {"material": "PLA", "rgba": "0000EEFF"}
+        spool = {"material": "ABS", "rgba": "0000EEFF"}
         with patch("requests.get", side_effect=_get()):
             roomy = client.post("/api/locations/suggest", json={"spool": spool, "default_cap": 3}).get_json()
             tight = client.post("/api/locations/suggest", json={"spool": spool, "caps": {"Regal A": 2}}).get_json()
@@ -258,7 +260,7 @@ class TestSuggestRoute:
     def test_a_stored_spool_is_not_its_own_neighbour(self, client):
         # Spool 1 (blue PLA, in A-1) scanned to put it away: its neighbour is
         # the red PLA in A-10. Without its id it would find itself in A-1.
-        spool = {"id": 1, "material": "PLA", "rgba": "0000FFFF"}
+        spool = {"id": 1, "material": "ABS", "rgba": "0000FFFF"}
         with patch("requests.get", side_effect=_get()):
             mine = client.post("/api/locations/suggest", json={"spool": spool, "default_cap": 3}).get_json()
             anon = client.post("/api/locations/suggest", json={"spool": dict(spool, id=None),

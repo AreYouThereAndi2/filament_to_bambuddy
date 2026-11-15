@@ -1,0 +1,263 @@
+[
+ {
+  "id": 1,
+  "brand": "Geeetech",
+  "material": "PLA",
+  "subtype": "Matte PLA Brown",
+  "color_name": "Like Marble",
+  "color_name_is_synthesized": false,
+  "rgba": "C0C9CCFF"
+ },
+ {
+  "id": 2,
+  "brand": "eSUN",
+  "material": "PLA",
+  "subtype": "Basic",
+  "color_name": "Fire Engine Red",
+  "color_name_is_synthesized": false,
+  "rgba": "91202BFF"
+ },
+ {
+  "id": 3,
+  "brand": "Overture",
+  "material": "PLA",
+  "subtype": "High Speed Plus",
+  "color_name": "Chocolate",
+  "color_name_is_synthesized": false,
+  "rgba": "7B3F00FF"
+ },
+ {
+  "id": 4,
+  "brand": "eSUN 3D",
+  "material": "PLA",
+  "subtype": "-Basic Orange",
+  "color_name": "-Basic Orange",
+  "color_name_is_synthesized": true,
+  "rgba": "FF6A14FF"
+ },
+ {
+  "id": 5,
+  "brand": "eSUN",
+  "material": "PLA+",
+  "subtype": "Red",
+  "color_name": "Brick-Red",
+  "color_name_is_synthesized": false,
+  "rgba": "DC4638FF"
+ },
+ {
+  "id": 6,
+  "brand": "eSUN 3D",
+  "material": "PLA",
+  "subtype": "-Basic White",
+  "color_name": "-Basic White",
+  "color_name_is_synthesized": true,
+  "rgba": "FFFFFFFF"
+ },
+ {
+  "id": 7,
+  "brand": "DeepLee",
+  "material": "PLA",
+  "subtype": "Matte PLA Ice Blue",
+  "color_name": "Matte PLA Ice Blue",
+  "color_name_is_synthesized": true,
+  "rgba": "A8D8E8FF"
+ },
+ {
+  "id": 8,
+  "brand": "Cai Lab",
+  "material": "PLA+",
+  "subtype": "Basic",
+  "color_name": "Dark Brown",
+  "color_name_is_synthesized": false,
+  "rgba": "7D6556FF"
+ },
+ {
+  "id": 9,
+  "brand": "eSUN 3D",
+  "material": "PETG",
+  "subtype": "-Matte MATCHA GREEN",
+  "color_name": "-Matte MATCHA GREEN",
+  "color_name_is_synthesized": true,
+  "rgba": "989F4FFF"
+ },
+ {
+  "id": 10,
+  "brand": "Cai Lab",
+  "material": "PLA",
+  "subtype": "Silk",
+  "color_name": "Copper Brown Metallic",
+  "color_name_is_synthesized": false,
+  "rgba": "AA6443FF"
+ },
+ {
+  "id": 11,
+  "brand": "kexcelled",
+  "material": "PETG",
+  "subtype": "GF",
+  "color_name": "White",
+  "color_name_is_synthesized": false,
+  "rgba": "FFFFFFFF"
+ },
+ {
+  "id": 12,
+  "brand": "eSUN 3D",
+  "material": "PETG",
+  "subtype": "-Matte TERRACOTTA",
+  "color_name": "-Matte TERRACOTTA",
+  "color_name_is_synthesized": true,
+  "rgba": "E2725BFF"
+ },
+ {
+  "id": 13,
+  "brand": "eSUN 3D",
+  "material": "PETG",
+  "subtype": "-Matte LIGHT KHAKI",
+  "color_name": "-Matte LIGHT KHAKI",
+  "color_name_is_synthesized": true,
+  "rgba": "C6C0A8FF"
+ },
+ {
+  "id": 14,
+  "brand": "Geeetech",
+  "material": "PLA",
+  "subtype": "Silk",
+  "color_name": "Silk White",
+  "color_name_is_synthesized": false,
+  "rgba": "DEE2E5FF"
+ },
+ {
+  "id": 15,
+  "brand": "eSUN 3D",
+  "material": "PETG",
+  "subtype": "Basic Translucent Light Pink",
+  "color_name": "Translucent Pink with Sparkles",
+  "color_name_is_synthesized": false,
+  "rgba": "F4A4C0FF"
+ },
+ {
+  "id": 16,
+  "brand": "TECBEARS",
+  "material": "PLA",
+  "subtype": "Transparent",
+  "color_name": "Transparent",
+  "color_name_is_synthesized": true,
+  "rgba": "FFFFFFFF"
+ },
+ {
+  "id": 17,
+  "brand": "eSUN 3D",
+  "material": "PETG",
+  "subtype": "Basic Translucent Red",
+  "color_name": "Iron Red",
+  "color_name_is_synthesized": false,
+  "rgba": "7C2731FF"
+ },
+ {
+  "id": 18,
+  "brand": "SUNLU",
+  "material": "PETG",
+  "subtype": "Bone White",
+  "color_name": "Bone White",
+  "color_name_is_synthesized": true,
+  "rgba": "FFFFFFFF"
+ },
+ {
+  "id": 19,
+  "brand": "eSUN 3D",
+  "material": "PLA",
+  "subtype": "-Silk Copper",
+  "color_name": "-Silk Copper",
+  "color_name_is_synthesized": true,
+  "rgba": "C9774BFF"
+ },
+ {
+  "id": 20,
+  "brand": "eSUN 3D",
+  "material": "PLA",
+  "subtype": "-Lite Green",
+  "color_name": "-Lite Green",
+  "color_name_is_synthesized": true,
+  "rgba": "3E484AFF"
+ },
+ {
+  "id": 21,
+  "brand": "eSUN 3D",
+  "material": "PLA",
+  "subtype": "-Basic Purple",
+  "color_name": "-Basic Purple",
+  "color_name_is_synthesized": true,
+  "rgba": "9E007EFF"
+ },
+ {
+  "id": 22,
+  "brand": "eSUN 3D",
+  "material": "PLA",
+  "subtype": "Silk Rose Gold",
+  "color_name": "Rose Gold",
+  "color_name_is_synthesized": false,
+  "rgba": "E78397FF"
+ },
+ {
+  "id": 23,
+  "brand": "Cai Lab",
+  "material": "PLA",
+  "subtype": "Silk",
+  "color_name": "Silver",
+  "color_name_is_synthesized": false,
+  "rgba": "A6A9AAFF"
+ },
+ {
+  "id": 24,
+  "brand": "Cai Lab",
+  "material": "PLA+",
+  "subtype": "Bio",
+  "color_name": "Hunter Green",
+  "color_name_is_synthesized": false,
+  "rgba": "002A21FF"
+ },
+ {
+  "id": 25,
+  "brand": "eSUN 3D",
+  "material": "PLA+",
+  "subtype": "Concrete Grey",
+  "color_name": "Concrete Grey",
+  "color_name_is_synthesized": false,
+  "rgba": "91A0B6FF"
+ },
+ {
+  "id": 26,
+  "brand": "eSUN 3D",
+  "material": "PLA",
+  "subtype": "Silk",
+  "color_name": "Silk Gold",
+  "color_name_is_synthesized": false,
+  "rgba": "C48E2FFF"
+ },
+ {
+  "id": 27,
+  "brand": "Anycubic",
+  "material": "PLA",
+  "subtype": "Basic Classic Green",
+  "color_name": "Basic Classic Green",
+  "color_name_is_synthesized": true,
+  "rgba": "009639FF"
+ },
+ {
+  "id": 28,
+  "brand": "DeepLee",
+  "material": "PLA",
+  "subtype": "Matte",
+  "color_name": "Purple",
+  "color_name_is_synthesized": false,
+  "rgba": "B87BEAFF"
+ },
+ {
+  "id": 29,
+  "brand": "Overture",
+  "material": "TPU",
+  "subtype": "Black",
+  "color_name": "Black",
+  "color_name_is_synthesized": true,
+  "rgba": "000000FF"
+ }
+]

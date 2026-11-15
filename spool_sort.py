@@ -6,14 +6,16 @@ that order.
 Each spool gets its sort keys once (sort_keys). The page compares them as
 they come, so a list sorts the same on the phone as here:
 
-- material: the family first ("PLA" for "PLA+", "PLA Silk", "PLA-CF" and
-  "Silk PLA"), then what follows it, plain before "+" before the rest;
-  numbers in their order ("PA6" before "PA12"); the subtype counts as part
-  of the material. Case and accents are ignored.
-- colour: round the colour wheel from red over orange, yellow, green, cyan,
-  blue and purple to pink; then white, the greys and black, from light to
-  dark; then transparent spools (a clear colour, or "transparent", "clear",
-  "natural" in the name). The colour comes from the spool's RGBA hex.
+- material: the base material as the inventory names it, then its line.
+  PLA, PLA+ and PETG are bases of their own and never mixed; the line
+  (Basic, Matte, Silk, High Speed, Translucent …) is read from the material
+  and subtype, colour words there are left out ("PLA" + "-Basic Orange" is
+  "PLA Basic"). Within a base: no line, then Basic, Matte, Silk …
+- colour: along a colour chart, as a shelf is arranged: white, transparent,
+  beige, yellow, gold, orange, red, pink, purple, blue, turquoise, green,
+  brown, grey, black; within a family light to dark. The family comes from
+  the colour's name first ("Concrete Grey", "Chocolate"), else from the RGBA
+  value measured in OKLCH (see color_key).
 - maker, location: by name, numbers in their order ("Regal A-2" before
   "Regal A-10").
 - remaining, id (the spool's number), added (the date).
@@ -31,7 +33,6 @@ front, so ties at a place's border do not move needlessly.
 SPDX-License-Identifier: AGPL-3.0-or-later
 """
 
-import colorsys
 import math
 import re
 import unicodedata
@@ -44,31 +45,17 @@ KEYS = ("material", "color", "brand", "remaining", "location", "id", "added")
 MAX_KEYS = 3
 MAX_CAPACITY = 999
 
-# Material families: a word of these is the family even when it is not the
-# first one ("Silk PLA").
-_FAMILIES = {"pla", "petg", "pet", "pctg", "abs", "asa", "tpu", "tpe", "pa", "nylon", "pc", "pp", "pe",
-             "pva", "bvoh", "hips", "peek", "pei", "pekk", "pps", "pvb", "pcl", "cpe", "pom", "pmma", "san"}
-_TOKEN = re.compile(r"[a-z]+|\d+|\+")
 _DIGITS = re.compile(r"\d+")
 _HEX = re.compile(r"#?([0-9A-Fa-f]{6})([0-9A-Fa-f]{2})?")
-_CLEAR = re.compile(r"\b(transparent|translucent|clear|klar|durchsichtig|transluzent|natural|natur)\b", re.IGNORECASE)
-
-# Where the colour wheel is cut: 15° below red, so a crimson (350°) sorts
-# with the reds and not after pink.
-_HUE_SHIFT = 15.0
-# Colour families on the shifted wheel, each up to its upper bound.
-_HUE_FAMILIES = ((30, "red"), (60, "orange"), (85, "yellow"), (180, "green"), (210, "cyan"),
-                 (270, "blue"), (305, "purple"), (360, "pink"))
-FAMILIES = tuple(f for _, f in _HUE_FAMILIES) + ("white", "grey", "black", "clear")
-# Below this chroma (max − min of R, G, B, 0..1) a colour is a grey.
-_GREY_CHROMA = 0.1
-# Below this alpha a colour is transparent.
-_CLEAR_ALPHA = 0.5
+_WORD = re.compile(r"[a-z0-9]+|\+")
 
 
 def _fold(value) -> str:
-    """Lower case, accents off, spaces squeezed."""
-    text = unicodedata.normalize("NFKD", str(value or "")).encode("ascii", "ignore").decode()
+    """Lower case, accents off (ß, ü, ö, ä spelled out first), spaces squeezed."""
+    text = str(value or "").replace("ß", "ss").replace("ẞ", "ss")
+    for a, b in (("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("Ä", "ae"), ("Ö", "oe"), ("Ü", "ue")):
+        text = text.replace(a, b)
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
     return re.sub(r"\s+", " ", text.strip().lower())
 
 
@@ -78,17 +65,179 @@ def natural(value) -> str:
                        _fold(value))
 
 
-def material_key(material, subtype=None) -> list | None:
-    """[family, [what follows]] for a material and its subtype, None for none."""
-    text = _fold(" ".join(str(p) for p in (material, subtype) if p and str(p).strip()))
-    text = re.sub(r"\bplus\b", "+", text)
-    tokens = [t.rjust(6, "0") if t.isdigit() else t for t in _TOKEN.findall(text)]
-    if not tokens:
+# ── Material ────────────────────────────────────────────────────────────────
+# A spool's material is its base material as the inventory names it (PLA,
+# PLA+, PETG …: "PLA+" is a material of its own, never mixed with PLA) and its
+# line (Basic, Matte, Silk …). The subtype in BamBuddy often carries the colour
+# as well ("-Basic Orange", "Matte PLA Ice Blue", "Red"); only the line words
+# count, the rest is left to the colour.
+
+# Bases in the order a shelf usually has them; others after them, by name.
+_BASE_ORDER = ("PLA", "PLA+", "PETG", "PCTG", "PET", "ABS", "ASA", "HIPS", "TPU", "TPE", "PA", "PC", "PP",
+               "PVA", "BVOH", "PVB", "PEEK", "PEI")
+_BASE_ALIAS = {"PLAPLUS": "PLA+", "PLA PLUS": "PLA+", "PLA +": "PLA+", "PET-G": "PETG", "PET G": "PETG",
+               "NYLON": "PA", "TPU95A": "TPU", "TPU 95A": "TPU"}
+# Line words, in the order the lines follow each other within a base.
+# (word, canonical label); several words may name one line.
+_LINES = (
+    ("basic", "Basic"), ("standard", "Basic"),
+    ("matte", "Matte"), ("matt", "Matte"),
+    ("silk", "Silk"), ("dual silk", "Silk Dual"), ("tri silk", "Silk Tri"),
+    ("high speed", "High Speed"), ("highspeed", "High Speed"), ("hs", "High Speed"), ("hyper", "High Speed"),
+    ("rapid", "High Speed"),
+    ("translucent", "Translucent"),
+    ("lite", "Lite"),
+    ("bio", "Bio"),
+    ("tough", "Tough"),
+    ("marble", "Marble"), ("wood", "Wood"), ("metal", "Metal"), ("galaxy", "Galaxy"), ("sparkle", "Galaxy"),
+    ("glitter", "Galaxy"), ("glow", "Glow"),
+    ("gf", "GF"), ("cf", "CF"), ("carbon", "CF"),
+    ("rainbow", "Multicolor"), ("multicolor", "Multicolor"), ("gradient", "Multicolor"),
+)
+_LINE_ORDER = []
+for _w, _label in _LINES:
+    if _label not in _LINE_ORDER:
+        _LINE_ORDER.append(_label)
+# A line may come with its base glued to it in the subtype ("Matte PLA Brown");
+# those words are no part of the line.
+_LINE_PHRASES = sorted(((w.split(), lab) for w, lab in _LINES), key=lambda x: -len(x[0]))
+
+
+def _base(material) -> tuple[str, str] | None:
+    """(label, rest of the text) from the inventory's material: ("PLA+", "") for
+    "PLA Plus", ("PLA", "silk") for "Silk PLA"; None without a material."""
+    text = _fold(material)
+    if not text:
         return None
-    # The family is the first word that is one, else the first word; a
-    # number glued to it ("PA12") follows it.
-    at = next((i for i, t in enumerate(tokens) if t in _FAMILIES), 0)
-    return [tokens[at], tokens[:at] + tokens[at + 1:]]
+    up = text.upper()
+    for alias, base in _BASE_ALIAS.items():
+        if up == alias:
+            return base, ""
+    words = re.findall(r"[a-z0-9]+\+?|\+", text)
+    if "+" in words:  # "pla +"
+        i = words.index("+")
+        if i:
+            words[i - 1] += "+"
+        words.pop(i)
+    if "plus" in words:
+        i = words.index("plus")
+        if i and words[i - 1].upper() in _BASE_ORDER:
+            words[i - 1] += "+"
+            words.pop(i)
+    known = {b.lower() for b in _BASE_ORDER}
+    at = next((i for i, w in enumerate(words) if w in known), None)
+    if at is None:
+        # An unknown material: the whole name is its base ("PPS-CF").
+        return up, ""
+    base = words[at].upper()
+    return base, " ".join(words[:at] + words[at + 1:])
+
+
+def _lines(material, subtype=None) -> list:
+    """The line ("Matte", "Silk" …) from what the material and subtype say,
+    None for none. Colour words and the base repeated in the subtype are no
+    line. "Basic" gives way to a more telling line ("Basic Translucent" is
+    "Translucent")."""
+    b = _base(material)
+    text = " ".join(t for t in ((b[1] if b else ""), _fold(subtype)) if t)
+    words = _WORD.findall(text.replace("-", " "))
+    found = []
+    i = 0
+    while i < len(words):
+        for phrase, label in _LINE_PHRASES:
+            if words[i:i + len(phrase)] == phrase:
+                if label not in found:
+                    found.append(label)
+                i += len(phrase) - 1
+                break
+        i += 1
+    if len(found) > 1 and "Basic" in found:
+        found.remove("Basic")
+    found.sort(key=_LINE_ORDER.index)
+    return found
+
+
+def material_line(material, subtype=None) -> str | None:
+    """The line ("Matte", "Silk", "High Speed" …) the material and subtype
+    name, None for none."""
+    return " ".join(_lines(material, subtype)) or None
+
+
+def material_label(material, subtype=None) -> str | None:
+    """"PLA Matte", "PLA+ Basic", "PETG": what a heading says."""
+    b = _base(material)
+    if not b:
+        return None
+    line = material_line(material, subtype)
+    return f"{b[0]} {line}" if line else b[0]
+
+
+def material_key(material, subtype=None) -> list | None:
+    """[base rank, base, line rank, line] for a material and its subtype,
+    None without a material. PLA, PLA+ and PETG are bases of their own; within
+    a base the spools without a line come first, then Basic, Matte, Silk …"""
+    b = _base(material)
+    if not b:
+        return None
+    base = b[0]
+    rank = _BASE_ORDER.index(base) if base in _BASE_ORDER else len(_BASE_ORDER)
+    lines = _lines(material, subtype)
+    lrank = _LINE_ORDER.index(lines[0]) if lines else -1
+    return [rank, natural(base), lrank, natural(" ".join(lines))]
+
+
+# ── Colour ──────────────────────────────────────────────────────────────────
+# Spools are sorted along a colour chart, the way a filament shelf is usually
+# arranged: white, transparent, beige, yellow, gold, orange, red, pink, purple,
+# blue, turquoise, green, brown, grey, black. Within a family from light to
+# dark.
+#
+# The family comes first from the colour's name, which the maker chose and
+# which says what the spool looks like ("Concrete Grey", "Chocolate", "Matcha
+# Green"); the RGBA value in the inventory is often only near it. Of several
+# colour words the last one counts ("Fire Engine Red", "Ice Blue", "Bone
+# White"). Without a colour word the RGBA value decides, measured in OKLCH,
+# which follows what the eye sees (brown is a dark, dull orange; a grey with a
+# hint of blue is still grey).
+FAMILIES = ("white", "clear", "beige", "yellow", "gold", "orange", "red", "pink", "purple", "blue", "cyan",
+            "green", "brown", "grey", "black")
+
+_COLOR_WORDS = {
+    "white": "white weiss weis snow ivory bone pearl perlweiss alabaster chalk milk milky offwhite",
+    "clear": "transparent clear klar durchsichtig natural natur glass",
+    "beige": "beige khaki sand cream creme skin haut champagne wheat linen tan latte vanilla",
+    "yellow": "yellow gelb lemon zitrone banana canary mustard senf",
+    "gold": "gold golden goldene",
+    "orange": "orange tangerine mandarin apricot aprikose peach pfirsich pumpkin kuerbis amber bernstein",
+    "red": "red rot rote roter crimson scarlet ruby rubin cherry kirsch brick ziegel burgundy bordeaux wine wein "
+           "maroon cardinal coral koralle",
+    "pink": "pink rosa rose fuchsia magenta salmon lachs blush flamingo",
+    "purple": "purple lila violet violett lilac flieder lavender lavendel mauve plum pflaume amethyst grape",
+    "blue": "blue blau navy marine cobalt kobalt sky himmel azure azur sapphire saphir denim royal indigo ice eis",
+    "cyan": "cyan turquoise tuerkis teal petrol aqua aquamarine",
+    "green": "green gruen olive oliv lime limette mint jade emerald smaragd forest wald army hunter matcha moss "
+             "moos sage salbei pistachio pistazie avocado grass gras",
+    "brown": "brown braun chocolate schokolade coffee kaffee mocha cocoa kakao caramel karamell walnut nuss "
+             "copper kupfer bronze rust rost umber wood holz terracotta terrakotta terakotta",
+    "grey": "grey gray grau silver silber concrete beton graphite graphit ash asche slate schiefer "
+            "stone stein steel stahl titanium titan charcoal anthracite anthrazit gunmetal",
+    "black": "black schwarz onyx jet ebony",
+}
+_WORD_FAMILY = {w: fam for fam, words in _COLOR_WORDS.items() for w in words.split()}
+# German compounds end in their colour ("Dunkelgrün", "Himmelblau", "Kirschrot").
+_SUFFIXES = sorted(("rot", "gruen", "blau", "gelb", "weiss", "schwarz", "grau", "braun", "lila", "rosa",
+                    "orange", "tuerkis", "gold", "silber", "beige", "violett"), key=len, reverse=True)
+# Two words that together name another family than their last word.
+_PHRASE_FAMILY = {("rose", "gold"): "pink", ("off", "white"): "white", ("dark", "brown"): "brown",
+                  ("light", "khaki"): "beige", ("sky", "blue"): "blue", ("ice", "blue"): "blue"}
+# Words that only describe ("light", "dark", "matte" …) are passed over.
+
+_FAMILY_RANK = {f: i for i, f in enumerate(FAMILIES)}
+# Where a family sits when the name gives it but there is no RGBA value: its
+# usual lightness, so it lands in the middle of its family.
+_FAMILY_L = {"white": 0.98, "clear": 0.95, "beige": 0.85, "yellow": 0.9, "gold": 0.72, "orange": 0.72,
+             "red": 0.58, "pink": 0.75, "purple": 0.55, "blue": 0.55, "cyan": 0.65, "green": 0.6,
+             "brown": 0.45, "grey": 0.6, "black": 0.15}
 
 
 def _rgba(value) -> tuple | None:
@@ -100,41 +249,118 @@ def _rgba(value) -> tuple | None:
     return r, g, b, a
 
 
-def color_key(rgba, name=None) -> list | None:
-    """Where a colour sorts: [0, hue, -lightness, -saturation] for a colour,
-    [1, -lightness] for white, grey and black, [2, hue or -1, -lightness]
-    for a transparent one (colourless first, then tinted ones round the
-    wheel); None without a colour."""
+def oklch(r: float, g: float, b: float) -> tuple[float, float, float]:
+    """sRGB 0..1 → OKLCH: lightness 0..1, chroma, hue in degrees."""
+    def lin(c):
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+    r, g, b = lin(r), lin(g), lin(b)
+    l_ = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+    m_ = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+    s_ = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+    lightness = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_
+    a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_
+    bb = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+    return lightness, math.hypot(a, bb), math.degrees(math.atan2(bb, a)) % 360
+
+
+def family_from_name(*names) -> str | None:
+    """The colour family a name gives ("Fire Engine Red" → "red"), from the
+    first name that has a colour word; the last colour word in it counts."""
+    for name in names:
+        # What comes after "with"/"mit" are specks or sparkles in the colour,
+        # not the colour ("White with Brown Specks", "Weiß mit Glitzer").
+        text = re.split(r"\b(?:with|mit|w/)\b", _fold(name).replace("-", " "))[0]
+        words = _WORD.findall(text)
+        fam = None
+        for i, w in enumerate(words):
+            pair = _PHRASE_FAMILY.get(tuple(words[i - 1:i + 1])) if i else None
+            if pair:
+                fam = pair
+            else:
+                if w not in _WORD_FAMILY:
+                    w = next((x for x in _SUFFIXES if len(w) > len(x) + 2 and w.endswith(x)), w)
+                if w not in _WORD_FAMILY:
+                    continue
+                # "transparent" beside a colour word ("Translucent Pink") is the
+                # colour's, not a clear spool.
+                if _WORD_FAMILY[w] == "clear" and fam and fam != "clear":
+                    continue
+                fam = _WORD_FAMILY[w]
+        if fam:
+            return fam
+    return None
+
+
+def family_from_rgb(r: float, g: float, b: float) -> str:
+    """The colour family the eye gives an sRGB colour, measured in OKLCH."""
+    light, chroma, hue = oklch(r, g, b)
+    # Very dark: black unless clearly coloured (navy, forest green stay).
+    if light < 0.3 and chroma < 0.045:
+        return "black"
+    if chroma < 0.04:
+        # Nearly no colour: white or grey, or a warm off-white (beige).
+        if chroma >= 0.012 and 50 <= hue <= 110 and 0.72 <= light < 0.96:
+            return "beige"
+        # A dull warm colour that is not light: taupe, a greyish brown.
+        if chroma >= 0.025 and 30 <= hue <= 100 and light < 0.72:
+            return "brown"
+        return "white" if light >= 0.95 else "grey"
+    # Brown is a dark, not too bright orange or yellow.
+    if 35 <= hue < 110 and light < 0.62 and chroma < 0.16:
+        return "brown"
+    if 55 <= hue < 110 and light >= 0.72 and chroma < 0.08:
+        return "beige"
+    # Olive and matcha: yellowish greens without the brightness of yellow.
+    if 100 <= hue < 125 and chroma < 0.13:
+        return "green"
+    for bound, fam in ((8, "pink"), (40, "red"), (72, "orange"), (115, "yellow"), (182, "green"),
+                       (230, "cyan"), (290, "blue"), (330, "purple"), (360, "pink")):
+        if hue < bound:
+            # A light, soft red is a pink (salmon, rose).
+            if fam == "red" and hue < 18 and light > 0.72:
+                return "pink"
+            return fam
+    return "pink"
+
+
+def color_key(rgba, name=None, subtype=None) -> list | None:
+    """Where a colour sorts on the colour chart: [family rank, darkness, hue,
+    -chroma]; None without a colour. The family from the name (else the
+    subtype, else the RGBA value), the place in the family from the RGBA
+    value: light first."""
     c = _rgba(rgba)
-    clear_name = bool(name and _CLEAR.search(str(name)))
+    fam = family_from_name(name, subtype)
     if c is None:
-        return [2, -1.0, 0.0] if clear_name else None
+        if not fam:
+            return None
+        return [_FAMILY_RANK[fam], round(1 - _FAMILY_L[fam], 4), 0.0, 0.0]
     r, g, b, a = c
-    h, light, sat = colorsys.rgb_to_hls(r, g, b)
-    hue = round((h * 360 + _HUE_SHIFT) % 360, 1)
-    grey = max(r, g, b) - min(r, g, b) < _GREY_CHROMA
-    if a < _CLEAR_ALPHA or clear_name:
-        return [2, -1.0 if grey else hue, round(-light, 4)]
-    if grey:
-        return [1, round(-light, 4)]
-    return [0, hue, round(-light, 4), round(-sat, 4)]
+    if not fam:
+        fam = "clear" if a < 0.5 else family_from_rgb(r, g, b)
+    light, chroma, hue = oklch(r, g, b)
+    # Within the family: light to dark; equally light ones round the wheel
+    # starting at red, so reds and pinks meet the neighbouring families.
+    return [_FAMILY_RANK[fam], round(1 - light, 4), round((hue - 20) % 360, 1), round(-chroma, 4)]
 
 
 def _family(key: list | None) -> str | None:
-    if key is None:
-        return None
-    if key[0] == 2:
-        return "clear"
-    if key[0] == 1:
-        light = -key[1]
-        return "white" if light >= 0.85 else "grey" if light >= 0.2 else "black"
-    return next(f for bound, f in _HUE_FAMILIES if key[1] < bound)
+    return None if key is None else FAMILIES[key[0]]
 
 
-def color_family(rgba, name=None) -> str | None:
-    """"red" … "pink", "white", "grey", "black" or "clear"; None without a colour.
-    In colour order the families follow each other, so they serve as headings."""
-    return _family(color_key(rgba, name))
+def color_family(rgba, name=None, subtype=None) -> str | None:
+    """"white" … "black" (see FAMILIES); None without a colour. In colour
+    order the families follow each other, so they serve as headings."""
+    return _family(color_key(rgba, name, subtype))
+
+
+def spool_color_family(s: dict) -> str | None:
+    """A spool's colour family, from its colour name, subtype and RGBA."""
+    return color_family(s.get("rgba"), s.get("color_name"), s.get("subtype"))
+
+
+def spool_material_label(s: dict) -> str | None:
+    """A spool's material heading: "PLA Matte", "PLA+", "PETG Translucent"."""
+    return material_label(s.get("material"), s.get("subtype"))
 
 
 def _text_or_none(value) -> str | None:
@@ -155,7 +381,7 @@ def sort_keys(s: dict) -> dict:
     added = str(s.get("added") or "").strip()[:10]
     return {
         "material": material_key(s.get("material"), s.get("subtype")),
-        "color": color_key(s.get("rgba"), s.get("color_name")),
+        "color": color_key(s.get("rgba"), s.get("color_name"), s.get("subtype")),
         "brand": _text_or_none(s.get("brand")),
         "remaining": _number_or_none(s.get("remaining")),
         "location": _text_or_none(s.get("storage_location")),
@@ -471,7 +697,7 @@ def suggest_place(new: dict, spools: list, places: list, order=None, capacity_of
                       tiebreak=lambda s: (s is probe, _number_or_none(s.get("id")) or 0))
     at = next(i for i, s in enumerate(row) if s is probe)
     mine = sort_keys(probe)
-    family = color_family(probe.get("rgba"), probe.get("color_name"))
+    family = spool_color_family(probe)
 
     def room(k):
         cap = capacity_of(known[k]) if capacity_of else None
@@ -480,7 +706,7 @@ def suggest_place(new: dict, spools: list, places: list, order=None, capacity_of
     def answer(k, neighbour):
         same = sum(1 for s in shelved if _place_key(s.get("storage_location")) == k
                    and sort_keys(s)["material"] == mine["material"]
-                   and color_family(s.get("rgba"), s.get("color_name")) == family)
+                   and spool_color_family(s) == family)
         return {"name": known[k], "same": same, "free": room(k),
                 "neighbor": {f: neighbour.get(f) for f in _SPOOL_FIELDS}}
 

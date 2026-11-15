@@ -1864,7 +1864,8 @@ def _compact_spool(raw: dict) -> dict | None:
     out["added"] = str(raw.get("created_at") or raw.get("registered") or "")[:10] or None
     # Sorted on the page by these, the same as here (see spool_sort.py).
     out["sort"] = spool_sort.sort_keys(out)
-    out["color_family"] = spool_sort.color_family(out["rgba"], out["color_name"])
+    out["color_family"] = spool_sort.spool_color_family(out)
+    out["material_label"] = spool_sort.spool_material_label(out)
     return out
 
 
@@ -2319,7 +2320,7 @@ def locations_suggest():
     others = [sp for sp in spools if sp.get("id") != itself]
     found = spool_sort.suggest_place(new, others, [loc["name"] for loc in locs], order, capacity_of)
     if found:
-        found["family"] = spool_sort.color_family(new.get("rgba"), new.get("color_name"))
+        found["family"] = spool_sort.spool_color_family(new)
     return jsonify(ok=True, suggestion=found)
 
 

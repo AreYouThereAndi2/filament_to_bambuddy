@@ -2266,7 +2266,7 @@ function sortHeading(s, key){
                                             : {id: '', label: t('sort.fam_none')};
   const k = sortKeyOf(s, key);
   if(k == null) return {id: '', label: key === 'location' ? t('loc.unassigned') : t('sort.missing')};
-  const label = key === 'material' ? [s.material, s.subtype].filter(Boolean).join(' ') : key === 'brand' ? s.brand : s.storage_location;
+  const label = key === 'material' ? (s.material_label || s.material) : key === 'brand' ? s.brand : s.storage_location;
   return {id: JSON.stringify(k), label: String(label || '').trim() || '—'};
 }
 function sortClean(v){
