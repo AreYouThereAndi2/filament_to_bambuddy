@@ -6,11 +6,13 @@ that order.
 Each spool gets its sort keys once (sort_keys). The page compares them as
 they come, so a list sorts the same on the phone as here:
 
-- material: the base material as the inventory names it, then its line.
-  PLA, PLA+ and PETG are bases of their own and never mixed; the line
-  (Basic, Matte, Silk, High Speed, Translucent …) is read from the material
-  and subtype, colour words there are left out ("PLA" + "-Basic Orange" is
-  "PLA Basic"). Within a base: no line, then Basic, Matte, Silk …
+- material: the base material as the inventory names it, in families: PLA,
+  PLA+, ePLA one block after the other, then PETG, PETG+, then the rest.
+  Variants are never mixed and are no technical materials.
+- line (subtype): Basic, Matte, Silk, High Speed, Translucent … read from
+  the material and subtype, colour words left out ("PLA" + "-Basic Orange"
+  is Basic). No subtype first. A key of its own, so "material, then
+  subtype, then colour" is three steps.
 - colour: along a colour chart, as a shelf is arranged: white, transparent,
   beige, yellow, gold, orange, red, pink, purple, blue, turquoise, green,
   brown, grey, black; within a family light to dark. The family comes from
@@ -25,9 +27,11 @@ direction. A tie goes to the next key, finally to the spool's number.
 
 The shelf plan (shelf_plan) takes a row of places ("Regal A-01" …
 "Regal A-12", in the order of their names), a number of spools a place
-holds, and fills the places one after the other with the spools sorted.
-Spools whose place changes are the moves; what does not fit stays where it
-is. Of spools that sort alike, the one already further in front goes in
+holds, and fills the places one after the other with the spools sorted:
+always from the top left ("A" the top row, "1" the left place), no place
+left empty in between, even when that moves more spools (the step guide
+lays them on the table while it makes room). What does not fit stays where
+it is. Of spools that sort alike, the one already further in front goes in
 front, so ties at a place's border do not move needlessly.
 
 SPDX-License-Identifier: AGPL-3.0-or-later
@@ -36,13 +40,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 import math
 import re
 import unicodedata
-from collections import deque
 from functools import cmp_to_key
 
 from locations import group_of
 
-KEYS = ("tech", "material", "color", "brand", "remaining", "location", "id", "added")
-MAX_KEYS = 3
+KEYS = ("tech", "material", "line", "color", "brand", "remaining", "location", "id", "added")
+MAX_KEYS = 4
 MAX_CAPACITY = 999
 
 _DIGITS = re.compile(r"\d+")
@@ -73,10 +76,17 @@ def natural(value) -> str:
 # count, the rest is left to the colour.
 
 # Bases in the order a shelf usually has them; others after them, by name.
-_BASE_ORDER = ("PLA", "PLA+", "PETG", "PCTG", "PET", "ABS", "ASA", "HIPS", "TPU", "TPE", "PA", "PC", "PP",
-               "PVA", "BVOH", "PVB", "PEEK", "PEI")
-_BASE_ALIAS = {"PLAPLUS": "PLA+", "PLA PLUS": "PLA+", "PLA +": "PLA+", "PET-G": "PETG", "PET G": "PETG",
+_BASE_ORDER = ("PLA", "PLA+", "EPLA", "PETG", "PETG+", "PCTG", "PET", "ABS", "ASA", "HIPS", "TPU", "TPE", "PA",
+               "PC", "PP", "PVA", "BVOH", "PVB", "PEEK", "PEI")
+_BASE_ALIAS = {"PLAPLUS": "PLA+", "PLA PLUS": "PLA+", "PLA +": "PLA+", "PLA PRO": "PLA+", "E-PLA": "EPLA",
+               "E PLA": "EPLA", "PET-G": "PETG", "PET G": "PETG", "PETG PLUS": "PETG+", "PETG PRO": "PETG+",
                "NYLON": "PA", "TPU95A": "TPU", "TPU 95A": "TPU"}
+# A base's family: its variants follow it as one block ("PLA", "PLA+",
+# "ePLA"; "PETG", "PETG+"). They are no technical materials.
+_FAMILY = {"PLA+": "PLA", "EPLA": "PLA", "PETG+": "PETG"}
+_FAMILY_ORDER = tuple(dict.fromkeys(_FAMILY.get(b, b) for b in _BASE_ORDER))
+# How a base is written in a heading.
+_BASE_LABEL = {"EPLA": "ePLA"}
 # Line words, in the order the lines follow each other within a base.
 # (word, canonical label); several words may name one line.
 _LINES = (
@@ -164,26 +174,40 @@ def material_line(material, subtype=None) -> str | None:
 
 
 def material_label(material, subtype=None) -> str | None:
-    """"PLA Matte", "PLA+ Basic", "PETG": what a heading says."""
-    b = _base(material)
-    if not b:
+    """"PLA Matte", "PLA+ Basic", "PETG": base and subtype together."""
+    base = material_base(material)
+    if not base:
         return None
     line = material_line(material, subtype)
-    return f"{b[0]} {line}" if line else b[0]
+    return f"{base} {line}" if line else base
+
+
+def material_base(material) -> str | None:
+    """The base as a heading says it: "PLA", "PLA+", "ePLA", "PETG"."""
+    b = _base(material)
+    return _BASE_LABEL.get(b[0], b[0]) if b else None
 
 
 def material_key(material, subtype=None) -> list | None:
-    """[base rank, base, line rank, line] for a material and its subtype,
-    None without a material. PLA, PLA+ and PETG are bases of their own; within
-    a base the spools without a line come first, then Basic, Matte, Silk …"""
+    """[family rank, base rank, base] for a material, None without one. The
+    family keeps its variants together: PLA, PLA+, ePLA one after the other,
+    then PETG, PETG+. The subtype (Matte, Silk …) is a key of its own, see
+    line_key."""
     b = _base(material)
     if not b:
         return None
     base = b[0]
+    family = _FAMILY.get(base, base)
+    frank = _FAMILY_ORDER.index(family) if family in _FAMILY_ORDER else len(_FAMILY_ORDER)
     rank = _BASE_ORDER.index(base) if base in _BASE_ORDER else len(_BASE_ORDER)
+    return [frank, natural(family), rank, natural(base)]
+
+
+def line_key(material, subtype=None) -> list:
+    """[line rank, line] for the subtype (Basic, Matte, Silk …); spools
+    without one first ([-1, ""]), so it never counts as missing."""
     lines = _lines(material, subtype)
-    lrank = _LINE_ORDER.index(lines[0]) if lines else -1
-    return [rank, natural(base), lrank, natural(" ".join(lines))]
+    return [_LINE_ORDER.index(lines[0]) if lines else -1, natural(" ".join(lines))]
 
 
 # Technical filaments get a row of their own when asked ("tech" first in the
@@ -381,6 +405,16 @@ def spool_color_family(s: dict) -> str | None:
     return color_family(s.get("rgba"), s.get("color_name"), s.get("subtype"))
 
 
+def spool_material_base(s: dict) -> str | None:
+    """A spool's material heading: "PLA", "PLA+", "ePLA", "PETG"."""
+    return material_base(s.get("material"))
+
+
+def spool_material_line(s: dict) -> str | None:
+    """A spool's subtype heading: "Matte", "Silk", None for none."""
+    return material_line(s.get("material"), s.get("subtype"))
+
+
 def spool_material_label(s: dict) -> str | None:
     """A spool's material heading: "PLA Matte", "PLA+", "PETG Translucent"."""
     return material_label(s.get("material"), s.get("subtype"))
@@ -405,6 +439,7 @@ def sort_keys(s: dict) -> dict:
     return {
         "tech": 1 if is_technical(s.get("material"), s.get("subtype")) else 0,
         "material": material_key(s.get("material"), s.get("subtype")),
+        "line": line_key(s.get("material"), s.get("subtype")),
         "color": color_key(s.get("rgba"), s.get("color_name"), s.get("subtype")),
         "brand": _text_or_none(s.get("brand")),
         "remaining": _number_or_none(s.get("remaining")),
@@ -420,7 +455,7 @@ def group_key(keys: dict, key: str):
     number or date would be a heading of its own)."""
     if key == "color":
         return _family(keys.get("color"))
-    if key in ("material", "brand", "location", "tech"):
+    if key in ("material", "line", "brand", "location", "tech"):
         return keys.get(key)
     return None
 
@@ -543,55 +578,18 @@ def _plan_spool(s: dict, target: str | None) -> dict:
     return out
 
 
-def _segments(at: list, starts: list | None, n_places: int, cap: int) -> list:
-    """The place of each spool of a sorted row: consecutive runs, at most
-    `cap` long, one per place in order (a place may stay empty). `at[j]` is
-    the place spool j is in now (or None): as many as possible stay; among
-    those arrangements, the front places are filled first. With `starts`
-    (where the group of spool j begins) a run stays inside one group.
-
-    For each place c and row length j: best[c][j] = max over k of
-    best[c-1][k] + score of spools k..j-1 in c, the window k ≥ j - cap (and
-    ≥ the group's start) slid along j with a deque, O(places × spools)."""
-    m = len(at)
-    if not m:
-        return []
-    weight = m * n_places + 1      # one spool staying outweighs any filling
-    prev: list = [None] * (m + 1)
-    prev[0] = 0
-    picks = []
-    for c in range(n_places):
-        here = [0] * (m + 1)
-        for j in range(m):
-            here[j + 1] = here[j] + (at[j] == c)
-        cost = c + 1
-        cur: list = [None] * (m + 1)
-        pick = [0] * (m + 1)
-        window: deque = deque()
-        for j in range(m + 1):
-            if prev[j] is not None:
-                v = prev[j] - weight * here[j] + cost * j
-                while window and window[-1][1] <= v:
-                    window.pop()
-                window.append((j, v))
-            lo = j - cap
-            if starts is not None and j:
-                lo = max(lo, starts[j - 1])
-            while window and window[0][0] < lo:
-                window.popleft()
-            if window:
-                k, v = window[0]
-                cur[j] = v + weight * here[j] - cost * j
-                pick[j] = k
-        picks.append(pick)
-        prev = cur
-    out: list = [0] * m
-    j = m
-    for c in range(n_places - 1, -1, -1):
-        k = picks[c][j]
-        for i in range(k, j):
-            out[i] = c
-        j = k
+def _packed(m: int, starts: list | None, cap: int) -> list:
+    """The place of each spool of a sorted row: filled from the first place
+    on, each up to `cap`, no gap left. The first place is the top left one
+    (place names in natural order: "A-1", "A-2" … "B-1", A at the top, 1 at
+    the left). With `starts` (where the group of spool j begins) a new group
+    starts in the next place."""
+    out, place, n = [], 0, 0
+    for j in range(m):
+        if n and (n >= cap or (starts is not None and starts[j] == j)):
+            place, n = place + 1, 0
+        out.append(place)
+        n += 1
     return out
 
 
@@ -680,8 +678,7 @@ def shelf_plan(spools: list, places: list, capacity: int | None = None, order=No
         if j and group(s) != group(placed[j - 1]):
             start = j
         starts.append(start)
-    at = [rank.get(_place_key(s.get("storage_location"))) for s in placed]
-    slots = _segments(at, starts if break_on_group else None, len(names), cap)
+    slots = _packed(len(placed), starts if break_on_group else None, cap)
 
     out_places = [{"name": n, "spools": []} for n in names]
     for s, c in zip(placed, slots):
