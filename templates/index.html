@@ -3807,7 +3807,20 @@ $('guideRedo').onclick = () => { guide.steps.forEach(s => { if(s.state === 'skip
 $('guideReplan').onclick = () => guideReplan(false);
 $('guideClose').onclick = () => $('guideSheet').close();
 $('guideLabelEach').checked = !!lsGet('f2b.guideLabelEach', false);
-$('guideLabelEach').addEventListener('change', () => lsSet('f2b.guideLabelEach', $('guideLabelEach').checked));
+// Ticking it picks the printer at once: the browser offers its chooser only
+// on a tap, and a step's "Done" comes after the location was saved.
+$('guideLabelEach').addEventListener('change', async () => {
+  lsSet('f2b.guideLabelEach', $('guideLabelEach').checked);
+  if(!$('guideLabelEach').checked || labelPrinter || !navigator.bluetooth) return;
+  try{
+    labelPrinter = await printerPick();
+    labelPickAll = false;
+    guideHint(t('guide.printer_ready', {name: labelPrinter.name || '?'}));
+  }catch(e){
+    if(e && e.name === 'NotFoundError'){ labelPickAll = !labelPickAll; guideHint(labelPickAll ? t('label.bt_all_hint') : ''); }
+    else guideHint(t('label.bt_failed', {error: (e && e.message) || e}), true);
+  }
+});
 $('guideSheet').addEventListener('close', () => {
   guideScan.stop(); guideSave();
   if(LOC){ invForget(); locLoad(true); }
@@ -4139,6 +4152,47 @@ let labelLast = null, labelDemoSeq = 0;   // the spool previewed last, for the l
 let labelJob = null;      // the previewed label as the printer takes it
 let labelPng = null;      // Bambuddy's image, for sharing
 let labelPrinter = null;  // the printer picked in this session
+// After a chooser that was closed (the printer not in the list): the next
+// tap shows every Bluetooth device. Many printers send their name only
+// once a phone knows them, so the name filter can miss them.
+let labelPickAll = false;
+// Services label printers write through: the PM240/PM250's 0xff00 first,
+// then the common serial-over-BLE ones (Phomemo, Niimbot, TSPL, ISSC, HM-10).
+const PRINTER_SERVICES = [0xff00, 0xffe0, 0x18f0, 0xfee7, 0xae30, 0xffb0, 0xae00,
+  'e7810a71-73ae-499d-8c15-faa9aef0c3f2', '49535343-fe7d-4ae5-8fa9-9fafd205e455'];
+const PRINTER_NAMES = ['PM2', 'PM-2', 'PM', 'TYPONOS', 'Typonos', 'Labelife', 'Printer'];
+function withTimeout(p, ms, what){
+  return Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error(what + ' timeout')), ms))]);
+}
+async function printerPick(){
+  if(labelPickAll) return navigator.bluetooth.requestDevice({acceptAllDevices: true, optionalServices: PRINTER_SERVICES});
+  return navigator.bluetooth.requestDevice({
+    filters: [{services: [0xff00]}].concat(PRINTER_NAMES.map(namePrefix => ({namePrefix}))),
+    optionalServices: PRINTER_SERVICES});
+}
+// Connect, a few times: a printer that just woke often refuses the first.
+async function printerConnect(device){
+  let last;
+  for(let i = 0; i < 3; i++){
+    try{ return await withTimeout(device.gatt.connect(), 10000, 'connect'); }
+    catch(e){ last = e; try{ device.gatt.disconnect(); }catch(_){} await sleep(700); }
+  }
+  throw last;
+}
+// The characteristic to write the job to: 0xff00/0xff02 when there, else the
+// first writable one of the known printer services.
+async function printerChannel(server){
+  try{ return await (await server.getPrimaryService(0xff00)).getCharacteristic(0xff02); }catch(e){}
+  let services = [];
+  try{ services = await server.getPrimaryServices(); }catch(e){}
+  for(const svc of services){
+    let chars = [];
+    try{ chars = await svc.getCharacteristics(); }catch(e){ continue; }
+    const c = chars.find(c => c.properties.writeWithoutResponse) || chars.find(c => c.properties.write);
+    if(c) return c;
+  }
+  throw new Error(t('label.bt_no_channel'));
+}
 let labelSeq = 0;
 let labelLocs = null;     // [{loc: name}] while storage location labels are shown
 
@@ -4751,11 +4805,11 @@ async function labelPrint(){
   let device = labelPrinter;
   try{
     // The chooser needs the tap itself: nothing awaited before it.
-    if(!device) device = await navigator.bluetooth.requestDevice({
-      filters:[{services:[0xff00]}, {namePrefix:'PM2'}], optionalServices:[0xff00]});
+    if(!device) device = await printerPick();
+    labelPickAll = false;
     labelHint(t('label.connecting'));
-    const server = await device.gatt.connect();
-    const ch = await (await server.getPrimaryService(0xff00)).getCharacteristic(0xff02);
+    const server = await printerConnect(device);
+    const ch = await printerChannel(server);
     labelPrinter = device;
     const write = ch.writeValueWithoutResponse ? b => ch.writeValueWithoutResponse(b) : b => ch.writeValue(b);
     let printed = 0;
@@ -4792,7 +4846,7 @@ async function labelPrint(){
   }catch(e){
     // A closed chooser is no error; anything else forgets the printer, so
     // the next tap offers the choice again.
-    if(e && e.name === 'NotFoundError') labelHint('');
+    if(e && e.name === 'NotFoundError'){ labelPickAll = !labelPickAll; labelHint(labelPickAll ? t('label.bt_all_hint') : ''); }
     else { labelPrinter = null; labelHint(t('label.bt_failed', {error: (e && e.message) || e}), true); }
   }finally{
     try{ if(device && device.gatt.connected) device.gatt.disconnect(); }catch(e){}
