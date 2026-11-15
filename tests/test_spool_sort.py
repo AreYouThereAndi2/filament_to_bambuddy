@@ -47,7 +47,7 @@ class TestColourFamily:
     @pytest.mark.parametrize("name,family", [
         ("Fire Engine Red", "red"), ("Brick-Red", "red"), ("Iron Red", "red"), ("Ice Blue", "blue"),
         ("Bone White", "white"), ("Silk White", "white"), ("Concrete Grey", "grey"), ("Silver", "grey"),
-        ("Like Marble", "grey"), ("Chocolate", "brown"), ("Dark Brown", "brown"), ("Copper Brown Metallic", "brown"),
+        ("Like Marble", None), ("White Marble", "white"), ("Like Marble Brown", "brown"), ("White with Brown Specks", "white"), ("Weiß mit braunen Partikeln", "white"), ("Terakotta", "brown"), ("Chocolate", "brown"), ("Dark Brown", "brown"), ("Copper Brown Metallic", "brown"),
         ("-Silk Copper", "brown"), ("-Matte TERRACOTTA", "brown"), ("-Matte LIGHT KHAKI", "beige"),
         ("-Matte MATCHA GREEN", "green"), ("Hunter Green", "green"), ("-Lite Green", "green"), ("Rose Gold", "pink"),
         ("Silk Gold", "gold"), ("Translucent Pink with Sparkles", "pink"), ("Transparent", "clear"),
@@ -71,7 +71,7 @@ class TestColourFamily:
 
     def test_name_before_rgba_subtype_when_no_name(self):
         assert ss.color_family("3E484AFF", None, "-Lite Green") == "green"     # the hex is a grey
-        assert ss.color_family("C0C9CCFF", "Like Marble", "Matte PLA Brown") == "grey"  # the name wins
+        assert ss.color_family("C0C9CCFF", "Like Marble", "Matte PLA Brown") == "brown"  # no colour word: subtype
         assert ss.color_family("E2725BFF") == "red"
         assert ss.color_family(None, "Black") == "black"
         assert ss.color_family("FFFFFF00") == "clear"
@@ -116,7 +116,7 @@ class TestColourOrder:
         assert _runs(_fams(ordered)) == ["white", "clear", "beige", "gold", "orange", "red", "pink", "purple",
                                          "blue", "green", "brown", "grey", "black"]
         assert _ids(ordered) == [6, 11, 18, 14, 16, 13, 26, 4, 5, 2, 17, 15, 22, 28, 21, 7, 9, 27, 20, 24,
-                                 12, 19, 10, 8, 3, 1, 23, 25, 29]
+                                 1, 12, 19, 10, 8, 3, 23, 25, 29]
 
 
 class TestMaterial:

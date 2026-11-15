@@ -218,8 +218,8 @@ _COLOR_WORDS = {
     "green": "green gruen olive oliv lime limette mint jade emerald smaragd forest wald army hunter matcha moss "
              "moos sage salbei pistachio pistazie avocado grass gras",
     "brown": "brown braun chocolate schokolade coffee kaffee mocha cocoa kakao caramel karamell walnut nuss "
-             "copper kupfer bronze rust rost umber wood holz terracotta terrakotta",
-    "grey": "grey gray grau silver silber concrete beton graphite graphit marble marmor ash asche slate schiefer "
+             "copper kupfer bronze rust rost umber wood holz terracotta terrakotta terakotta",
+    "grey": "grey gray grau silver silber concrete beton graphite graphit ash asche slate schiefer "
             "stone stein steel stahl titanium titan charcoal anthracite anthrazit gunmetal",
     "black": "black schwarz onyx jet ebony",
 }
@@ -267,7 +267,10 @@ def family_from_name(*names) -> str | None:
     """The colour family a name gives ("Fire Engine Red" → "red"), from the
     first name that has a colour word; the last colour word in it counts."""
     for name in names:
-        words = _WORD.findall(_fold(name).replace("-", " "))
+        # What comes after "with"/"mit" are specks or sparkles in the colour,
+        # not the colour ("White with Brown Specks", "Weiß mit Glitzer").
+        text = re.split(r"\b(?:with|mit|w/)\b", _fold(name).replace("-", " "))[0]
+        words = _WORD.findall(text)
         fam = None
         for i, w in enumerate(words):
             pair = _PHRASE_FAMILY.get(tuple(words[i - 1:i + 1])) if i else None
