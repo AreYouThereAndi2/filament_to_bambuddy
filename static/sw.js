@@ -1,5 +1,5 @@
 /* filament_to_bambuddy service worker — app-shell cache for installable PWA */
-const CACHE = "f2b-v10";
+const CACHE = "f2b-v11";
 // The page itself ("/") is not fetched here: with the sign-in through
 // BamBuddy on, it answers a browser without a session with a redirect to
 // /login, and that must not end up cached as the page. It is kept from the
