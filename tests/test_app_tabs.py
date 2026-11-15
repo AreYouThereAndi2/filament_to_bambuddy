@@ -3,8 +3,8 @@ the translations of their texts."""
 
 import re
 
-import i18n
 import app as app_module
+import i18n
 
 TABS = ["add", "stock", "shelf", "labels", "more"]
 
@@ -44,7 +44,7 @@ def test_page_texts_translated_in_every_language():
     for lang in i18n.SUPPORTED_LANGS:
         assert set(i18n.TRANSLATIONS[lang]["nav"]) == keys, lang
         html = _page(lang)
-        assert "nav." not in re.sub(r"<script.*?</script>", "", html, flags=re.S), lang
+        assert "nav." not in re.sub(r"<script.*?</script>", "", html, flags=re.DOTALL), lang
 
 
 def test_language_choice_lists_every_language():
