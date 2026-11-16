@@ -435,7 +435,7 @@ def _remember(ctx, path: Path, inv: dict, items: list, priced: list) -> str:
     filament, also in the barcode memory for later lookups."""
     rec_id = uuid.uuid4().hex[:12]
     rec = {
-        "id": rec_id, "imported_at": datetime.datetime.now().isoformat(timespec="seconds"),
+        "id": rec_id, "imported_at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
         "source": inv.get("source") or "invoice",
         **{k: inv.get(k) for k in ("merchant", "seller", "invoice_number", "order_number", "date", "currency",
                                    "shipping", "discount", "total")},

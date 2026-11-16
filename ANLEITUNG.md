@@ -170,8 +170,27 @@ Der Bereich **Etiketten** holt das Etikett einer Spule fertig von BamBuddy, in B
    - **2 auf 1 – zum Durchschneiden:** zwei halbe Etiketten auf einem Rollen-Etikett, **untereinander** (z. B. 50 × 15 mm, für Regalhalter; Standard bei Lagerorten) oder **nebeneinander** (25 × 30 mm; Standard bei Spulen), mit gestrichelter **Schnittlinie** genau in der Mitte. Mehrere Etiketten kommen paarweise aufs Rollen-Etikett; bei ungerader Zahl wird das letzte **doppelt** gedruckt oder seine zweite Hälfte bleibt **leer**, ein einzelnes Etikett kommt also zweimal. Was auf eine Hälfte nicht passt, fällt weg (zuerst Notiz, Datum, Artikelnummer …); ein QR-Code, der dort nicht mehr lesbar wäre, ebenfalls, und die Vorschau sagt es. Eingestellt wird das getrennt für Spulen- und Lagerort-Etiketten; die App merkt es sich mit der Anordnung.
 5. Erst **🖨️ Drucken** schickt es los. Beim ersten Mal fragt Chrome, welcher Drucker es sein soll: den **PM240** wählen.
 
-- **Android:** Chrome druckt direkt über Bluetooth (Web Bluetooth). Der Drucker darf dabei nicht gleichzeitig mit der Labelnize-App verbunden sein.
+- **Mit Druckbrücke (empfohlen für den PM240):** Die App schickt das Etikett über den Server an die Druckbrücke, die es per klassischem Bluetooth an den Drucker gibt. Das geht von jedem Gerät aus, auch vom iPhone und vom PC. Siehe [Druckbrücke für den PM240](#druckbrücke-für-den-pm240).
+- **Android ohne Druckbrücke:** Chrome schickt das Etikett über Bluetooth LE (Web Bluetooth). Andere Drucker, die über BLE drucken, gehen so weiter; **der PM240 druckt auf diesem Weg aber nichts** (siehe unten). Der Drucker darf dabei nicht gleichzeitig mit der Labelnize-App verbunden sein.
 - **iPhone/iPad:** Safari kann kein Bluetooth. **Bild teilen** gibt das Etikett an die App des Druckers weiter, oder man speichert es in den Fotos.
+## Druckbrücke für den PM240
+
+**Warum:** Der TYPONOS PM240 druckt nur über **klassisches Bluetooth** (SPP). Seine Bluetooth-LE-Kanäle nehmen Daten zwar an, drucken aber nichts – das hat ein Mitschnitt der Hersteller-App gezeigt, die ebenfalls klassisches Bluetooth benutzt. Ein Browser (Web Bluetooth) und die SpoolmanScale können nur Bluetooth LE. Deshalb steht ein kleiner **ESP32** (ein originaler ESP32-WROOM-32, der klassisches Bluetooth kann) in der Nähe des Druckers: die **Druckbrücke**. Sie hängt im WLAN, nimmt Druckaufträge über HTTP an und gibt sie per Bluetooth an den PM240 weiter. Home Assistant oder andere Dienste braucht es dafür nicht.
+
+Weil die App über https läuft und die Druckbrücke nur http spricht, schickt die Seite das Etikett an den eigenen Server, und der reicht es an die Brücke weiter. Das Etikett ist dasselbe wie vorher (TSPL), nur der Weg ist anders.
+
+**Einrichten:**
+
+1. Die Druckbrücke ins WLAN bringen und auf ihrer eigenen Seite (`http://printbridge.local`) den PM240 suchen und auswählen. Optional dort einen API-Schlüssel setzen.
+2. Der App sagen, wo die Brücke ist – auf eine der beiden Arten:
+   - **In der App:** *Mehr → Druckbrücke*: Adresse eintragen (z. B. `http://printbridge.local` oder `http://192.168.0.50`), falls gesetzt den API-Schlüssel, **Speichern**. Das gilt für alle Geräte, denn es wird auf dem Server gespeichert (`/data/print_bridge.json`, nur für den Server lesbar). Dafür braucht man in BamBuddy das Recht *Einstellungen ändern*, wenn die Anmeldung über BamBuddy an ist.
+   - **In der `.env` / `docker-compose.yml`:** `PRINT_BRIDGE_URL=http://printbridge.local` und, falls an der Brücke gesetzt, `PRINT_BRIDGE_KEY=…`. Eine in der App gespeicherte Adresse hat Vorrang.
+3. **Verbindung prüfen** zeigt, ob die Brücke erreichbar ist und welcher Drucker eingestellt ist; **Testdruck** lässt die Brücke ein eigenes Testetikett drucken.
+
+Ist eine Druckbrücke eingerichtet, druckt **🖨️ Drucken** immer über sie: einzelne Etiketten, mehrere auf einmal, *2 auf 1*, Lagerort-Etiketten und die Etiketten aus der Schritt-Anleitung beim Einsortieren (dort ohne vorheriges Verbinden). Unter der Vorschau steht, wie es der Brücke geht: **Druckbrücke: bereit**, **Drucker nicht verbunden** (an der Brücke ist kein Drucker gewählt) oder **nicht erreichbar**. Ein Tipp darauf fragt neu.
+
+Geht etwas schief, sagt die App, was: Brücke beschäftigt (druckt gerade), kein Drucker gewählt, Drucker nicht erreichbar (aus oder zu weit weg), API-Schlüssel falsch, Brücke nicht erreichbar (aus oder anderes Netz). Die Adresse der Brücke muss vom **Server** aus erreichbar sein, nicht vom Handy; `printbridge.local` (mDNS) funktioniert in Docker nicht immer, dann die IP-Adresse nehmen.
+
 ## Was wurde erkannt? Etikett-Foto und eingefügte Titel
 
 Nach **Etikett fotografieren** oder **Ausfüllen** (eingefügter Titel) erscheint im Formular **„🔍 So wurde der Text gelesen“**:

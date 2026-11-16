@@ -278,10 +278,40 @@ Docker-specific env vars: `OFD_CACHE_FILE` and `BARCODE_CACHE_FILE` default to
 | `HOST` / `PORT` | `0.0.0.0` / `8088` | Server bind address, only for `python app.py` (the Docker image always listens on 8088) |
 | `UPC_LOOKUP` | `on` | `off` disables the UPCitemdb fallback |
 | `UPCITEMDB_KEY` | — | Paid UPCitemdb key; without one the free trial is used (100 lookups a day per IP) |
+| `PRINT_BRIDGE_URL` | — | The print bridge for the TYPONOS PM240 (`http://printbridge.local`, `http://192.168.0.50`): labels go to it through this server. Only `http(s)://host[:port]`. Also settable on the page (*More → Print bridge*), which wins. See [Print bridge](#print-bridge-typonos-pm240) |
+| `PRINT_BRIDGE_KEY` | — | The bridge's API key, if one is set on it (sent as `X-Api-Key`; never shown on the page) |
 | `AUTH_MODE` | `off` | `bambuddy`: the page asks for a BamBuddy user (with 2FA), and every BamBuddy request made for it carries that user's token, so BamBuddy checks their permissions and records who changed what. `off`: no sign-in, everything with the API key. See [Sign-in through BamBuddy](#sign-in-through-bambuddy) |
 
 The Open Filament Database dump is downloaded once and cached in
 `ofd_index.json`, refreshed daily (or on demand via the **Refresh DB** button).
+
+### Print bridge (TYPONOS PM240)
+
+The PM240 prints only over **Bluetooth Classic (SPP)**; its Bluetooth LE
+channels accept data and print nothing, and browsers (Web Bluetooth) only
+speak BLE. A small ESP32 next to the printer, the *print bridge*
+("Druckbrücke"), takes the job over HTTP on the LAN and sends it on over
+SPP. The page is https and the bridge plain http, so the page sends the
+same TSPL bytes to this server, which forwards them; no Home Assistant or
+other service is involved.
+
+Set `PRINT_BRIDGE_URL` (and `PRINT_BRIDGE_KEY` if the bridge has one), or
+enter both under *More → Print bridge* (kept server-side in
+`print_bridge.json` beside the settings, mode 600). With a bridge set, every
+print (single, batch, 2-on-1, location labels, the step guide's labels) goes
+through it; without one the page falls back to Web Bluetooth for printers
+that do print over BLE.
+
+| Endpoint | Permission | |
+|---|---|---|
+| `GET /api/print/status` | `inventory:read` | the bridge's `GET /api/status` (3 s timeout) plus `configured`, `reachable` |
+| `POST /api/print/raw` | `inventory:read` | body = the raw job (`application/octet-stream`, ≤ 512 KiB) → bridge `POST /api/print`; the bridge's JSON and status (409 busy, 412 no printer, 502 connect/write failed, 401 api key); bridge down → `502 {"ok":false,"error":"unreachable"}` |
+| `POST /api/print/test` | `inventory:read` | the bridge's own test label (`/api/test`) |
+| `GET /api/print/bridge` | — | `url`, `source` (`env`/`settings`), `key_set` — never the key |
+| `POST /api/print/bridge` | `settings:update` | `{"url": …, "key": …}`; `"url": ""` falls back to the environment, `"key": ""` clears it, `{"reset": true}` forgets both |
+
+Only the one configured base address is ever contacted, on fixed paths and
+without following redirects.
 
 ### Sign-in through BamBuddy
 
@@ -348,6 +378,7 @@ Each created spool is tagged `data_origin = "barcode-scan"`.
 | `locations.py` | Storage locations: names from a list, a range or a grid; the locations merged with the stock and grouped for the tiles |
 | `spool_sort.py` | Sort keys (material family, colour hue, maker …), the shelf plan that keeps most spools in place, the steps to get there, and a place for a new spool |
 | `invoices.py`, `invoice_extract.py`, `invoice_parse.py`, `amazon_orders.py` | Invoices: routes and the record of imported ones; text from PDFs and OCR of scans/photos; reading the table into items with gross prices; Amazon's order history export |
+| `print_bridge.py` | Labels through the print bridge (ESP32, classic Bluetooth) for the PM240: `/api/print/*`, its address and key |
 | `upc_lookup.py` | UPCitemdb fallback for retail barcodes the filament databases don't know; title + average offer price |
 | `templates/index.html` | Mobile UI (barcode scan + manual entry + editable form), Bambuddy dark/green theme |
 | `static/manifest.webmanifest`, `static/sw.js`, `static/icons/` | PWA manifest, service worker, and app icons |
