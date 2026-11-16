@@ -19,6 +19,10 @@ services:
     #   #           SPOOLMAN_URL=http://spoolman:7912, INVENTORY_MODE=spoolman
     #   # AUTH_MODE=bambuddy: sign in with your BamBuddy users; changes are made as
     #   #   that user (default off: no sign-in). Update the SpoolmanScale first.
+    #   # Print bridge (ESP32, classic Bluetooth) for the TYPONOS PM240 labels;
+    #   #   also settable on the page under More → Print bridge:
+    #   # PRINT_BRIDGE_URL=http://printbridge.local   (or http://192.168.0.50)
+    #   # PRINT_BRIDGE_KEY=the-bridge-api-key          (only if set on the bridge)
     env_file:
       - .env
     volumes:

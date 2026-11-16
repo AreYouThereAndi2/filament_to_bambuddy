@@ -124,7 +124,7 @@
   const NEED = {
     inventory_update: ['submitBtn', 'spSave', 'spEmpty', 'linkApply', 'planApply', 'planGuide',
                        'guideDone', 'locCreate'],
-    settings_update: ['invMode'],
+    settings_update: ['invMode', 'bridgeUrl', 'bridgeKey', 'bridgeKeyClear', 'bridgeSave'],
     notifications_update: ['reoAlert', 'reoAlertCheck'],
   };
   const LABEL = {inventory_update: 'perm_inventory_update', settings_update: 'perm_settings_update',

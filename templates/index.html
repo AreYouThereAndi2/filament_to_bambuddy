@@ -232,6 +232,9 @@
   .fieldgrid input{width:auto;margin:0;accent-color:var(--brand)}
   .chip{display:inline-block;margin:6px 6px 0 0;padding:5px 11px;border-radius:999px;
     background:var(--raised);border:1px solid var(--line);color:var(--text);font:600 14px/1 var(--display);text-decoration:none}
+  .bridge-chip{display:inline-flex;align-items:center;gap:7px;width:auto;min-height:36px;margin:10px 0 0;cursor:pointer;
+    font:500 13.5px/1.2 var(--body);text-align:left}
+  .bridge-chip .status-dot{margin-top:0}
 
   #whyMarked{white-space:pre-wrap;word-break:break-word;font:12.5px/1.5 ui-monospace,Menlo,monospace;
     background:var(--inset);border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;max-height:180px;overflow:auto}
@@ -1159,6 +1162,8 @@
             </select>
           </div>
           <button id="labelPreviewBtn" type="button" class="btn-primary" style="margin-top:14px">{{ t('label.preview') }}</button>
+          <!-- The print bridge's state, when one is set (More → Print bridge); a tap asks again. -->
+          <button id="bridgeChip" type="button" class="chip bridge-chip hidden" aria-live="polite"><span id="bridgeChipDot" class="status-dot"></span><span id="bridgeChipText"></span></button>
         </div>
         <div class="lbl-out">
           <div id="labelBox" class="hidden">
@@ -1225,6 +1230,25 @@
           </div>
         </details>
       </div>
+    </section>
+    <!-- The print bridge: an ESP32 on the LAN that hands the label to the
+         PM240 over classic Bluetooth, which no browser has. -->
+    <section class="card" aria-labelledby="moreBridgeTitle">
+      <h3 id="moreBridgeTitle" class="card-title">{{ t('bridge.title') }}</h3>
+      <div class="hint" style="margin-top:0">{{ t('bridge.intro') }}</div>
+      <div class="conn" style="margin-top:10px" role="status"><span id="bridgeDot" class="status-dot"></span><span id="bridgeState">{{ t('bridge.st_unknown') }}</span></div>
+      <label for="bridgeUrl">{{ t('bridge.url') }}</label>
+      <input id="bridgeUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="http://printbridge.local">
+      <label for="bridgeKey">{{ t('bridge.key') }}</label>
+      <input id="bridgeKey" type="password" autocomplete="new-password" spellcheck="false">
+      <div id="bridgeSrc" class="hint"></div>
+      <button id="bridgeKeyClear" type="button" class="btn-quiet hidden" style="margin-top:4px">{{ t('bridge.key_clear') }}</button>
+      <button id="bridgeSave" type="button" class="btn-primary" style="margin-top:12px">{{ t('bridge.save') }}</button>
+      <div class="row" style="margin-top:8px">
+        <div><button id="bridgeCheck" type="button" class="btn-secondary">{{ t('bridge.check') }}</button></div>
+        <div><button id="bridgeTest" type="button" class="btn-secondary">{{ t('bridge.test') }}</button></div>
+      </div>
+      <div id="bridgeHint" class="hint" role="status"></div>
     </section>
     <section class="card" aria-labelledby="moreLookTitle">
       <h3 id="moreLookTitle" class="card-title">{{ t('nav.sec_display') }}</h3>
@@ -4108,7 +4132,7 @@ function guideDraw(msg, err){
   $('guideNow').classList.toggle('hidden', end);
   $('guideEnd').classList.toggle('hidden', !end);
   $('guideBack').disabled = !g.history.length;
-  $('guideLabelBox').classList.toggle('hidden', !navigator.bluetooth || !labelShowsLocation());
+  $('guideLabelBox').classList.toggle('hidden', !labelCanPrint() || !labelShowsLocation());
   $('guideStep').innerHTML = '';
   if(!end){
     const st = g.steps[at];
@@ -4180,7 +4204,7 @@ async function guideDone(){
 // A label right after its step, when the printer is connected already;
 // else it waits for the button at the end (the first print connects).
 function guideLabelNow(id){
-  if(!labelPrinter || !navigator.bluetooth){
+  if(!bridge.configured && (!labelPrinter || !navigator.bluetooth)){
     if(!guide.queued.includes(id)) guide.queued.push(id);
     return t('guide.label_queued', {id});
   }
@@ -4258,7 +4282,7 @@ $('guideLabelEach').checked = !!lsGet('f2b.guideLabelEach', false);
 // on a tap, and a step's "Done" comes after the location was saved.
 $('guideLabelEach').addEventListener('change', async () => {
   lsSet('f2b.guideLabelEach', $('guideLabelEach').checked);
-  if(!$('guideLabelEach').checked || labelPrinter || !navigator.bluetooth) return;
+  if(!$('guideLabelEach').checked || bridge.configured || labelPrinter || !navigator.bluetooth) return;
   try{
     labelPrinter = await printerPick();
     labelPickAll = false;
@@ -4599,6 +4623,8 @@ let labelLast = null, labelDemoSeq = 0;   // the spool previewed last, for the l
 let labelJob = null;      // the previewed label as the printer takes it
 let labelPng = null;      // Bambuddy's image, for sharing
 let labelPrinter = null;  // the printer picked in this session
+// The print bridge as /api/print/status last said ({configured, reachable, printer, busy …}).
+let bridge = {configured: false, reachable: false};
 // After a chooser that was closed (the printer not in the list): the next
 // tap shows every Bluetooth device. Many printers send their name only
 // once a phone knows them, so the name filter can miss them.
@@ -4656,7 +4682,7 @@ let labelSeq = 0;
 let labelLocs = null;     // [{loc: name}] while storage location labels are shown
 
 // To the labels, the print part showing.
-function labelGo(){ labelSeg.set('labelCard'); showTab('labels'); }
+function labelGo(){ labelSeg.set('labelCard'); showTab('labels'); if(bridge.configured) bridgeRefresh(); }
 function labelHint(msg, err){ $('labelHint').textContent = msg||''; $('labelHint').classList.toggle('err', !!err); }
 // The layout is also kept on the server: the scale prints the same label.
 let labelSyncTimer = null;
@@ -4721,6 +4747,7 @@ function labelSave(){
   $('labelPreviewBtn').onclick = () => labelPreview();
   $('labelPrintBtn').onclick = () => labelPrint();
   $('labelShareBtn').onclick = () => labelShare();
+  // Shown with Web Bluetooth or a print bridge (bridgeShow).
   if(!navigator.bluetooth) $('labelPrintWrap').classList.add('hidden');
 })();
 
@@ -4874,7 +4901,7 @@ async function labelPreview(){
                 + (b.noQr ? ' ' + t('label.twoup_noqr') : ''));
     }else if(labelLocs && ids.length > 1) labelHint(t('loc.label_batch', {n: ids.length, name: ids[0].loc}));
     else if(ids.length > 1) labelHint(t('label.batch_ready', {n: ids.length, id: ids[0]}));
-    else if(!navigator.bluetooth) labelHint(t('label.no_bt'));
+    else if(!labelCanPrint()) labelHint(t('label.no_bt') + ' ' + t('bridge.pm240_hint'));
     else labelHint(labelLocs ? t('loc.label_ready', {name: ids[0].loc}) : t('label.ready', {id: ids[0]}));
   }catch(e){
     if(seq === labelSeq) labelHint(t('label.err_failed'), true);
@@ -5258,8 +5285,38 @@ function labelRaster(img, id, out){
   return {id, fits, job};
 }
 
+// Each label of the batch in turn as the printer's job: the previewed one
+// first, the others built now. `send(job, i)` hands one to the printer.
+async function labelEachJob(ids, send){
+  let printed = 0;
+  const skipped = [];
+  for(let i = 0; i < ids.length; i++){
+    let r = labelJob;
+    if(i > 0){
+      labelHint(t('label.preparing', {i: i + 1, n: ids.length}));
+      const b = await labelBuild(ids[i]);
+      if(b.error || !b.raster.fits){ skipped.push(labelItemName(ids[i])); continue; }
+      r = b.raster;
+    }
+    await send(r.job, i);
+    printed++;
+  }
+  return {printed, skipped};
+}
+function labelDoneText(many, printed, skipped){
+  return many ? t('label.printed_n', {n: printed}) + (skipped.length ? t('label.skipped', {ids: skipped.join(', ')}) : '')
+              : typeof labelJob.id === 'string' ? t('loc.label_printed', {name: labelJob.id})
+              : t('label.printed', {id: labelJob.id});
+}
+// A printer's Bluetooth name that is a PM240/PM250: it takes BLE writes and
+// prints nothing, only classic Bluetooth works (the print bridge).
+const isPm240 = name => /^(PM-?2|TYPONOS)/i.test(String(name || ''));
+
 async function labelPrint(){
   if(!labelJob || !labelJob.fits) return;
+  // A print bridge set up: always through it; Web Bluetooth only without.
+  if(bridge.configured) return labelPrintBridge();
+  if(!navigator.bluetooth){ labelHint(t('label.no_bt') + ' ' + t('bridge.pm240_hint'), true); return; }
   const ids = labelBatch.length ? labelBatch : [labelJob.id];
   const many = ids.length > 1;
   $('labelPrintBtn').disabled = true;
@@ -5274,17 +5331,7 @@ async function labelPrint(){
     await printerListen(ch);
     labelPrinter = device;
     const write = ch.writeValueWithoutResponse ? b => ch.writeValueWithoutResponse(b) : b => ch.writeValue(b);
-    let printed = 0;
-    const skipped = [];
-    for(let i = 0; i < ids.length; i++){
-      let r = labelJob;
-      if(i > 0){
-        labelHint(t('label.preparing', {i: i + 1, n: ids.length}));
-        const b = await labelBuild(ids[i]);
-        if(b.error || !b.raster.fits){ skipped.push(labelItemName(ids[i])); continue; }
-        r = b.raster;
-      }
-      const job = r.job;
+    const {printed, skipped} = await labelEachJob(ids, async (job, i) => {
       let n = 0, shown = -1;
       for(let pos = 0; pos < job.length; pos += BT_CHUNK, n++){
         await write(job.subarray(pos, pos + BT_CHUNK));
@@ -5298,23 +5345,164 @@ async function labelPrint(){
       // The printer prints from its buffer; the next label waits for it.
       labelHint(t('label.printing'));
       await sleep(BT_HOLD_MS);
-      printed++;
-    }
-    const done = many ? t('label.printed_n', {n: printed}) + (skipped.length ? t('label.skipped', {ids: skipped.join(', ')}) : '')
-                      : typeof labelJob.id === 'string' ? t('loc.label_printed', {name: labelJob.id})
-                      : t('label.printed', {id: labelJob.id});
+    });
+    const done = labelDoneText(many, printed, skipped);
+    // The PM240 took the bytes over BLE and prints nothing: said plainly.
+    if(isPm240(device.name)){ labelHint(t('bridge.pm240_sent') + ' ' + t('bridge.pm240_hint'), true); return; }
     labelHint(done, skipped.length > 0);
     toast(done, skipped.length ? false : true);
   }catch(e){
     // A closed chooser is no error; anything else forgets the printer, so
     // the next tap offers the choice again.
     if(e && e.name === 'NotFoundError'){ labelPickAll = !labelPickAll; labelHint(labelPickAll ? t('label.bt_all_hint') : ''); }
-    else { labelPrinter = null; labelHint(t('label.bt_failed', {error: (e && e.message) || e}), true); }
+    else {
+      const pm = isPm240(device && device.name);
+      labelPrinter = null;
+      labelHint(t('label.bt_failed', {error: (e && e.message) || e}) + (pm ? ' ' + t('bridge.pm240_hint') : ''), true);
+    }
   }finally{
     try{ if(device && device.gatt.connected) device.gatt.disconnect(); }catch(e){}
     $('labelPrintBtn').disabled = !(labelJob && labelJob.fits);
   }
 }
+
+// ── Print bridge ──
+// An ESP32 on the LAN takes the job over HTTP and sends it to the PM240
+// over classic Bluetooth (SPP), which no browser has. The page is https
+// and the bridge plain http, so the job goes through this server
+// (/api/print/raw), one request per label, the same TSPL bytes.
+const BRIDGE_HOLD_MS = 1500, BRIDGE_BUSY_TRIES = 4;
+const BRIDGE_ERRORS = {'busy': 'busy', 'no printer': 'no_printer', 'connect failed': 'connect', 'write failed': 'write',
+  'api key': 'api_key', 'unreachable': 'unreachable', 'not configured': 'not_configured', 'too large': 'too_large',
+  'empty': 'empty', 'bad answer': 'bad_answer', 'url': 'url', 'key': 'key'};
+function bridgeErrText(d, status){
+  const e = d && d.error;
+  if(e && BRIDGE_ERRORS[e]) return t('bridge.err_' + BRIDGE_ERRORS[e]);
+  if(e === 'permission' && d.message) return d.message;
+  return t('bridge.err_other', {error: e || ('HTTP ' + status)});
+}
+// One call to the bridge through the server: {ok, d, status, error}.
+async function bridgeCall(url, opts){
+  let r;
+  try{ r = await fetch(url, opts); }
+  catch(e){ return {ok: false, status: 0, d: null, error: t('bridge.err_unreachable')}; }
+  let d = null;
+  try{ d = await r.json(); }catch(e){}
+  const ok = r.ok && !!d && d.ok !== false;
+  return {ok, status: r.status, d, error: ok ? '' : bridgeErrText(d, r.status)};
+}
+// One job: a bridge still printing the one before answers "busy", then
+// it is asked again a little later.
+async function bridgeSend(job){
+  for(let k = 0; ; k++){
+    const res = await bridgeCall('/api/print/raw', {method: 'POST', headers: {'Content-Type': 'application/octet-stream'}, body: job});
+    if(res.ok || res.status !== 409 || k >= BRIDGE_BUSY_TRIES - 1) return res;
+    await sleep(1500);
+  }
+}
+async function labelPrintBridge(){
+  const ids = labelBatch.length ? labelBatch : [labelJob.id];
+  const many = ids.length > 1;
+  $('labelPrintBtn').disabled = true;
+  try{
+    const {printed, skipped} = await labelEachJob(ids, async (job, i) => {
+      if(i > 0) await sleep(BRIDGE_HOLD_MS);
+      labelHint(many ? t('bridge.sending_n', {i: i + 1, n: ids.length}) : t('bridge.sending'));
+      const res = await bridgeSend(job);
+      if(!res.ok) throw new Error(res.error);
+    });
+    const done = labelDoneText(many, printed, skipped);
+    labelHint(done, skipped.length > 0);
+    toast(done, skipped.length ? false : true);
+    bridgeRefresh();
+  }catch(e){
+    const msg = t('bridge.failed', {error: (e && e.message) || e});
+    labelHint(msg, true); toast(msg, false);
+    bridgeRefresh();
+  }finally{
+    $('labelPrintBtn').disabled = !(labelJob && labelJob.fits);
+  }
+}
+// The bridge's state: in the label card (a chip, only when one is set)
+// and in More.
+function bridgeStateOf(b){
+  if(!b.configured) return {cls: 'off', text: t('bridge.st_off')};
+  if(!b.reachable) return {cls: 'bad', text: t('bridge.st_unreachable')};
+  const p = b.printer || {};
+  if(b.busy) return {cls: 'warn', text: t('bridge.st_busy')};
+  if(!p.address || p.paired === false) return {cls: 'warn', text: t('bridge.st_no_printer')};
+  const bat = typeof p.battery === 'number' ? ' · ' + t('bridge.battery', {n: p.battery}) : '';
+  return {cls: 'ok', text: t('bridge.st_ready', {name: p.name || p.address}) + bat};
+}
+const BRIDGE_COLORS = {ok: 'var(--brand)', warn: 'var(--warn)', bad: 'var(--danger)', off: 'var(--muted)'};
+function labelCanPrint(){ return !!bridge.configured || !!navigator.bluetooth; }
+function bridgeShow(){
+  const st = bridgeStateOf(bridge);
+  const last = bridge.reachable && bridge.last && bridge.last.ok === false && bridge.last.error
+    ? ' ' + t('bridge.last_failed', {error: bridge.last.error}) : '';
+  $('bridgeChip').classList.toggle('hidden', !bridge.configured);
+  $('bridgeChipDot').style.background = BRIDGE_COLORS[st.cls];
+  $('bridgeChipText').textContent = t('bridge.chip', {state: st.text});
+  $('bridgeDot').style.background = BRIDGE_COLORS[st.cls];
+  $('bridgeState').textContent = st.text + last;
+  $('labelPrintWrap').classList.toggle('hidden', !labelCanPrint());
+}
+let bridgeAsking = null;
+function bridgeRefresh(){
+  if(bridgeAsking) return bridgeAsking;
+  bridgeAsking = fetch('/api/print/status').then(r => r.json()).then(d => {
+    if(d && typeof d.configured === 'boolean') bridge = d;
+  }).catch(() => {
+    if(bridge.configured) bridge = Object.assign({}, bridge, {reachable: false});
+  }).finally(() => { bridgeAsking = null; bridgeShow(); });
+  return bridgeAsking;
+}
+function bridgeSettingsShow(d){
+  if(!d || !d.ok) return;
+  $('bridgeUrl').value = d.url || '';
+  $('bridgeKey').value = '';
+  $('bridgeKey').placeholder = d.key_set ? t('bridge.key_kept') : t('bridge.key_none');
+  $('bridgeKeyClear').classList.toggle('hidden', !(d.key_set && d.key_source === 'settings'));
+  $('bridgeSrc').textContent = d.source === 'env' ? t('bridge.src_env')
+    : d.source === 'settings' && d.env_url ? t('bridge.src_settings_env', {url: d.env_url}) : '';
+}
+async function bridgeSave(body){
+  $('bridgeSave').disabled = true;
+  const res = await bridgeCall('/api/print/bridge', {method: 'POST', headers: {'Content-Type': 'application/json'},
+                                                     body: JSON.stringify(body)});
+  $('bridgeSave').disabled = false;
+  if(!res.ok){ $('bridgeHint').textContent = res.error; $('bridgeHint').classList.add('err'); return; }
+  bridgeSettingsShow(res.d);
+  $('bridgeHint').textContent = t('settings.saved'); $('bridgeHint').classList.remove('err');
+  toast(t('settings.saved'));
+  bridgeRefresh();
+}
+$('bridgeSave').onclick = () => {
+  const body = {url: $('bridgeUrl').value.trim()};
+  if($('bridgeKey').value) body.key = $('bridgeKey').value;
+  bridgeSave(body);
+};
+$('bridgeKeyClear').onclick = () => bridgeSave({key: ''});
+$('bridgeCheck').onclick = async () => {
+  $('bridgeCheck').disabled = true; $('bridgeState').textContent = t('bridge.checking');
+  await bridgeRefresh();
+  $('bridgeCheck').disabled = false;
+  const st = bridgeStateOf(bridge);
+  $('bridgeHint').textContent = bridge.configured ? st.text : t('bridge.err_not_configured');
+  $('bridgeHint').classList.toggle('err', st.cls !== 'ok');
+};
+$('bridgeTest').onclick = async () => {
+  $('bridgeTest').disabled = true;
+  $('bridgeHint').textContent = t('bridge.test_sending'); $('bridgeHint').classList.remove('err');
+  const res = await bridgeCall('/api/print/test', {method: 'POST'});
+  $('bridgeTest').disabled = false;
+  $('bridgeHint').textContent = res.ok ? t('bridge.test_ok') : t('bridge.failed', {error: res.error});
+  $('bridgeHint').classList.toggle('err', !res.ok);
+  bridgeRefresh();
+};
+$('bridgeChip').onclick = () => { $('bridgeChipText').textContent = t('bridge.chip', {state: t('bridge.checking')}); bridgeRefresh(); };
+fetch('/api/print/bridge').then(r => r.json()).then(bridgeSettingsShow).catch(() => {});
+bridgeRefresh();
 
 // iPhone, or another app: Bambuddy's PNG through the share sheet (it carries
 // its 203 dpi, so a label app prints it at size), else as a download.

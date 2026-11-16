@@ -2635,6 +2635,11 @@ import invoices
 
 invoices.init_app(app, sys.modules[__name__])
 
+# Labels through the print bridge on the LAN (print_bridge.py).
+import print_bridge
+
+print_bridge.init_app(app, sys.modules[__name__])
+
 
 if __name__ == "__main__":
     print(f"  Bambuddy: {BAMBUDDY_URL}  (API key {'set' if BAMBUDDY_API_KEY else 'NOT set'})")

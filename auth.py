@@ -129,6 +129,11 @@ ROUTE_PERMISSIONS = {
     ("POST", "/api/invoices/suggest"): INVENTORY_READ,
     ("POST", "/api/invoices/apply"): INVENTORY_UPDATE,
     ("POST", "/api/amazon/import"): INVENTORY_READ,
+    # Printing a label changes nothing in BamBuddy: as the label itself.
+    ("GET", "/api/print/status"): INVENTORY_READ,
+    ("POST", "/api/print/raw"): INVENTORY_READ,
+    ("POST", "/api/print/test"): INVENTORY_READ,
+    ("POST", "/api/print/bridge"): SETTINGS_UPDATE,
 }
 # What the page asks to hide or disable what the user may not do.
 CAN = {"inventory_read": INVENTORY_READ, "inventory_update": INVENTORY_UPDATE,
