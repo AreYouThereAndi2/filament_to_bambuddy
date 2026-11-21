@@ -259,19 +259,24 @@ def _hit(entry) -> tuple | None:
     return dict(entry["fields"]), list(entry["codes"])
 
 
-def lookup(barcode: str) -> tuple | None:
-    """(fields, all_codes) for an EAN/UPC, or None."""
+def lookup(barcode: str, strict: bool = False) -> tuple | None:
+    """(fields, all_codes) for an EAN/UPC, or None. With ``strict``, raises
+    when the catalogue could not be loaded at all."""
     try:
         return _hit(get_gtin_index().get(canon_gtin(barcode)))
     except Exception:
+        if strict:
+            raise
         return None
 
 
-def lookup_sku(code: str) -> tuple | None:
+def lookup_sku(code: str, strict: bool = False) -> tuple | None:
     """(fields, all_codes) for a maker's article number, or None."""
     try:
         return _hit(get_sku_index().get(_sku_key(code)))
     except Exception:
+        if strict:
+            raise
         return None
 
 

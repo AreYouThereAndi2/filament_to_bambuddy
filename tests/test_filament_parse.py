@@ -38,8 +38,9 @@ def test_abs_plus_red():
 def test_pla_carbon_fiber():
     f = parse_title("Polymaker PolyTerra PLA Carbon Fiber 1.75mm 500g")
     assert f["brand"] == "Polymaker"
-    assert f["material"] == "PLA"
-    assert f["subtype"] == "Carbon Fiber"
+    # Bambuddy's MATERIALS list has carbon-fibre PLA as its own material.
+    assert f["material"] == "PLA-CF"
+    assert "subtype" not in f
     assert f["label_weight"] == 500
 
 
@@ -49,7 +50,13 @@ def test_pla_carbon_fiber():
     ("eSUN PETG+ 1.75mm", "PETG"),
     ("PCTG Filament 1kg", "PCTG"),
     ("Generic TPU 95A", "TPU"),
-    ("PA-CF Carbon Nylon", "Nylon"),
+    ("PA-CF Carbon Nylon", "PA-CF"),
+    ("eSUN ePA Nylon 1kg", "PA"),
+    ("Polymaker PA6 1.75mm", "PA"),
+    ("PA12 natural", "PA"),
+    ("PETG Carbon Fibre 1kg", "PETG-CF"),
+    ("PETG mit Kohlefaser 1kg", "PETG-CF"),
+    ("PA6-CF 1.75mm", "PA-CF"),
     ("HIPS Support", "HIPS"),
 ])
 def test_material_variants(title, expected):
@@ -176,3 +183,70 @@ def test_decimal_comma_diameter_and_weight():
 def test_hf_only_as_a_whole_word():
     assert "subtype" not in parse_title("PLA Filament from Shenzhen HFX Ltd 1kg") or \
         "HF" not in parse_title("PLA Filament from Shenzhen HFX Ltd 1kg")["subtype"]
+
+
+# ── effect (finish), from upstream #29 ────────────────────────────────────────
+
+@pytest.mark.parametrize("title,expected", [
+    ("Silk PLA Gold 1kg", "silk"),
+    ("Glow in the dark PLA Green", "glow"),
+    ("Dual Matte PLA", "dual-color"),   # structure beats finish
+    ("Galaxy Black PETG", "galaxy"),
+    ("PLA Seide Gold", "silk"),
+    ("PLA Marmor Weiß", "marble"),
+    ("PLA Basic Black", None),
+])
+def test_effect_type(title, expected):
+    assert parse_title(title).get("effect_type") == expected
+
+
+def test_finishes_stay_in_the_subtype_too():
+    """The sorting reads the line from the subtype ("PLA Matte"), so the
+    finish stays there; Bambuddy's swatch gets it as effect_type."""
+    f = parse_title("Overture PETG 1.75 mm Matte Gray 1kg Spool")
+    assert f["subtype"] == "Matte"
+    assert f["effect_type"] == "matte"
+
+
+# ── dual / tri colour ─────────────────────────────────────────────────────────
+
+def test_dual_color_extra_colors_include_every_part():
+    """Bambuddy draws a gradient from extra_colors alone when it's set, so
+    the first colour has to be in it too."""
+    f = parse_title("Silk PLA 1.75mm Gold-Silver 1kg")
+    assert f["extra_colors"] == "D4AF37,C0C0C0"
+    assert f["effect_type"] == "dual-color"
+
+
+def test_tri_colour_with_german_names():
+    f = parse_title("SUNLU PLA Seide Rot/Gold/Grün 1kg")
+    assert f["color_name"] == "Rot-Gold-Grün"
+    assert f["extra_colors"] == "FF0000,D4AF37,00A000"
+    assert f["effect_type"] == "tri-color"
+
+
+def test_bracketed_pair_on_a_panchroma_style_label():
+    f = parse_title("DUAL\nMATTE\nFOGGY ORANGE\n(GREY-ORANGE)")
+    assert f["color_name"] == "Foggy Orange"
+    assert f["extra_colors"] == "808080,FF7F00"
+    assert f["effect_type"] == "dual-color"
+
+
+def test_color_field_on_label():
+    f = parse_title("PolyLite PLA Pro\nCOLOUR: Sky Blue")
+    assert f["color_name"] == "Sky Blue"
+    assert f["rgba"] == "0050FFFF"
+
+
+def test_german_colour_field_on_label():
+    f = parse_title("PETG\nFarbe: Dunkelgrün")
+    assert f["color_name"] == "Dunkelgrün"
+    assert f["rgba"] == "006400FF"
+
+
+def test_explain_points_at_the_finish_and_the_cf_base():
+    from filament_parse import explain
+    text = "Overture PETG Matte Gray"
+    assert explain(text, {"effect_type": "matte"})["effect_type"] == [[14, 19]]
+    text = "PLA Carbon Fiber"
+    assert explain(text, {"material": "PLA-CF"})["material"] == [[0, 3]]

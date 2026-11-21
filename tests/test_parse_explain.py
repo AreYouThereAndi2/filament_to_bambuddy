@@ -22,6 +22,7 @@ class TestExplain:
             "color_name": ["Gold"], "rgba": ["Gold"],
             "nozzle_temp_min": ["200-230°C"], "nozzle_temp_max": ["200-230°C"],
             "diameter_mm": ["1,75mm"], "label_weight": ["1KG"],
+            "effect_type": ["Seide"],
         }
 
     def test_hex_and_grams(self):

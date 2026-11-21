@@ -13,6 +13,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 import re
 
+import label_reader
+
 # Common filament brands (longest first so multi-word names win).
 KNOWN_BRANDS = [
     "Bambu Lab", "Polymaker", "Prusament", "Prusa", "Fillamentum", "MatterHackers",
@@ -25,18 +27,29 @@ KNOWN_BRANDS = [
     "iSANMATE", "YOUSU", "R3D", "Sakata", "Filamentive",
 ]
 
-# Base materials → canonical Bambuddy `material`. Order matters: the most
-# specific / longest token must be tried first (PETG before PET, PLA+ before PLA).
+# Base materials → canonical Bambuddy `material` (its spool form's MATERIALS
+# list: nylon is "PA", carbon-fibre blends are "<base>-CF"). Order matters: the
+# most specific / longest token must be tried first (PETG before PET, PLA+
+# before PLA, PA6-CF before PA6).
 BASE_MATERIALS = [
+    ("PLA-CF", "PLA-CF"), ("PETG-CF", "PETG-CF"), ("PA-CF", "PA-CF"),
+    ("PA6-CF", "PA-CF"), ("PA12-CF", "PA-CF"), ("NYLON-CF", "PA-CF"),
     ("PCTG", "PCTG"), ("PETG", "PETG"), ("PET-G", "PETG"), ("PET G", "PETG"),
     ("PLA+", "PLA"), ("PLA PLUS", "PLA"), ("PLA-PLUS", "PLA"), ("PLA", "PLA"),
     ("ABS+", "ABS"), ("ABS", "ABS"), ("ASA", "ASA"),
     ("TPU", "TPU"), ("TPE", "TPE"),
-    ("NYLON", "Nylon"), ("PA12", "Nylon"), ("PA6", "Nylon"), ("PA", "Nylon"),
+    ("NYLON", "PA"), ("PA12", "PA"), ("PA66", "PA"), ("PA6", "PA"), ("PA", "PA"),
     ("HIPS", "HIPS"), ("PVA", "PVA"), ("PC", "PC"),
 ]
 
-# Subtype / finish modifiers (canonical casing on the right).
+# Bases Bambuddy has a "-CF" material for; "PLA ... Carbon Fiber" → "PLA-CF".
+_CF_BASES = ("PLA", "PETG", "PA")
+_CARBON_FIBRE_RE = re.compile(
+    r"CARBON[\s-]*FIB(?:ER|RE)|KOHLEFASER|CARBONFASER|(?<![A-Z])CF(?![A-Z])")
+
+# Subtype / finish modifiers (canonical casing on the right). Finishes stay in
+# the subtype here (the sorting reads the line from it, "PLA Matte"); the
+# finish also goes to Bambuddy's own `effect_type` (label_reader.effect()).
 SUBTYPE_HINTS = [
     ("CARBON FIBER", "Carbon Fiber"), ("CARBON FIBRE", "Carbon Fiber"),
     ("KOHLEFASER", "Carbon Fiber"), ("CARBONFASER", "Carbon Fiber"),
@@ -119,6 +132,8 @@ def _find_material(text_upper: str) -> tuple[str | None, str | None]:
     for token, canonical in BASE_MATERIALS:
         if re.search(r"(?<![A-Z])" + re.escape(token) + r"(?![A-Z])", text_upper):
             sub = "Plus" if token.endswith(("+", "PLUS")) else None
+            if canonical in _CF_BASES and _CARBON_FIBRE_RE.search(text_upper):
+                canonical = f"{canonical}-CF"
             return canonical, sub
     return None, None
 
@@ -134,25 +149,46 @@ def _find_subtypes(text_upper: str) -> list[str]:
     return found
 
 
-def _find_color(text: str) -> tuple[str | None, str | None]:
-    # Dual colour first: "Grey-Orange", "Black/White" → keep both names; rgba
-    # from the first colour (a single swatch can't show two).
+def _palette_name(word: str) -> str | None:
+    """The palette's own spelling of a colour word ("GRÜN" → "Grün")."""
+    return next((w for w in COLOR_HEX if w.lower() == word.lower()), None)
+
+
+def _find_color(text: str) -> tuple[str | None, str | None, list[str]]:
+    """(colour name, RRGGBBAA, part hexes for a dual/tri-colour roll).
+
+    A "COLOR:"/"Farbe:" field, a bracketed "(GREY-ORANGE)" pair or a pair on
+    a line of its own wins (label_reader.label_color); then an inline pair or
+    triple ("Gold-Silver" in a product title); then the first colour word.
+    """
+    labelled = label_reader.label_color(text)
+    if labelled["name"]:
+        parts = labelled["part_hexes"]
+        rgba = (parts[0] + "FF") if parts else None
+        if rgba is None:
+            for word in _COLOR_WORDS:
+                if re.search(rf"\b{re.escape(word)}\b", labelled["name"], re.IGNORECASE):
+                    rgba = COLOR_HEX[word] + "FF"
+                    break
+        return labelled["name"], rgba, parts
+    # Inline pair/triple: "Grey-Orange", "Black/White/Gold" → keep all names;
+    # rgba from the first, every part as Bambuddy's extra colours.
     cw = "|".join(re.escape(w) for w in _COLOR_WORDS)
-    m = re.search(rf"\b({cw})\s*[-/]\s*({cw})\b", text, re.IGNORECASE)
+    m = re.search(rf"\b({cw})\s*[-/]\s*({cw})(?:\s*[-/]\s*({cw}))?\b", text, re.IGNORECASE)
     if m:
-        c1, c2 = m.group(1).title(), m.group(2).title()
-        rgba = COLOR_HEX.get(c1)
-        return f"{c1}-{c2}", (rgba + "FF") if rgba else None
+        names = [g.title() for g in m.groups() if g]
+        hexes = [COLOR_HEX[p] for p in (_palette_name(n) for n in names) if p]
+        return "-".join(names), (hexes[0] + "FF") if hexes else None, hexes
     clear = None
     for word in _COLOR_WORDS:
         if re.search(rf"\b{re.escape(word)}\b", text, re.IGNORECASE):
             if word in _CLEAR_WORDS:
                 clear = clear or word
                 continue
-            return word, COLOR_HEX[word] + "FF"   # RRGGBBAA, opaque
+            return word, COLOR_HEX[word] + "FF", []   # RRGGBBAA, opaque
     if clear:
-        return clear, COLOR_HEX[clear] + "FF"
-    return None, None
+        return clear, COLOR_HEX[clear] + "FF", []
+    return None, None, []
 
 
 def _find_diameter(text: str) -> float | None:
@@ -214,7 +250,8 @@ def parse_title(title: str, brand_hint: str | None = None, extra_brands=None) ->
 
     ``extra_brands`` augments the built-in brand list (e.g. the Open Filament
     Database's brands). Returns a dict with any of: brand, material, subtype,
-    color_name, rgba, diameter_mm, label_weight. Missing fields are absent.
+    effect_type, color_name, rgba, extra_colors, nozzle_temp_min/max,
+    diameter_mm, label_weight. Missing fields are absent.
     """
     if not title:
         return {}
@@ -231,15 +268,30 @@ def parse_title(title: str, brand_hint: str | None = None, extra_brands=None) ->
         out["material"] = material
 
     subtypes = _find_subtypes(upper)
+    # Carbon fibre is part of the material when Bambuddy has a "-CF" one.
+    if material and material.endswith("-CF"):
+        subtypes = [s for s in subtypes if s != "Carbon Fiber"]
     if plus_sub and plus_sub not in subtypes:
         subtypes.insert(0, plus_sub)
     if subtypes:
         out["subtype"] = " ".join(subtypes)
 
-    color_name, rgba = _find_color(text)
+    finish = label_reader.effect(text)
+    if finish:
+        out["effect_type"] = finish
+
+    color_name, rgba, part_hexes = _find_color(text)
     if color_name:
         out["color_name"] = color_name
-        out["rgba"] = rgba
+        if rgba:
+            out["rgba"] = rgba
+    # A dual/tri-colour roll's parts become Bambuddy's extra colours. Every
+    # part, the first included: with stops set, Bambuddy's swatch draws the
+    # gradient from them alone and ignores rgba.
+    if len(part_hexes) >= 2:
+        out["extra_colors"] = ",".join(part_hexes)
+        if finish not in label_reader.MULTICOLOR_EFFECTS:
+            out["effect_type"] = "tri-color" if len(part_hexes) >= 3 else "dual-color"
     # An explicit hex on the label is authoritative for the colour swatch.
     hex_rgba = _find_hex(text)
     if hex_rgba:
@@ -286,12 +338,18 @@ def explain(text: str, fields: dict) -> dict:
         if key == "brand":
             span = _first(re.escape(v), text)
         elif key == "material":
+            base = v[:-3] if v.endswith("-CF") else None
             for token, canonical in BASE_MATERIALS:
-                if canonical == v:
+                if canonical in (v, base):
                     span = _first(r"(?<![A-Z])" + re.escape(token) + r"(?![A-Z])", text)
                     if span:
                         break
             span = span or _first(re.escape(v), text)
+        elif key == "effect_type":
+            words = label_reader.effect_words(v)
+            if words:
+                span = _first(r"(?<![A-Z0-9])(?:" + "|".join(re.escape(w).replace(r"\ ", r"\s+") for w in words)
+                              + r")(?![A-Z0-9])", text)
         elif key == "subtype":
             spans = []
             for part in v.split(" "):
