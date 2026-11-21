@@ -9018,6 +9018,392 @@ BRIDGE_TEXTS = {
 for _code, _texts in BRIDGE_TEXTS.items():
     TRANSLATIONS[_code]["bridge"] = _texts
 
+
+# What came over from the original app's scan-to-add work (upstream #28/#29):
+# Bambuddy's effect labels (its inventory.colorEffect.*, keyed the same way)
+# as an "effect" section, and the new form, badge, photo and lookup texts,
+# added to their sections.
+SCAN_TEXTS = {
+    "en": {
+        "effect": {
+            "none": "None",
+            "sparkle": "Sparkle",
+            "wood": "Wood",
+            "marble": "Marble",
+            "glow": "Glow",
+            "matte": "Matte",
+            "silk": "Silk",
+            "galaxy": "Galaxy",
+            "rainbow": "Rainbow",
+            "metal": "Metal",
+            "translucent": "Translucent",
+            "gradient": "Gradient",
+            "dualColor": "Dual Color",
+            "triColor": "Tri Color",
+            "multicolor": "Multicolor"
+        },
+        "form": {
+            "effect": "Effect",
+            "extra_colors": "Extra colours (dual/tri-colour)",
+            "extra_colors_placeholder": "e.g. 808080,FF7F00",
+            "spoolman_effect_hint": "BamBuddy keeps the spools in Spoolman, which has no place for the effect and extra colours, so they are hidden."
+        },
+        "badge": {
+            "error": "lookup failed — couldn't check the databases"
+        },
+        "ocr": {
+            "reading_barcodes": "Looking for barcodes in the photo…"
+        },
+        "scan": {
+            "lookup_unavailable": "The filament databases could not be reached, so this code was not checked. Fill in the details below or try again later."
+        }
+    },
+    "de": {
+        "effect": {
+            "none": "Keiner",
+            "sparkle": "Glitzer",
+            "wood": "Holz",
+            "marble": "Marmor",
+            "glow": "Leuchtend",
+            "matte": "Matt",
+            "silk": "Seide",
+            "galaxy": "Galaxie",
+            "rainbow": "Regenbogen",
+            "metal": "Metallic",
+            "translucent": "Lichtdurchlässig",
+            "gradient": "Verlauf",
+            "dualColor": "Zweifarbig",
+            "triColor": "Dreifarbig",
+            "multicolor": "Mehrfarbig"
+        },
+        "form": {
+            "effect": "Effekt",
+            "extra_colors": "Zusatzfarben (zwei-/dreifarbig)",
+            "extra_colors_placeholder": "z. B. 808080,FF7F00",
+            "spoolman_effect_hint": "BamBuddy führt die Spulen in Spoolman; dort gibt es keinen Platz für Effekt und Zusatzfarben, daher sind sie ausgeblendet."
+        },
+        "badge": {
+            "error": "Suche fehlgeschlagen — Datenbanken nicht erreichbar"
+        },
+        "ocr": {
+            "reading_barcodes": "Suche Barcodes im Foto…"
+        },
+        "scan": {
+            "lookup_unavailable": "Die Filament-Datenbanken waren nicht erreichbar, der Code wurde daher nicht geprüft. Fülle die Angaben unten aus oder versuche es später noch einmal."
+        }
+    },
+    "es": {
+        "effect": {
+            "none": "Ninguno",
+            "sparkle": "Destellos",
+            "wood": "Madera",
+            "marble": "Mármol",
+            "glow": "Brillante en la oscuridad",
+            "matte": "Mate",
+            "silk": "Seda",
+            "galaxy": "Galaxia",
+            "rainbow": "Arcoíris",
+            "metal": "Metal",
+            "translucent": "Translúcido",
+            "gradient": "Degradado",
+            "dualColor": "Bicolor",
+            "triColor": "Tricolor",
+            "multicolor": "Multicolor"
+        },
+        "form": {
+            "effect": "Efecto",
+            "extra_colors": "Colores extra (bicolor/tricolor)",
+            "extra_colors_placeholder": "p. ej. 808080,FF7F00",
+            "spoolman_effect_hint": "BamBuddy guarda las bobinas en Spoolman, que no tiene sitio para el efecto ni los colores extra, así que se ocultan."
+        },
+        "badge": {
+            "error": "búsqueda fallida — no se pudieron consultar las bases de datos"
+        },
+        "ocr": {
+            "reading_barcodes": "Buscando códigos de barras en la foto…"
+        },
+        "scan": {
+            "lookup_unavailable": "No se pudo acceder a las bases de datos de filamentos, así que este código no se comprobó. Rellena los datos abajo o vuelve a intentarlo más tarde."
+        }
+    },
+    "fr": {
+        "effect": {
+            "none": "Aucun",
+            "sparkle": "Pailleté",
+            "wood": "Bois",
+            "marble": "Marbre",
+            "glow": "Lueur",
+            "matte": "Mat",
+            "silk": "Soie",
+            "galaxy": "Galaxie",
+            "rainbow": "Arc-en-ciel",
+            "metal": "Métal",
+            "translucent": "Translucide",
+            "gradient": "Dégradé",
+            "dualColor": "Bicolore",
+            "triColor": "Tricolore",
+            "multicolor": "Multicolore"
+        },
+        "form": {
+            "effect": "Effet",
+            "extra_colors": "Couleurs supplémentaires (bi/tricolore)",
+            "extra_colors_placeholder": "ex. 808080,FF7F00",
+            "spoolman_effect_hint": "BamBuddy garde les bobines dans Spoolman, qui n'a pas de place pour l'effet ni les couleurs supplémentaires : ils sont masqués."
+        },
+        "badge": {
+            "error": "échec de la recherche — bases de données injoignables"
+        },
+        "ocr": {
+            "reading_barcodes": "Recherche de codes-barres dans la photo…"
+        },
+        "scan": {
+            "lookup_unavailable": "Les bases de données de filaments n'ont pas pu être jointes : ce code n'a pas été vérifié. Remplissez les détails ci-dessous ou réessayez plus tard."
+        }
+    },
+    "ja": {
+        "effect": {
+            "none": "なし",
+            "sparkle": "スパークル",
+            "wood": "ウッド",
+            "marble": "マーブル",
+            "glow": "グロー",
+            "matte": "マット",
+            "silk": "シルク",
+            "galaxy": "ギャラクシー",
+            "rainbow": "レインボー",
+            "metal": "メタル",
+            "translucent": "半透明",
+            "gradient": "グラデーション",
+            "dualColor": "デュアルカラー",
+            "triColor": "トリカラー",
+            "multicolor": "マルチカラー"
+        },
+        "form": {
+            "effect": "エフェクト",
+            "extra_colors": "追加カラー（2色/3色）",
+            "extra_colors_placeholder": "例: 808080,FF7F00",
+            "spoolman_effect_hint": "BamBuddy はスプールを Spoolman で管理しています。Spoolman にはエフェクトと追加カラーを保存する場所がないため、非表示になっています。"
+        },
+        "badge": {
+            "error": "検索失敗 — データベースを確認できません"
+        },
+        "ocr": {
+            "reading_barcodes": "写真内のバーコードを探しています…"
+        },
+        "scan": {
+            "lookup_unavailable": "フィラメントデータベースに接続できなかったため、このコードは確認できませんでした。下に詳細を入力するか、後でもう一度お試しください。"
+        }
+    },
+    "it": {
+        "effect": {
+            "none": "Nessuno",
+            "sparkle": "Scintillante",
+            "wood": "Legno",
+            "marble": "Marmo",
+            "glow": "Bagliore",
+            "matte": "Opaco",
+            "silk": "Silk",
+            "galaxy": "Galassia",
+            "rainbow": "Arcobaleno",
+            "metal": "Metallo",
+            "translucent": "Traslucido",
+            "gradient": "Sfumatura",
+            "dualColor": "Bicolore",
+            "triColor": "Tricolore",
+            "multicolor": "Multicolore"
+        },
+        "form": {
+            "effect": "Effetto",
+            "extra_colors": "Colori aggiuntivi (bi/tricolore)",
+            "extra_colors_placeholder": "es. 808080,FF7F00",
+            "spoolman_effect_hint": "BamBuddy tiene le bobine in Spoolman, che non ha spazio per l'effetto e i colori aggiuntivi, quindi sono nascosti."
+        },
+        "badge": {
+            "error": "ricerca non riuscita — database non raggiungibili"
+        },
+        "ocr": {
+            "reading_barcodes": "Ricerca dei codici a barre nella foto…"
+        },
+        "scan": {
+            "lookup_unavailable": "Impossibile raggiungere i database dei filamenti, quindi il codice non è stato verificato. Compila i dettagli qui sotto o riprova più tardi."
+        }
+    },
+    "ko": {
+        "effect": {
+            "none": "없음",
+            "sparkle": "스파클",
+            "wood": "우드",
+            "marble": "마블",
+            "glow": "글로우",
+            "matte": "매트",
+            "silk": "실크",
+            "galaxy": "갤럭시",
+            "rainbow": "레인보우",
+            "metal": "메탈",
+            "translucent": "반투명",
+            "gradient": "그라데이션",
+            "dualColor": "듀얼 컬러",
+            "triColor": "트리 컬러",
+            "multicolor": "멀티컬러"
+        },
+        "form": {
+            "effect": "효과",
+            "extra_colors": "추가 색상 (2색/3색)",
+            "extra_colors_placeholder": "예: 808080,FF7F00",
+            "spoolman_effect_hint": "BamBuddy는 스풀을 Spoolman에서 관리하며, Spoolman에는 효과와 추가 색상을 저장할 곳이 없어 숨겨집니다."
+        },
+        "badge": {
+            "error": "조회 실패 — 데이터베이스를 확인할 수 없음"
+        },
+        "ocr": {
+            "reading_barcodes": "사진에서 바코드를 찾는 중…"
+        },
+        "scan": {
+            "lookup_unavailable": "필라멘트 데이터베이스에 연결할 수 없어 이 코드를 확인하지 못했습니다. 아래에 직접 입력하거나 나중에 다시 시도하세요."
+        }
+    },
+    "pt-br": {
+        "effect": {
+            "none": "Nenhum",
+            "sparkle": "Brilho",
+            "wood": "Madeira",
+            "marble": "Mármore",
+            "glow": "Brilho",
+            "matte": "Fosco",
+            "silk": "Silk",
+            "galaxy": "Galáxia",
+            "rainbow": "Arco-íris",
+            "metal": "Metal",
+            "translucent": "Translúcido",
+            "gradient": "Gradiente",
+            "dualColor": "Dupla cor",
+            "triColor": "Tricolor",
+            "multicolor": "Multicolor"
+        },
+        "form": {
+            "effect": "Efeito",
+            "extra_colors": "Cores extras (bicolor/tricolor)",
+            "extra_colors_placeholder": "ex.: 808080,FF7F00",
+            "spoolman_effect_hint": "O BamBuddy guarda os carretéis no Spoolman, que não tem lugar para o efeito e as cores extras, por isso estão ocultos."
+        },
+        "badge": {
+            "error": "busca falhou — não foi possível consultar os bancos"
+        },
+        "ocr": {
+            "reading_barcodes": "Procurando códigos de barras na foto…"
+        },
+        "scan": {
+            "lookup_unavailable": "Não foi possível acessar os bancos de dados de filamentos, então este código não foi verificado. Preencha os dados abaixo ou tente novamente mais tarde."
+        }
+    },
+    "zh-cn": {
+        "effect": {
+            "none": "无",
+            "sparkle": "闪光",
+            "wood": "木纹",
+            "marble": "大理石",
+            "glow": "夜光",
+            "matte": "哑光",
+            "silk": "丝光",
+            "galaxy": "星空",
+            "rainbow": "彩虹",
+            "metal": "金属",
+            "translucent": "半透明",
+            "gradient": "渐变",
+            "dualColor": "双色",
+            "triColor": "三色",
+            "multicolor": "多色"
+        },
+        "form": {
+            "effect": "效果",
+            "extra_colors": "附加颜色（双色/三色）",
+            "extra_colors_placeholder": "例如 808080,FF7F00",
+            "spoolman_effect_hint": "BamBuddy 将料盘保存在 Spoolman 中，Spoolman 无法存储效果和附加颜色，因此已隐藏。"
+        },
+        "badge": {
+            "error": "查询失败 — 无法访问数据库"
+        },
+        "ocr": {
+            "reading_barcodes": "正在查找照片中的条码…"
+        },
+        "scan": {
+            "lookup_unavailable": "无法连接耗材数据库，因此未能核对此代码。请在下方手动填写，或稍后重试。"
+        }
+    },
+    "zh-tw": {
+        "effect": {
+            "none": "無",
+            "sparkle": "閃光",
+            "wood": "木紋",
+            "marble": "大理石",
+            "glow": "夜光",
+            "matte": "霧面",
+            "silk": "絲光",
+            "galaxy": "星空",
+            "rainbow": "彩虹",
+            "metal": "金屬",
+            "translucent": "半透明",
+            "gradient": "漸層",
+            "dualColor": "雙色",
+            "triColor": "三色",
+            "multicolor": "多色"
+        },
+        "form": {
+            "effect": "效果",
+            "extra_colors": "附加顏色（雙色/三色）",
+            "extra_colors_placeholder": "例如 808080,FF7F00",
+            "spoolman_effect_hint": "BamBuddy 將線軸存放在 Spoolman 中，Spoolman 無法儲存效果與附加顏色，因此已隱藏。"
+        },
+        "badge": {
+            "error": "查詢失敗 — 無法存取資料庫"
+        },
+        "ocr": {
+            "reading_barcodes": "正在尋找照片中的條碼…"
+        },
+        "scan": {
+            "lookup_unavailable": "無法連線至線材資料庫，因此未能核對此代碼。請在下方手動填寫，或稍後再試。"
+        }
+    },
+    "tr": {
+        "effect": {
+            "none": "Yok",
+            "sparkle": "Parıltı",
+            "wood": "Ahşap",
+            "marble": "Mermer",
+            "glow": "Parlama",
+            "matte": "Mat",
+            "silk": "İpek",
+            "galaxy": "Galaksi",
+            "rainbow": "Gökkuşağı",
+            "metal": "Metal",
+            "translucent": "Yarı saydam",
+            "gradient": "Gradyan",
+            "dualColor": "Çift Renk",
+            "triColor": "Üç Renk",
+            "multicolor": "Çok Renkli"
+        },
+        "form": {
+            "effect": "Efekt",
+            "extra_colors": "Ek renkler (çift/üç renk)",
+            "extra_colors_placeholder": "ör. 808080,FF7F00",
+            "spoolman_effect_hint": "BamBuddy makaraları Spoolman'de tutuyor; orada efekt ve ek renkler için yer olmadığından gizlendiler."
+        },
+        "badge": {
+            "error": "arama başarısız — veritabanlarına ulaşılamadı"
+        },
+        "ocr": {
+            "reading_barcodes": "Fotoğrafta barkod aranıyor…"
+        },
+        "scan": {
+            "lookup_unavailable": "Filament veritabanlarına ulaşılamadı, bu yüzden kod kontrol edilemedi. Ayrıntıları aşağıya girin veya daha sonra tekrar deneyin."
+        }
+    }
+}
+
+for _code, _texts in SCAN_TEXTS.items():
+    for _section, _entries in _texts.items():
+        TRANSLATIONS[_code].setdefault(_section, {}).update(_entries)
+
 DEFAULT_LANG = "en"
 SUPPORTED_LANGS = sorted(TRANSLATIONS)
 

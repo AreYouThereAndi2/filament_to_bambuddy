@@ -112,7 +112,7 @@ class TestMatching:
     def test_tigertag_first_others_fill_gaps_via_siblings(self):
         with patch("tigertag.lookup_sku", return_value=self.TT), patch("tigertag.lookup", return_value=None), \
              patch("ofd.lookup_article", return_value=None), \
-             patch("ofd.lookup", side_effect=lambda c: self.OFD if c == "6974994171043" else None), \
+             patch("ofd.lookup", side_effect=lambda c, **_k: self.OFD if c == "6974994171043" else None), \
              patch("spoolmandb_community.lookup", return_value=None), \
              patch("spoolmandb_community.lookup_sku", return_value=None):
             fields, source, codes, title = app_module._external_all_codes("700-001-1535", "sku")

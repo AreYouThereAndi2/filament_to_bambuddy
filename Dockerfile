@@ -1,11 +1,11 @@
-FROM python:3.14-slim
+FROM python:3.15-slim
 
 # The base image's own OS packages lag Debian's security patch cadence —
 # util-linux (util-linux/mount/login/libuuid1/libsmartcols1/libmount1/
 # liblastlog2-2/libblkid1/bsdutils, all built from the same source package)
 # was flagged by CI's Trivy scan at 2.41-5 with several CVEs fixed in
 # 2.41.3-1/2.41.5-0+deb13u1. Upgrading here (rather than waiting on the next
-# python:3.14-slim rebuild) keeps every build current regardless of how
+# python:3.15-slim rebuild) keeps every build current regardless of how
 # stale the upstream base image's own OS layer is.
 #
 # CACHE_BUST forces this layer to actually re-run instead of being served
@@ -32,11 +32,19 @@ ARG VERSION=dev
 WORKDIR /app
 
 # Deps first for layer caching. gunicorn serves the Flask app in production.
+#
+# pip is upgraded first because the base image's pip bundles its own private
+# copies of urllib3, msgpack and others (pip/_vendor), and Trivy flags those
+# whenever they fall behind: the base image's pip (26.2 or older) bundled
+# urllib3 2.7.0 and msgpack 1.1.2 (CVE-2026-97687/97688/97689, CVE-2026-114613).
+# pip 26.3 bundles the fixed urllib3 2.8.0 and msgpack 1.2.4. These copies
+# only run during `pip install` at build time, never in the running app.
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt gunicorn
+RUN pip install --no-cache-dir --upgrade "pip>=26.3" \
+    && pip install --no-cache-dir -r requirements.txt gunicorn
 
 # App code
-COPY app.py catalog_util.py ofd.py filament_parse.py spoolmandb_community.py tigertag.py name_match.py spoolman_match.py presets.py label_render.py reorder.py locations.py spool_sort.py i18n.py upc_lookup.py page_import.py invoices.py invoice_extract.py invoice_parse.py amazon_orders.py print_bridge.py ./
+COPY app.py catalog_util.py ofd.py filament_parse.py label_reader.py spoolmandb_community.py tigertag.py name_match.py spoolman_match.py presets.py label_render.py reorder.py locations.py spool_sort.py i18n.py upc_lookup.py page_import.py invoices.py invoice_extract.py invoice_parse.py amazon_orders.py print_bridge.py ./
 # Sign-in through BamBuddy (AUTH_MODE=bambuddy)
 COPY auth.py ./
 COPY templates ./templates

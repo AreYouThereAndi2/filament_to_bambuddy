@@ -36,6 +36,7 @@ from flask import Flask, Response, jsonify, make_response, render_template, requ
 
 import auth
 import i18n
+import label_reader
 import presets
 import spool_sort
 
@@ -154,6 +155,33 @@ def _classify_code(raw: str) -> tuple[str, str]:
     return (raw or "").strip().upper(), "sku"
 
 
+class LookupUnavailable(Exception):
+    """None of the filament databases could be checked (each index download
+    failed with nothing cached). Distinct from a plain miss, which means they
+    were checked and none knows the code."""
+
+
+def _finish_fields(fields: dict) -> dict:
+    """Bring merged database fields in line with what Bambuddy stores.
+
+    Material as Bambuddy's list spells it ("Nylon" → "PA"), an effect_type
+    Bambuddy accepts, and, when the database gave none, the effect the
+    subtype or colour name implies ("Dual Matte", "Galaxy Black", "Silk").
+    """
+    if fields.get("material"):
+        fields["material"] = label_reader.canonical_material(fields["material"])
+    effect = label_reader.normalize_effect(fields.get("effect_type"))
+    if not effect:
+        effect = label_reader.effect(" ".join(
+            str(fields[k]) for k in ("subtype", "color_name") if fields.get(k)))
+    fields["effect_type"] = effect
+    if not fields.get("extra_colors"):
+        fields.pop("extra_colors", None)
+    if fields.get("effect_type") is None:
+        fields.pop("effect_type", None)
+    return fields
+
+
 def _external_all_codes(code: str, kind: str) -> tuple | None:
     """Cross-reference TigerTag, OFD and SpoolmanDB-Community for `code`, merging their hits.
 
@@ -166,6 +194,10 @@ def _external_all_codes(code: str, kind: str) -> tuple | None:
     GTINs, the refill GTIN, the SKU/article number) found across them. A
     database that does not know `code` itself is asked for those siblings.
     Mirrors Bambuddy's `_external_all_codes` in `backend/app/api/routes/inventory.py`.
+
+    Returns None when the databases were checked and none knows the code;
+    raises LookupUnavailable when not one of them could be checked at all
+    (TigerTag switched off counts as not asked).
     """
     import ofd
     import spoolmandb_community
@@ -179,13 +211,29 @@ def _external_all_codes(code: str, kind: str) -> tuple | None:
 
     def _ask(by_gtin, by_sku, c, k):
         try:
-            return by_gtin(c) if k == "gtin" else by_sku(c)
+            return by_gtin(c, strict=True) if k == "gtin" else by_sku(c, strict=True)
+        except Exception:
+            log.warning("filament database lookup couldn't run for %s", c, exc_info=True)
+            raise
+
+    hits: dict = {}
+    checked = False
+    for name, g, s in databases:
+        try:
+            hits[name] = _ask(g, s, code, kind)
+            checked = checked or name != "tigertag" or tigertag.TIGERTAG_ENABLED
+        except Exception:
+            hits[name] = None
+    if not any(hits.values()):
+        if not checked:
+            raise LookupUnavailable(code)
+        return None
+
+    def _probe(by_gtin, by_sku, c, k):
+        try:
+            return _ask(by_gtin, by_sku, c, k)
         except Exception:
             return None
-
-    hits: dict = {name: _ask(g, s, code, kind) for name, g, s in databases}
-    if not any(hits.values()):
-        return None
 
     fields: dict = {}
     all_codes: list = []
@@ -227,12 +275,12 @@ def _external_all_codes(code: str, kind: str) -> tuple | None:
         for name, by_gtin, by_sku in databases:
             if hits[name]:
                 continue
-            probe = _ask(by_gtin, by_sku, sibling_code, entry["kind"])
+            probe = _probe(by_gtin, by_sku, sibling_code, entry["kind"])
             if probe:
                 _merge(probe, name)
                 hits[name] = probe
 
-    return fields, source, all_codes, title
+    return _finish_fields(fields), source, all_codes, title
 
 
 def _get_version() -> str:
@@ -450,12 +498,24 @@ def manifest():
 
 
 # Dropdown option lists (mirroring Bambuddy's spool edit form).
+# Materials are spelled Bambuddy's way (nylon is "PA", label_reader.canonical_material).
 MATERIAL_OPTIONS = ["PLA", "PETG", "PCTG", "ABS", "ASA", "TPU", "TPE", "PC", "PA",
-                    "Nylon", "PVA", "HIPS", "PP", "PET", "PLA-CF", "PETG-CF", "PA-CF"]
+                    "PVA", "HIPS", "PP", "PET", "PLA-CF", "PETG-CF", "PA-CF"]
 SUBTYPE_OPTIONS = ["Basic", "Matte", "Silk", "Silk+", "Plus", "Tough", "HF",
                    "High Speed", "CF", "GF", "Galaxy", "Glow", "Marble", "Metal",
                    "Rainbow", "Sparkle", "Wood", "Translucent", "Transparent",
                    "Clear", "Gradient", "Dual Color", "Tri Color", "Carbon Fiber"]
+# Bambuddy's effect_type values (the swatch's finish), in its form's order.
+EFFECT_OPTIONS = [value for value, _ in label_reader.EFFECT_OPTIONS]
+# Spool fields Bambuddy's Spoolman inventory (SpoolmanInventoryCreate, checked
+# against Bambuddy 1.3.1) has no place for; sent anyway they are dropped
+# silently, so they are left out and the form hides the effect and extra
+# colours in that mode. The temperatures still reach the Spoolman filament
+# (see _fill_spoolman_filament), so the form keeps them.
+SPOOLMAN_UNSUPPORTED_FIELDS = {"extra_colors", "effect_type", "nozzle_temp_min",
+                               "nozzle_temp_max", "category", "data_origin"}
+SPOOLMAN_HIDDEN_FORM_FIELDS = ["effect_type", "extra_colors"]
+_HEX_STOP_RE = re.compile(r"[0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?")
 WEIGHT_OPTIONS = [250, 500, 750, 1000, 2000, 3000]
 COLOR_OPTIONS = ["Black", "White", "Gray", "Silver", "Red", "Orange", "Yellow",
                  "Green", "Blue", "Navy", "Cyan", "Teal", "Purple", "Pink",
@@ -999,7 +1059,10 @@ def options():
         brands = DEFAULT_BRANDS
     try:
         materials = sorted(
-            set(MATERIAL_OPTIONS) | {m["material"] for m in spoolmandb_community.get_materials() if m.get("material")},
+            set(MATERIAL_OPTIONS) | {
+                label_reader.canonical_material(m["material"])
+                for m in spoolmandb_community.get_materials() if m.get("material")
+            },
             key=str.lower,
         )
     except Exception:
@@ -1009,9 +1072,14 @@ def options():
     # (~23 entries), while SpoolmanDB's colors are thousands of specific
     # product names on a different axis (already covered by the free-text
     # color_name field, not a constrained dropdown).
-    return jsonify(materials=materials, subtypes=SUBTYPE_OPTIONS,
+    try:
+        spoolman = _spoolman_mode()
+    except Exception:
+        spoolman = False
+    return jsonify(materials=materials, subtypes=SUBTYPE_OPTIONS, effects=EFFECT_OPTIONS,
                    weights=WEIGHT_OPTIONS, colors=COLOR_OPTIONS, brands=brands,
-                   locations=_bambuddy_locations())
+                   locations=_bambuddy_locations(),
+                   hidden_fields=SPOOLMAN_HIDDEN_FORM_FIELDS if spoolman else [])
 
 
 @app.delete("/api/cache")
@@ -1178,7 +1246,14 @@ def lookup():
 
     # 2. Cross-referenced OFD + SpoolmanDB-Community lookup. The user's own
     # Spoolman filament, by code or by name, goes on top of what they found.
-    external = _external_all_codes(code, kind)
+    # Couldn't check is not "not found": the user's Spoolman and UPCitemdb
+    # are still asked, and the answer says the databases were not reached.
+    lookup_error = False
+    try:
+        external = _external_all_codes(code, kind)
+    except LookupUnavailable:
+        log.warning("lookup %s: filament databases unavailable", barcode)
+        external, lookup_error = None, True
     if external:
         fields, source, all_codes, title = external
         clean_fields = {k: v for k, v in fields.items() if not k.startswith("_")}
@@ -1221,8 +1296,10 @@ def lookup():
     # Only Amazon's own codes are Amazon's: an ASIN (B0…) or a warehouse
     # FNSKU (X0…). Any other unknown article number is just unknown.
     src = "amazon" if kind == "sku" and re.fullmatch(r"[BX]0[0-9A-Z]{8}", code.upper()) else "none"
+    if lookup_error and src == "none":
+        src = "error"
     log.info("lookup %s: not found (source=%s)", barcode, src)
-    return jsonify(barcode=code, source=src,
+    return jsonify(barcode=code, source=src, lookup_error=lookup_error,
                    fields={"label_weight": DEFAULT_LABEL_WEIGHT}, title=None, linked_codes=[])
 
 
@@ -1288,67 +1365,122 @@ def _offer_price(gtin: str | None, all_codes: list) -> dict | None:
 
 
 def _extract_barcode(text: str) -> str | None:
-    """Pull a barcode (UPC/EAN/GTIN) out of free text, e.g. label OCR.
-
-    Prefers a labelled number ("EAN: 6938936716785"); falls back to any bare
-    12–14 digit run. Returns digits only, or None.
-    """
-    import re
-    # The separator between the label and the digits is wrapped in an atomic
-    # group: without it, its optional \s* overlaps with the [\d\s] class right
-    # after it, and a long run of spaces with no trailing digit makes the
-    # regex engine try every possible split between the two — O(n^2) blowup
-    # (confirmed: 50k spaces took ~24s before, ~3ms after).
-    m = re.search(r"(?:EAN|UPC|GTIN|BARCODE)(?>\s*[:#]?\s*)(\d[\d\s]{6,16}\d)", text, re.IGNORECASE)
-    cand = re.sub(r"\D", "", m.group(1)) if m else None
-    if not cand:
-        m = re.search(r"(?<!\d)(\d{12,14})(?!\d)", text)
-        cand = m.group(1) if m else None
-    return cand if cand and 8 <= len(cand) <= 14 else None
+    """Pull a printed barcode (UPC/EAN/GTIN) out of free text — see label_reader.extract_barcode."""
+    return label_reader.extract_barcode(text)
 
 
-@app.get("/api/parse")
+# A label photo's OCR text is a few hundred characters; this bounds what a
+# request can make the parser chew on.
+_MAX_PARSE_TEXT = 20_000
+_MAX_PARSE_BARCODES = 20
+
+
+@app.route("/api/parse", methods=["GET", "POST"])
 def parse_endpoint():
-    """Parse free text (pasted title or label OCR) into filament fields.
+    """Parse free text (a pasted title, or a label photo) into filament fields.
 
-    Heuristically parses the text, applies the user's reading rules, and if
-    a barcode is present in it, looks that barcode up (TigerTag, OFD,
-    SpoolmanDB-Community): authoritative data overrides the guesses when
-    found. `why` says for each field where it came from: "text" (the parse),
+    GET ?title=… takes a pasted product title. POST {"text": …, "barcodes":
+    […]} takes a label photo: its OCR text, line breaks kept, and every
+    barcode decoded from the image itself.
+
+    The text is parsed heuristically and the user's reading rules applied.
+    Then the codes on it are looked up in order (TigerTag, OFD,
+    SpoolmanDB-Community; first hit wins): decoded GTINs, the printed
+    EAN/UPC, other decoded barcodes, the value under a "SKU"/"Art.-Nr."
+    heading and, for a photo, other SKU-shaped tokens; Amazon FNSKU stickers
+    are skipped (label_reader.code_candidates). Database data overrides the
+    guesses, but the label still fills what the database leaves out (its
+    finish, a dual-colour roll's colours) and its printed weight beats the
+    database's, since one code can cover several sizes. `lookup_error` says
+    the databases could not be reached at all.
+
+    `why` says for each field where it came from: "text" (the parse),
     "rule" (with the rule's match), "db" or "default", and the places in
     `text` it was read from, so the page can show and correct the reading.
     """
     import ofd
     from filament_parse import explain, parse_title
-    title = (request.args.get("title") or "").strip()
-    if not title:
+    photo = request.method == "POST"
+    if photo:
+        body = request.get_json(force=True, silent=True) or {}
+        title = str(body.get("text") or "")[:_MAX_PARSE_TEXT].strip()
+        barcodes = [str(b)[:200] for b in (body.get("barcodes") or [])
+                    if isinstance(b, (str, int)) and not isinstance(b, bool)][:_MAX_PARSE_BARCODES]
+    else:
+        title = (request.args.get("title") or "")[:_MAX_PARSE_TEXT].strip()
+        barcodes = []
+    if not title and not barcodes:
         return jsonify(fields={}, why={}, text="")
     try:
         brands = ofd.get_brands()
     except Exception:
         brands = []
-    fields = parse_title(title, extra_brands=brands)
-    by = dict.fromkeys(fields, "text")
-    fields, applied = apply_rules(title, fields)
+    parsed = parse_title(title, extra_brands=brands) if title else {}
+    by = dict.fromkeys(parsed, "text")
+    fields, applied = apply_rules(title, dict(parsed))
     by.update(dict.fromkeys(applied, "rule"))
+    labelled = label_reader.label_color(title)
 
     source, out_title = "parsed", title
     linked_codes: list = []
-    barcode = _extract_barcode(title)
-    resolved_code = barcode
-    if barcode:
-        code, kind = _classify_code(barcode)
-        external = _external_all_codes(code, kind)
-        if external:
-            ext_fields, ext_source, all_codes, ext_title = external
-            ext_clean = {k: v for k, v in ext_fields.items() if not k.startswith("_") and v is not None}
-            fields = {**fields, **ext_clean}
-            by.update(dict.fromkeys(ext_clean, "db"))
-            source = ext_source
-            out_title = ext_title or title
-            resolved_code = code
-            linked_codes = [c for c in all_codes if c["code"] != code]
+    resolved_code = None
+    lookup_error = False
+    for candidate in label_reader.code_candidates(title, barcodes, classify=_classify_code, loose=photo):
+        code, kind = _classify_code(candidate)
+        try:
+            external = _external_all_codes(code, kind)
+        except LookupUnavailable:
+            # No database could be reached; every other code would fail the
+            # same way.
+            lookup_error = True
+            if resolved_code is None and kind == "gtin":
+                resolved_code = code
+            break
+        if not external:
+            # The label's barcode is still what the spool is remembered by.
+            if resolved_code is None and kind == "gtin":
+                resolved_code = code
+            continue
+        ext_fields, ext_source, all_codes, ext_title = external
+        db = {k: v for k, v in ext_fields.items() if not k.startswith("_") and v is not None}
+        fields = {**fields, **db}
+        by.update(dict.fromkeys(db, "db"))
+        # The box's own printed weight wins: a database code can cover several sizes.
+        if parsed.get("label_weight") and "label_weight" not in applied:
+            fields["label_weight"] = parsed["label_weight"]
+            by["label_weight"] = "text"
+        # The label's split-colour swatch when the database has none, as long
+        # as the effect is a multi-colour one; else no stale stops.
+        if "extra_colors" not in db:
+            if parsed.get("extra_colors") and fields.get("effect_type") in label_reader.MULTICOLOR_EFFECTS:
+                fields["extra_colors"] = parsed["extra_colors"]
+                by["extra_colors"] = "text"
+            else:
+                fields.pop("extra_colors", None)
+                by.pop("extra_colors", None)
+        if "effect_type" not in db and parsed.get("effect_type"):
+            fields["effect_type"] = parsed["effect_type"]
+            by["effect_type"] = "text"
+        # A database name that is product line + colour ("PolyLite PLA Pro
+        # Blue") when the label names the colour on its own ("COLOR: Blue"):
+        # the label's colour, and the rest as the product line.
+        if labelled["explicit"] and labelled["name"]:
+            split = label_reader.split_product_and_color(
+                db.get("color_name"), labelled["name"], fields.get("material"))
+            if split:
+                fields["color_name"] = split[0]
+                by["color_name"] = "text"
+                if not db.get("subtype") and split[1]:
+                    fields["subtype"] = split[1]
+                    by["subtype"] = "db"
+        source = ext_source
+        out_title = ext_title or title
+        resolved_code = code
+        linked_codes = [c for c in all_codes if c["code"] != code]
+        break
 
+    if fields.get("material"):
+        fields["material"] = label_reader.canonical_material(fields["material"])
     fields, _ = _enrich(fields, title)
     before = dict(fields)
     fields, spoolman = _link_spoolman(fields, title, resolved_code)
@@ -1368,7 +1500,8 @@ def parse_endpoint():
             entry["spans"] = []
         why[key] = entry
     return jsonify(fields=fields, title=out_title, barcode=resolved_code, source=source,
-                   linked_codes=linked_codes, text=title, why=why, spoolman=spoolman)
+                   linked_codes=linked_codes, text=title, why=why, spoolman=spoolman,
+                   lookup_error=lookup_error)
 
 
 # The code the user last went to the web for, so a shop page handed back
@@ -1439,7 +1572,10 @@ def import_page():
         code, kind = _classify_code(page["gtin"])
         if kind == "gtin":
             gtin = code
-            external = _external_all_codes(code, kind)
+            try:
+                external = _external_all_codes(code, kind)
+            except LookupUnavailable:
+                external = None
             if external:
                 ext_fields, source, all_codes, ext_title = external
                 fields = {**fields, **{k: v for k, v in ext_fields.items()
@@ -1505,6 +1641,21 @@ def add_spool():
                 val = float(val)
             except (TypeError, ValueError):
                 continue
+        elif key == "effect_type":
+            # Bambuddy refuses the whole spool over an effect it doesn't know.
+            val = label_reader.normalize_effect(str(val))
+            if val is None:
+                continue
+        elif key == "material":
+            val = label_reader.canonical_material(str(val))
+        elif key == "extra_colors":
+            # Bambuddy rejects the whole spool over one bad token, and takes
+            # at most 8 stops: keep the valid ones.
+            stops = [t.strip().lstrip("#") for t in str(val).split(",")]
+            stops = [t.upper() for t in stops if _HEX_STOP_RE.fullmatch(t)][:8]
+            if not stops:
+                continue
+            val = ",".join(stops)
         payload[key] = val
     payload.setdefault("label_weight", DEFAULT_LABEL_WEIGHT)
     payload["data_origin"] = "barcode-scan"
@@ -1522,6 +1673,11 @@ def add_spool():
             profile_rows = p["per_model"]
     base = _inventory_base()
     spoolman_mode = base == "/api/v1/spoolman/inventory"
+    if spoolman_mode:
+        # Bambuddy's Spoolman inventory has no place for these (the
+        # temperatures go onto the Spoolman filament from `fields`, below).
+        for key in SPOOLMAN_UNSUPPORTED_FIELDS:
+            payload.pop(key, None)
     # The filament in the user's Spoolman the form found: the spool is made
     # on it, with all it carries, instead of on one Bambuddy makes up.
     filament_id = fields.get("spoolman_filament_id")

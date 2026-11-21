@@ -148,7 +148,7 @@ Routes: `GET /api/inventory?sort=material,color:desc`, `GET
 /api/locations/suggest` (a place for a new spool). Planning needs **Read
 Status**, applying **Manage Inventory**.
 
-> **Tested with** Bambuddy v0.2.4.8. Requires **Python 3.10+**.
+> **Tested with** Bambuddy v0.2.4.8; the spool create payload (built-in inventory and Spoolman mode) is checked against Bambuddy 1.3.1's schemas. Requires **Python 3.10+** (the image runs 3.15).
 
 ---
 
@@ -375,6 +375,7 @@ Each created spool is tagged `data_origin = "barcode-scan"`.
 | `spoolmandb_community.py` | SpoolmanDB-Community client — builds the GTIN + SKU indexes from the community filament repo, cached/refreshed daily |
 | `catalog_util.py` | Helpers the catalogue clients share: GTIN canonicalisation, `#RRGGBB` → RRGGBBAA |
 | `filament_parse.py` | Heuristics turning product/label text into filament fields (paste-title + label OCR), English and German |
+| `label_reader.py` | What a label says beyond that: codes to try in order (FNSKU skipped), effect, dual-colour parts, BamBuddy's material spelling (from the original app, #29) |
 | `locations.py` | Storage locations: names from a list, a range or a grid; the locations merged with the stock and grouped for the tiles |
 | `spool_sort.py` | Sort keys (material family, colour hue, maker …), the shelf plan that keeps most spools in place, the steps to get there, and a place for a new spool |
 | `invoices.py`, `invoice_extract.py`, `invoice_parse.py`, `amazon_orders.py` | Invoices: routes and the record of imported ones; text from PDFs and OCR of scans/photos; reading the table into items with gross prices; Amazon's order history export |

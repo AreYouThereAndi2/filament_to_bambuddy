@@ -177,6 +177,7 @@
     border-radius:999px;background:var(--raised);color:var(--muted);border:1px solid var(--line)}
   .badge.cache{color:var(--brand-strong);border-color:color-mix(in srgb,var(--brand) 45%,transparent)}
   .badge.upc{color:var(--info);border-color:color-mix(in srgb,var(--info) 45%,transparent)}
+  .badge.err{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
   .codes{font-size:13px;color:var(--muted);line-height:1.5}
   .codes code{font-family:ui-monospace,Menlo,monospace;color:var(--text)}
 
@@ -236,6 +237,8 @@
     font:500 13.5px/1.2 var(--body);text-align:left}
   .bridge-chip .status-dot{margin-top:0}
 
+  /* Bambuddy's extra colours as it draws them: a gradient over the stops. */
+  .swatch-preview{height:14px;border-radius:7px;border:1px solid var(--line);margin-top:6px}
   #whyMarked{white-space:pre-wrap;word-break:break-word;font:12.5px/1.5 ui-monospace,Menlo,monospace;
     background:var(--inset);border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;max-height:180px;overflow:auto}
   #whyMarked mark{color:var(--text);border-radius:3px;padding:0 1px}
@@ -805,6 +808,13 @@
         <div><label for="color_name">{{ t('form.color_name') }}</label><div class="combo"><input id="color_name" placeholder="{{ t('combo.placeholder') }}"><span class="combo-chev"></span><ul id="color_name-list" class="combo-list" hidden></ul></div></div>
         <div style="flex:0 0 96px"><label for="color_picker">{{ t('form.color') }}</label><input id="color_picker" type="color" class="swatch" value="#00ae42"></div>
       </div>
+      <!-- Bambuddy's effect_type and extra_colors (dual/tri-colour rolls); its
+           Spoolman inventory keeps neither, so they are hidden there. -->
+      <div class="row">
+        <div data-field="effect_type"><label for="effect_type">{{ t('form.effect') }}</label><select id="effect_type"></select></div>
+        <div data-field="extra_colors"><label for="extra_colors">{{ t('form.extra_colors') }}</label><input id="extra_colors" autocomplete="off" spellcheck="false" placeholder="{{ t('form.extra_colors_placeholder') }}"><div id="swatchPreview" class="swatch-preview hidden"></div></div>
+      </div>
+      <div id="effectHiddenHint" class="hint hidden">{{ t('form.spoolman_effect_hint') }}</div>
     </div>
 
     <div class="sec">
@@ -1751,16 +1761,45 @@ function setSelect(id, value){
 }
 async function loadOptions(){
   try{ OPTS = await (await fetch('/api/options')).json(); }
-  catch(e){ OPTS = {materials:[],subtypes:[],weights:[1000],colors:[],brands:[],locations:[]}; }
+  catch(e){ OPTS = {materials:[],subtypes:[],effects:[],weights:[1000],colors:[],brands:[],locations:[],hidden_fields:[]}; }
   fillSelect('material', OPTS.materials, {blank:true});
   fillSelect('brand', OPTS.brands, {blank:true});
   fillSelect('subtype', OPTS.subtypes, {blank:true});
+  // Bambuddy's effect_type values, labelled the way Bambuddy labels them.
+  const eff = $('effect_type'), effNow = eff.value; eff.innerHTML = '';
+  [''].concat(OPTS.effects||[]).forEach(v => {
+    const op = document.createElement('option'); op.value = v; op.textContent = effectLabel(v); eff.appendChild(op);
+  });
+  eff.value = effNow;
+  // Bambuddy in Spoolman mode has nowhere to keep some fields: hidden.
+  const hidden = new Set(OPTS.hidden_fields||[]);
+  document.querySelectorAll('#form [data-field]').forEach(el => el.classList.toggle('hidden', hidden.has(el.dataset.field)));
+  $('effectHiddenHint').classList.toggle('hidden', !hidden.size);
   fillSelect('label_weight', OPTS.weights.map(String));
   fillSelect('storage_location', OPTS.locations, {blank:true});
   fillSelect('spLocation', OPTS.locations);
   fillSelect('color_name', OPTS.colors);
   setSelect('label_weight','1000');
 }
+// "dual-color" → t('effect.dualColor'), Bambuddy's own key naming.
+function effectLabel(value){
+  return t('effect.' + (value ? value.replace(/-([a-z])/g, (_, c) => c.toUpperCase()) : 'none'));
+}
+// Bambuddy's extra_colors: comma-separated 6/8-digit hex stops. With stops
+// set, Bambuddy draws the swatch as a gradient across them and ignores the
+// main colour, so the preview does the same.
+function parseStops(value){
+  return (value||'').split(',').map(s => s.trim().replace(/^#/, '')).filter(s => /^[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(s));
+}
+function updateSwatchPreview(){
+  const stops = parseStops($('extra_colors').value).map(h => '#'+h.substring(0, 6));
+  const el = $('swatchPreview');
+  if(!stops.length){ el.classList.add('hidden'); return; }
+  el.style.background = 'linear-gradient(90deg,' + (stops.length === 1 ? [stops[0], stops[0]] : stops).join(',') + ')';
+  el.classList.remove('hidden');
+}
+$('extra_colors').addEventListener('input', updateSwatchPreview);
+
 // A shop page handed back at load fills the form; it waits for the selects.
 const optionsReady = loadOptions();
 
@@ -2101,6 +2140,8 @@ function applyFields(f){
   if(f.material!=null) setSelect('material', f.material);
   if(f.brand!=null) setSelect('brand', f.brand);
   if(f.subtype!=null) setSelect('subtype', f.subtype);
+  if(f.effect_type!=null) setSelect('effect_type', f.effect_type);
+  if(f.extra_colors!=null){ $('extra_colors').value = f.extra_colors; updateSwatchPreview(); }
   if(f.color_name!=null) $('color_name').value = f.color_name;
   if(f.rgba){ const c=hexToColorInput(f.rgba); if(c) $('color_picker').value=c; }
   if(f.label_weight!=null) setSelect('label_weight', f.label_weight);
@@ -2157,6 +2198,7 @@ function badgeFor(source){
     'spoolmandb-community': [t('badge.smdb'), 'cache'],
     label:  [t('badge.label'), 'upc'],
     amazon: [t('badge.amazon'), ''],
+    error:  [t('badge.error'), 'err'],
     upcitemdb: [t('badge.upcitemdb'), 'upc'],
     none:   [t('badge.none'), ''],
   };
@@ -2225,14 +2267,17 @@ function fillForm(d){
   // Point the web-search link at the scanned code (helps when no DB has it).
   const code = d.barcode || currentBarcode || '';
   setSearchLink(code, d.source);
+  // Couldn't check is not "not found": the databases were not reached.
+  if(d.source === 'error') $('fillHint').textContent = t('scan.lookup_unavailable');
   // 'Forget' only makes sense for a remembered (cache) entry with a barcode.
   $('forgetBtn').classList.toggle('hidden', !(code && d.source==='cache'));
   // reset then apply
-  ['color_name','category','core_weight','nozzle_temp_min','nozzle_temp_max','bed_temp_min','bed_temp_max',
+  ['color_name','extra_colors','category','core_weight','nozzle_temp_min','nozzle_temp_max','bed_temp_min','bed_temp_max',
    'cost_per_kg','price_per_spool','tag_uid','note','paste_title'].forEach(id=>$(id).value='');
+  updateSwatchPreview();
   $('nfcHint').textContent='';
   $('whyBox').classList.add('hidden');
-  setSelect('material',''); setSelect('brand',''); setSelect('subtype',''); setSelect('storage_location','');
+  setSelect('material',''); setSelect('brand',''); setSelect('subtype',''); setSelect('effect_type',''); setSelect('storage_location','');
   setSelect('label_weight','1000'); $('quantity').value=1;
   applyFields(f);
   showSpoolman(d.spoolman);
@@ -2302,7 +2347,9 @@ async function ocrBestOrientation(file){
       currentDeg=deg;
       const canvas=rotatedCanvas(img, deg, 1600);
       const { data } = await worker.recognize(canvas);
-      const text=(data.text||'').replace(/\s+/g,' ').trim();
+      // Keep the line breaks: a "SKU" heading with its value on the next
+      // line, a "COLOR:" field and a "(GREY-ORANGE)" pair are read by line.
+      const text=(data.text||'').split(/\n/).map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean).join('\n');
       const score=scoreText(text);
       if(score>best.score) best={text,score};
       if(score>=120) break;   // strong result — no need to try more rotations
@@ -2313,6 +2360,63 @@ async function ocrBestOrientation(file){
   }
 }
 
+// Every barcode in a still photo: the box's EAN, a QR code carrying it, a
+// Code 128 article number. ZXing finds one per decode, so it is run over the
+// whole photo, then each half and quarter, upright and turned 90° (linear
+// barcodes only read across their bars). Amazon's stock sticker is dropped
+// by the server.
+function codeFromPhotoResult(result){
+  const F = ZXingBrowser.BarcodeFormat, text = (result.getText()||'').trim(), format = result.getBarcodeFormat();
+  if(F && format === F.CODE_128) return isPlausibleSku(text) ? text : null;
+  if(F && format === F.UPC_E){
+    const expanded = expandUpcEToUpcA(text);
+    return expanded && isValidUpcEanBarcode(expanded) ? expanded : null;
+  }
+  const candidate = extractGtinFromScan(text);
+  return candidate && isValidUpcEanBarcode(candidate) ? candidate : null;
+}
+function cropCanvas(src, x, y, w, h){
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  c.getContext('2d').drawImage(src, x, y, w, h, 0, 0, w, h);
+  return c;
+}
+async function decodeBarcodesInPhoto(img){
+  if(!window.ZXingBrowser) return [];
+  const found = [];
+  try{
+    const r = new ZXingBrowser.BrowserMultiFormatReader();
+    if(ZXingBrowser.BarcodeFormat){
+      const F = ZXingBrowser.BarcodeFormat;
+      r.hints.set(3, true);
+      r.possibleFormats = [F.UPC_A, F.UPC_E, F.EAN_13, F.EAN_8, F.QR_CODE, F.CODE_128];
+    }
+    for(const deg of [0, 90]){
+      const full = rotatedCanvas(img, deg, 1400);
+      const W=full.width, H=full.height, hw=Math.round(W/2), hh=Math.round(H/2);
+      const regions = [[0,0,W,H],[0,0,W,hh],[0,hh,W,H-hh],[0,0,hw,H],[hw,0,W-hw,H],
+                       [0,0,hw,hh],[hw,0,W-hw,hh],[0,hh,hw,H-hh],[hw,hh,W-hw,H-hh]];
+      for(const [x,y,w,h] of regions){
+        let result = null;
+        try{ result = r.decodeFromCanvas(cropCanvas(full, x, y, w, h)); }catch(e){ /* nothing here */ }
+        if(!result) continue;
+        // A spool's own label QR code is no product code.
+        if(spoolIdFromCode(result.getText())) continue;
+        const code = codeFromPhotoResult(result);
+        if(code && !found.includes(code)) found.push(code);
+      }
+      // Let the hint update between passes.
+      await new Promise(res => setTimeout(res, 0));
+    }
+  }catch(e){ /* barcode decoding is a bonus; the text still gets read */ }
+  return found;
+}
+// The label photo's text and codes, for "read again" in the box below.
+let photoRead = null;
+async function parsePhoto(text, barcodes){
+  return (await fetch('/api/parse', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({text, barcodes})})).json();
+}
+
 $('ocrBtn').onclick = () => $('labelPhoto').click();
 $('labelPhoto').onchange = async (e) => {
   const file = e.target.files[0]; if(!file) return;
@@ -2321,10 +2425,12 @@ $('labelPhoto').onchange = async (e) => {
       $('ocrHint').textContent=t('ocr.loading_recognizer');
       await loadScript('/static/tesseract/tesseract.min.js');
     }
+    $('ocrHint').textContent=t('ocr.reading_barcodes');
+    const barcodes = await decodeBarcodesInPhoto(await loadImage(file));
     $('ocrHint').textContent=t('ocr.reading_label');
     const text = await ocrBestOrientation(file);
-    if(!text){ $('ocrHint').textContent=t('ocr.no_text_found'); return; }
-    const d = await (await fetch('/api/parse?title='+encodeURIComponent(text))).json();
+    if(!text && !barcodes.length){ $('ocrHint').textContent=t('ocr.no_text_found'); return; }
+    const d = await parsePhoto(text, barcodes);
     if(d.barcode) currentBarcode = d.barcode;   // remember by the label's barcode
     const fields = Object.assign({label_weight:1000}, d.fields||{});
     // Did OCR yield anything beyond the default weight?
@@ -2336,17 +2442,18 @@ $('labelPhoto').onchange = async (e) => {
                linked_codes: dbSource ? (d.linked_codes||[]) : [],
                fields });
     showWhy(d);
-    $('ocrHint').textContent = got ? '' : t('ocr.couldnt_read');
+    photoRead = {barcodes};
+    $('ocrHint').textContent = d.lookup_error ? t('scan.lookup_unavailable') : (got ? '' : t('ocr.couldnt_read'));
   }catch(err){ $('ocrHint').textContent=t('ocr.failed',{error:err}); }
   finally{ e.target.value=''; }
 };
 
 // ── Where the fields came from, and the user's reading rules ──
-const WHY_FIELDS = ['brand','material','subtype','color_name','rgba','label_weight','nozzle_temp_min','nozzle_temp_max','diameter_mm'];
-const WHY_LABEL = {brand:'form.brand', material:'form.material', subtype:'form.subtype', color_name:'form.color_name',
+const WHY_FIELDS = ['brand','material','subtype','effect_type','color_name','rgba','label_weight','nozzle_temp_min','nozzle_temp_max','diameter_mm'];
+const WHY_LABEL = {brand:'form.brand', material:'form.material', subtype:'form.subtype', effect_type:'form.effect', color_name:'form.color_name',
   rgba:'form.color', label_weight:'form.net_weight', nozzle_temp_min:'form.nozzle_min', nozzle_temp_max:'form.nozzle_max',
   diameter_mm:'why.diameter'};
-const WHY_COLOR = {brand:'#4f9cf9', material:'#00c64d', subtype:'#c084fc', color_name:'#f59e0b', rgba:'#f59e0b',
+const WHY_COLOR = {brand:'#4f9cf9', material:'#00c64d', subtype:'#c084fc', effect_type:'#e879f9', color_name:'#f59e0b', rgba:'#f59e0b',
   label_weight:'#22d3ee', nozzle_temp_min:'#f87171', nozzle_temp_max:'#f87171', diameter_mm:'#a3e635'};
 const RULE_FIELDS = ['brand','material','subtype','color_name','label_weight','nozzle_temp_min','nozzle_temp_max'];
 let whySel = '';
@@ -2380,7 +2487,7 @@ function showWhy(d){
     else if(w.by === 'spoolman') from = t('why.by_spoolman');
     else if(w.by === 'default') from = t('why.by_default');
     else from = (w.spans||[]).length ? w.spans.map(([a, b]) => t('why.quote', {text: text.slice(a, b)})).join(' + ') : t('why.by_guess');
-    const v = k === 'rgba' ? '#'+String(fields[k]).slice(0, 6) : fields[k];
+    const v = k === 'rgba' ? '#'+String(fields[k]).slice(0, 6) : k === 'effect_type' ? effectLabel(fields[k]) : fields[k];
     return '<div class="whyrow"><span class="dot" style="background:'+WHY_COLOR[k]+'"></span><b>'+esc(t(WHY_LABEL[k]))+'</b> '
       + esc(v) + ' <span class="muted">← '+esc(from)+'</span></div>';
   });
@@ -2408,7 +2515,9 @@ function whyFields(d){
     const text = $('whyText').value.trim();
     if(!text) return;
     try{
-      const d = await (await fetch('/api/parse?title='+encodeURIComponent(text))).json();
+      // Text from a label photo is read again as one, with its barcodes.
+      const d = photoRead ? await parsePhoto(text, photoRead.barcodes)
+        : await (await fetch('/api/parse?title='+encodeURIComponent(text))).json();
       applyFields(whyFields(d)); showWhy(d);
     }catch(e){ toast(t('form.parse_request_failed'), false); }
   };
@@ -2470,6 +2579,7 @@ $('autofillBtn').onclick = async () => {
   }
   try{
     const d = await (await fetch('/api/parse?title='+encodeURIComponent(pastedTitle))).json();
+    photoRead = null;
     applyFields(d.fields||{});
     if(d.spoolman) showSpoolman(d.spoolman);
     showWhy(d);
@@ -5542,6 +5652,8 @@ $('form').onsubmit = async (e) => {
     material: $('material').value.trim(),
     brand: $('brand').value.trim(),
     subtype: $('subtype').value.trim(),
+    effect_type: $('effect_type').value,
+    extra_colors: parseStops($('extra_colors').value).join(','),
     color_name: $('color_name').value.trim(),
     rgba: colorInputToRgba($('color_picker').value),
     label_weight: $('label_weight').value.trim(),
